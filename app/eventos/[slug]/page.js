@@ -38,7 +38,7 @@ export default async function EventoPage({ params }) {
     '@context': 'https://schema.org',
     '@type': 'Event',
     name: f.nome,
-    description: f.descricao || `${f.nome} em ${f.local}, ${f.cidade}.`,
+    description: f.descrio || `${f.nome} em ${f.local}, ${f.cidade}.`,
     startDate: f.data,
     eventStatus: 'https://schema.org/EventScheduled',
     eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
@@ -56,7 +56,7 @@ export default async function EventoPage({ params }) {
           <div style={{fontSize:'12px',color:'var(--text-faint)',display:'flex',gap:'6px',alignItems:'center',marginBottom:'20px'}}>
             <Link href="/">Festas</Link>
             <span>›</span>
-            <span style={{color:'var(--text-muted)'}}>{f.genero}</span>
+            <span style={{color:'var(--text-muted)'}}>{f.gnero}</span>
             <span>›</span>
             <span style={{color:'var(--text-muted)'}}>{f.nome}</span>
           </div>
@@ -80,7 +80,7 @@ export default async function EventoPage({ params }) {
           {/* CONTENT */}
           <div style={{display:'flex',flexDirection:'column',gap:'20px',paddingTop:'20px'}}>
             <div>
-              <div style={{display:'inline-block',fontSize:'11px',fontWeight:500,letterSpacing:'0.08em',textTransform:'uppercase',color:'var(--pink)',background:'rgba(233,30,140,0.1)',border:'1px solid rgba(233,30,140,0.2)',padding:'4px 12px',borderRadius:'20px',marginBottom:'8px'}}>{f.genero}</div>
+              <div style={{display:'inline-block',fontSize:'11px',fontWeight:500,letterSpacing:'0.08em',textTransform:'uppercase',color:'var(--pink)',background:'rgba(233,30,140,0.1)',border:'1px solid rgba(233,30,140,0.2)',padding:'4px 12px',borderRadius:'20px',marginBottom:'8px'}}>{f.gnero}</div>
               <h1 style={{fontFamily:'var(--font-display)',fontSize:'36px',fontWeight:700,lineHeight:1.1,letterSpacing:'-0.02em',marginBottom:'6px'}}>{f.nome}</h1>
               <div style={{fontSize:'16px',color:'var(--text-muted)'}}>{f.local}</div>
             </div>
@@ -107,18 +107,18 @@ export default async function EventoPage({ params }) {
               Garantir ingresso com desconto
             </a>
 
-            {f.descricao && (
+            {f.descrio && (
               <>
                 <hr style={{border:'none',borderTop:'1px solid var(--border)'}} />
                 <div>
                   <div style={{fontSize:'11px',fontWeight:500,letterSpacing:'0.1em',textTransform:'uppercase',color:'var(--text-faint)',marginBottom:'12px'}}>Sobre o evento</div>
-                  <div style={{fontSize:'15px',color:'var(--text-muted)',lineHeight:1.75,whiteSpace:'pre-line'}}>{f.descricao}</div>
+                  <div style={{fontSize:'15px',color:'var(--text-muted)',lineHeight:1.75,whiteSpace:'pre-line'}}>{f.descrio}</div>
                 </div>
               </>
             )}
 
             <div style={{background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:'var(--radius)',overflow:'hidden'}}>
-              {[['Data',dataFormatada],['Local',f.local],['Cidade',f.cidade],['Gênero',f.genero]].map(([label,value]) => (
+              {[['Data',dataFormatada],['Local',f.local],['Cidade',f.cidade],['Gênero',f.gnero]].map(([label,value]) => (
                 <div key={label} style={{display:'flex',alignItems:'center',gap:'14px',padding:'14px 16px',borderBottom:'1px solid var(--border)'}}>
                   <div style={{width:'32px',height:'32px',borderRadius:'6px',background:'var(--bg3)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
                     <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="var(--text-muted)" strokeWidth="1.2"><rect x="1" y="2.5" width="13" height="11" rx="2"/><path d="M5 1.5v2M10 1.5v2M1 7h13"/></svg>

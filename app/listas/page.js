@@ -3,8 +3,9 @@ import Nav from '../components/Nav'
 import Footer from '../components/Footer'
 import { getListas } from '../../lib/contentful'
 
+export const revalidate = 300
+
 export const metadata = {
-  title: 'Listas VIP — Entrada gratuita nas melhores festas | Direct Network',
   description: 'Coloque seu nome na lista VIP e entre grátis ou com desconto nas melhores festas de São Paulo.',
 }
 
@@ -49,7 +50,7 @@ export default async function ListasPage() {
               <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill, minmax(200px, 1fr))',gap:'16px'}}>
                 {listas.map((lista) => {
                   const f = lista.fields
-                  const color = GENERO_COLORS[f.genero] || '#534AB7'
+                  const color = GENERO_COLORS[f.gnero] || '#534AB7'
                   const flyerUrl = f.flyer?.fields?.file?.url
                   return (
                     <Link key={lista.sys.id} href={`/listas/${f.slug}`} style={{background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:'var(--radius)',overflow:'hidden',display:'block'}}>
@@ -67,7 +68,7 @@ export default async function ListasPage() {
                       <div style={{padding:'14px'}}>
                         <div style={{fontFamily:'var(--font-display)',fontSize:'14px',fontWeight:600,lineHeight:1.3,marginBottom:'4px'}}>{f.nome}</div>
                         <div style={{fontSize:'12px',color:'var(--text-muted)',marginBottom:'8px'}}>{f.local}</div>
-                        <div style={{fontSize:'11px',fontWeight:500,color:'#C8963C',background:'rgba(200,150,60,0.08)',border:'1px solid rgba(200,150,60,0.15)',padding:'4px 10px',borderRadius:'4px',marginBottom:'10px',display:'inline-block'}}>{f.beneficio}</div>
+                        <div style={{fontSize:'11px',fontWeight:500,color:'#C8963C',background:'rgba(200,150,60,0.08)',border:'1px solid rgba(200,150,60,0.15)',padding:'4px 10px',borderRadius:'4px',marginBottom:'10px',display:'inline-block'}}>{f.benefcio}</div>
                         <div style={{display:'block',width:'100%',background:'transparent',border:'1px solid #C8963C',color:'#C8963C',fontSize:'12px',fontWeight:500,padding:'8px',borderRadius:'6px',textAlign:'center'}}>
                           Colocar nome na lista
                         </div>

@@ -17,8 +17,8 @@ export async function generateMetadata({ params }) {
     if (!lista) return {}
     const f = lista.fields
     return {
-      title: `${f.nome} — Lista VIP, ${f.beneficio} | Direct Network`,
-      description: `Coloque seu nome na lista VIP de ${f.nome} em ${f.local} e garanta ${f.beneficio.toLowerCase()}.`,
+      title: `${f.nome} — Lista VIP, ${f.benefcio} | Direct Network`,
+      description: `Coloque seu nome na lista VIP de ${f.nome} em ${f.local} e garanta ${f.benefcio.toLowerCase()}.`,
     }
   } catch { return {} }
 }
@@ -63,7 +63,7 @@ export default async function ListaPage({ params }) {
           <div style={{display:'flex',flexDirection:'column',gap:'20px',paddingTop:'20px'}}>
             <div>
               <div style={{display:'inline-flex',alignItems:'center',gap:'7px',fontSize:'11px',fontWeight:600,letterSpacing:'0.1em',textTransform:'uppercase',color:'#C8963C',background:'rgba(200,150,60,0.1)',border:'1px solid rgba(200,150,60,0.25)',padding:'5px 14px',borderRadius:'20px',marginBottom:'10px'}}>
-                Lista VIP — {f.genero}
+                Lista VIP — {f.gnero}
               </div>
               <h1 style={{fontFamily:'var(--font-display)',fontSize:'36px',fontWeight:700,lineHeight:1.1,letterSpacing:'-0.02em',marginBottom:'6px'}}>{f.nome}</h1>
               <div style={{fontSize:'16px',color:'var(--text-muted)'}}>{f.local}</div>
@@ -81,7 +81,7 @@ export default async function ListaPage({ params }) {
                 <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="#C8963C" strokeWidth="1.5" strokeLinecap="round"><polygon points="11,2 13.5,8 20,8.5 15,13 16.5,20 11,17 5.5,20 7,13 2,8.5 8.5,8"/></svg>
               </div>
               <div>
-                <div style={{fontFamily:'var(--font-display)',fontSize:'15px',fontWeight:600,color:'#C8963C',marginBottom:'3px'}}>{f.beneficio}</div>
+                <div style={{fontFamily:'var(--font-display)',fontSize:'15px',fontWeight:600,color:'#C8963C',marginBottom:'3px'}}>{f.benefcio}</div>
                 <div style={{fontSize:'13px',color:'var(--text-muted)'}}>Coloque seu nome pelo link — sem custo</div>
               </div>
             </div>

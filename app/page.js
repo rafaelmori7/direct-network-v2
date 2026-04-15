@@ -22,6 +22,8 @@ function formatDate(dateStr) {
   return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace('.', '')
 }
 
+export const revalidate = 300 // revalida a cada 5 minutos
+
 export default async function Home() {
   let eventos = []
   try {
@@ -64,7 +66,7 @@ export default async function Home() {
               <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill, minmax(200px, 1fr))',gap:'16px'}}>
                 {eventos.map((evento) => {
                   const f = evento.fields
-                  const color = GENERO_COLORS[f.genero] || '#534AB7'
+                  const color = GENERO_COLORS[f.gnero] || '#534AB7'
                   const flyerUrl = f.flyer?.fields?.file?.url
                   return (
                     <Link key={evento.sys.id} href={`/eventos/${f.slug}`} style={{background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:'var(--radius)',overflow:'hidden',display:'block',transition:'border-color 0.2s, transform 0.2s'}}>
@@ -80,7 +82,7 @@ export default async function Home() {
                           {formatDate(f.data)}
                         </span>
                         <span style={{position:'absolute',top:'8px',right:'8px',fontSize:'10px',fontWeight:500,padding:'3px 8px',borderRadius:'4px',background:`${color}dd`,color:'#fff'}}>
-                          {f.genero}
+                          {f.gnero}
                         </span>
                       </div>
                       <div style={{padding:'14px'}}>
