@@ -17,7 +17,7 @@ export default function Nav() {
           <Link href="/" style={{fontSize:'13px',color:path==='/'?'#fff':'var(--text-muted)'}}>Festas</Link>
           <Link href="/listas" style={{fontSize:'13px',color:path.startsWith('/listas')?'#fff':'var(--text-muted)'}}>Listas VIP</Link>
           <Link href="/quem-somos" style={{fontSize:'13px',color:path==='/quem-somos'?'#fff':'var(--text-muted)'}}>Quem somos</Link>
-          <a href="https://chat.whatsapp.com/DylGoK7gscc9e4wJkqxspx" target="_blank" style={{background:'var(--pink)',color:'#fff',padding:'9px 20px',borderRadius:'6px',fontSize:'13px',fontWeight:500}}>Grupo do Whatsapp</a>
+          <a href="https://chat.whatsapp.com/DylGoK7gscc9e4wJkqxspx" target="_blank" style={{background:'#25D366',color:'#fff',padding:'9px 20px',borderRadius:'6px',fontSize:'13px',fontWeight:500}}>Grupo do Whatsapp</a>
         </div>
       </nav>
     </>
