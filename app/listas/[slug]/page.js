@@ -107,7 +107,7 @@ export default async function ListaPage({ params }) {
             <div style={{background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:'var(--radius)',padding:'18px 20px',display:'flex',alignItems:'center',justifyContent:'space-between',gap:'16px'}}>
               <div>
                 <strong style={{fontFamily:'var(--font-display)',fontSize:'14px',fontWeight:600,display:'block',marginBottom:'3px'}}>Quer receber as próximas listas?</strong>
-                <p style={{fontSize:'12px',color:'var(--text-muted)'}}>Entre no grupo VIP da Direct Network.</p>
+                <p style={{fontSize:'12px',color:'var(--text-muted)'}}>Entre no grupo da Direct Network.</p>
               </div>
               <a href="https://chat.whatsapp.com/DylGoK7gscc9e4wJkqxspx" target="_blank" style={{display:'flex',alignItems:'center',gap:'7px',background:'#25D366',color:'#fff',fontSize:'12px',fontWeight:500,padding:'9px 16px',borderRadius:'6px',whiteSpace:'nowrap'}}>Entrar</a>
             </div>
