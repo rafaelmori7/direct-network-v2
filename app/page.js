@@ -88,7 +88,7 @@ export default async function Home() {
                       <div style={{padding:'14px'}}>
                         <div style={{fontFamily:'var(--font-display)',fontSize:'14px',fontWeight:600,lineHeight:1.3,marginBottom:'4px'}}>{f.nome}</div>
                         <div style={{fontSize:'12px',color:'var(--text-muted)',marginBottom:'12px'}}>{f.local}</div>
-                        <div style={{display:'block',width:'100%',background:'transparent',border:'1px solid var(--pink)',color:'var(--pink)',fontSize:'12px',fontWeight:500,padding:'8px',borderRadius:'6px',textAlign:'center'}}>
+                        <div style={{display:'block',width:'100%',background:'var(--pink)',border:'1px solid var(--pink)',color:'#fff',fontSize:'12px',fontWeight:500,padding:'8px',borderRadius:'6px',textAlign:'center'}}>
                           Ver evento + desconto
                         </div>
                       </div>
