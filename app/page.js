@@ -65,7 +65,7 @@ export default async function Home() {
                     <Link key={evento.sys.id} href={`/eventos/${f.slug}`} style={{background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:'var(--radius)',overflow:'hidden',display:'flex',flexDirection:'column'}}>
                       <div style={{width:'100%',aspectRatio:'3/4',overflow:'hidden',position:'relative',background:flyerUrl?'var(--bg3)':`${color}18`}}>
                         {flyerUrl ? (
-                          <img src={`https:${flyerUrl}`} alt={f.nome} style={{width:'100%',height:'100%',objectFit:'cover',display:'block'}} />
+                          <img src={`https:${flyerUrl}?w=600&fm=webp&q=80`} alt={f.nome} style={{width:'100%',height:'100%',objectFit:'cover',display:'block'}} />
                         ) : (
                           <div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center'}}>
                             <svg width="40" height="40" viewBox="0 0 40 40" fill="none"><rect x="4" y="6" width="32" height="28" rx="5" stroke={color} strokeWidth="1.5"/><path d="M13 6V3M27 6V3" stroke={color} strokeWidth="1.5" strokeLinecap="round"/><path d="M4 14h32" stroke={color} strokeWidth="1"/></svg>
