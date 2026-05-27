@@ -63,7 +63,7 @@ export default async function Home() {
                   const flyerUrl = f.flyer?.fields?.file?.url
                   return (
                     <Link key={evento.sys.id} href={`/eventos/${f.slug}`} style={{background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:'var(--radius)',overflow:'hidden',display:'flex',flexDirection:'column'}}>
-                      <div style={{width:'100%',aspectRatio:'1/1',overflow:'hidden',position:'relative',background:flyerUrl?'var(--bg3)':`${color}18`}}>
+                      <div style={{width:'100%',aspectRatio:'3/4',overflow:'hidden',position:'relative',background:flyerUrl?'var(--bg3)':`${color}18`}}>
                         {flyerUrl ? (
                           <img src={`https:${flyerUrl}`} alt={f.nome} style={{width:'100%',height:'100%',objectFit:'cover',display:'block'}} />
                         ) : (
