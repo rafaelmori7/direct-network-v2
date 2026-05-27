@@ -62,7 +62,7 @@ export default async function Home() {
                   const color = GENERO_COLORS[f.gnero] || '#534AB7'
                   const flyerUrl = f.flyer?.fields?.file?.url
                   return (
-                    <Link key={evento.sys.id} href={`/eventos/${f.slug}`} style={{background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:'var(--radius)',overflow:'hidden',display:'block'}}>
+                    <Link key={evento.sys.id} href={`/eventos/${f.slug}`} style={{background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:'var(--radius)',overflow:'hidden',display:'flex',flexDirection:'column'}}>
                       <div style={{width:'100%',aspectRatio:'1/1',overflow:'hidden',position:'relative',background:flyerUrl?'var(--bg3)':`${color}18`}}>
                         {flyerUrl ? (
                           <img src={`https:${flyerUrl}`} alt={f.nome} style={{width:'100%',height:'100%',objectFit:'cover',display:'block'}} />
@@ -74,11 +74,13 @@ export default async function Home() {
                         <span style={{position:'absolute',bottom:'8px',left:'8px',fontSize:'11px',fontWeight:500,background:'rgba(0,0,0,0.75)',color:'#fff',padding:'3px 8px',borderRadius:'4px'}}>{formatDate(f.data)}</span>
                         <span style={{position:'absolute',top:'8px',right:'8px',fontSize:'10px',fontWeight:500,padding:'3px 8px',borderRadius:'4px',background:`${color}dd`,color:'#fff'}}>{f.gnero}</span>
                       </div>
-                      <div style={{padding:'12px'}}>
+                      <div style={{padding:'12px',display:'flex',flexDirection:'column',flex:1}}>
                         <div style={{fontFamily:'var(--font-display)',fontSize:'13px',fontWeight:600,lineHeight:1.3,marginBottom:'4px'}}>{f.nome}</div>
                         <div style={{fontSize:'12px',color:'var(--text-muted)',marginBottom:'10px'}}>{f.local}</div>
-                        <div className="card-cta">
-                          Ver evento + desconto
+                        <div style={{marginTop:'auto'}}>
+                          <div className="card-cta">
+                            Ver evento + desconto
+                          </div>
                         </div>
                       </div>
                     </Link>
