@@ -21,7 +21,7 @@ export default function Nav() {
         {/* Desktop */}
         <div className="nav-desktop" style={{display:'flex',alignItems:'center',gap:'32px'}}>
           <Link href="/" style={{fontSize:'13px',color:path==='/'?'#fff':'var(--text-muted)'}}>Festas</Link>
-          <Link href="/listas" style={{fontSize:'13px',color:path.startsWith('/listas')?'#fff':'var(--text-muted)'}}>Listas VIP</Link>
+          <a href="https://linktr.ee/nomenalista" target="_blank" style={{fontSize:'13px',color:'var(--text-muted)'}}>Listas VIP</a>
           <Link href="/quem-somos" style={{fontSize:'13px',color:path==='/quem-somos'?'#fff':'var(--text-muted)'}}>Quem somos</Link>
           <a href="https://chat.whatsapp.com/DylGoK7gscc9e4wJkqxspx" target="_blank"
             style={{background:'#25D366',color:'#fff',padding:'9px 18px',borderRadius:'6px',fontSize:'13px',fontWeight:500}}>
@@ -53,7 +53,7 @@ export default function Nav() {
           overflowY:'auto'
         }}>
           <Link href="/" onClick={()=>setOpen(false)} style={{fontSize:'17px',fontWeight:500,padding:'16px 0',borderBottom:'1px solid var(--border)',color:path==='/'?'var(--pink)':'#fff',display:'block'}}>Festas</Link>
-          <Link href="/listas" onClick={()=>setOpen(false)} style={{fontSize:'17px',fontWeight:500,padding:'16px 0',borderBottom:'1px solid var(--border)',color:path.startsWith('/listas')?'var(--pink)':'#fff',display:'block'}}>Listas VIP</Link>
+          <a href="https://linktr.ee/nomenalista" target="_blank" onClick={()=>setOpen(false)} style={{fontSize:'17px',fontWeight:500,padding:'16px 0',borderBottom:'1px solid var(--border)',color:'#fff',display:'block'}}>Listas VIP</a>
           <Link href="/quem-somos" onClick={()=>setOpen(false)} style={{fontSize:'17px',fontWeight:500,padding:'16px 0',borderBottom:'1px solid var(--border)',color:path==='/quem-somos'?'var(--pink)':'#fff',display:'block'}}>Quem somos</Link>
           <a
             href="https://chat.whatsapp.com/DylGoK7gscc9e4wJkqxspx"
