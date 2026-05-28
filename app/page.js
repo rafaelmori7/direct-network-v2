@@ -1,21 +1,9 @@
-import Link from 'next/link'
 import Nav from './components/Nav'
 import Footer from './components/Footer'
+import EventsGrid from './components/EventsGrid'
 import { getEventos } from '../lib/contentful'
 
 export const revalidate = 300
-
-const GENERO_COLORS = {
-  'Eletrônica': '#534AB7',
-  'Pagode': '#BA7517',
-  'Sertanejo': '#993556',
-  'Show': '#185FA5',
-}
-
-function formatDate(dateStr) {
-  const d = new Date(dateStr)
-  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace('.', '')
-}
 
 export default async function Home() {
   let eventos = []
@@ -43,53 +31,8 @@ export default async function Home() {
           </p>
         </section>
 
-        {/* EVENTS GRID */}
-        <section style={{padding:'24px var(--px) 48px'}}>
-          {eventos.length === 0 ? (
-            <div style={{textAlign:'center',padding:'60px 20px',color:'var(--text-faint)'}}>
-              <p style={{fontSize:'16px',marginBottom:'8px'}}>Em breve novos eventos</p>
-              <p style={{fontSize:'13px'}}>Entre no grupo VIP para receber primeiro.</p>
-            </div>
-          ) : (
-            <>
-              <div style={{display:'flex',alignItems:'baseline',gap:'12px',marginBottom:'20px',paddingBottom:'16px',borderBottom:'1px solid var(--border)'}}>
-                <span style={{fontFamily:'var(--font-display)',fontSize:'20px',fontWeight:600}}>Próximos eventos</span>
-                <span style={{fontSize:'12px',color:'var(--text-faint)'}}>{eventos.length} evento{eventos.length !== 1 ? 's' : ''}</span>
-              </div>
-              <div className="events-grid">
-                {eventos.map((evento) => {
-                  const f = evento.fields
-                  const color = GENERO_COLORS[f.gnero] || '#534AB7'
-                  const flyerUrl = f.flyer?.fields?.file?.url
-                  return (
-                    <Link key={evento.sys.id} href={`/eventos/${f.slug}`} style={{background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:'var(--radius)',overflow:'hidden',display:'flex',flexDirection:'column'}}>
-                      <div style={{width:'100%',aspectRatio:'3/4',overflow:'hidden',position:'relative',background:flyerUrl?'var(--bg3)':`${color}18`}}>
-                        {flyerUrl ? (
-                          <img src={`https:${flyerUrl}?w=600&fm=webp&q=80`} alt={f.nome} style={{width:'100%',height:'100%',objectFit:'cover',display:'block'}} />
-                        ) : (
-                          <div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center'}}>
-                            <svg width="40" height="40" viewBox="0 0 40 40" fill="none"><rect x="4" y="6" width="32" height="28" rx="5" stroke={color} strokeWidth="1.5"/><path d="M13 6V3M27 6V3" stroke={color} strokeWidth="1.5" strokeLinecap="round"/><path d="M4 14h32" stroke={color} strokeWidth="1"/></svg>
-                          </div>
-                        )}
-                        <span style={{position:'absolute',bottom:'8px',left:'8px',fontSize:'11px',fontWeight:500,background:'rgba(0,0,0,0.75)',color:'#fff',padding:'3px 8px',borderRadius:'4px'}}>{formatDate(f.data)}</span>
-                        <span style={{position:'absolute',top:'8px',right:'8px',fontSize:'10px',fontWeight:500,padding:'3px 8px',borderRadius:'4px',background:`${color}dd`,color:'#fff'}}>{f.gnero}</span>
-                      </div>
-                      <div style={{padding:'12px',display:'flex',flexDirection:'column',flex:1}}>
-                        <div style={{fontFamily:'var(--font-display)',fontSize:'13px',fontWeight:600,lineHeight:1.3,marginBottom:'4px'}}>{f.nome}</div>
-                        <div style={{fontSize:'12px',color:'var(--text-muted)',marginBottom:'10px'}}>{f.local}</div>
-                        <div style={{marginTop:'auto'}}>
-                          <div className="card-cta">
-                            Ver evento + desconto
-                          </div>
-                        </div>
-                      </div>
-                    </Link>
-                  )
-                })}
-              </div>
-            </>
-          )}
-        </section>
+        {/* EVENTS COM FILTRO */}
+        <EventsGrid eventos={eventos} />
 
         {/* WPP BANNER */}
         <div className="banner-flex" style={{margin:'0 var(--px) 40px',background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:'var(--radius)',padding:'20px'}}>
