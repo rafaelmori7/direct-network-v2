@@ -135,7 +135,7 @@ export default async function EventoPage({ params }) {
                   <strong style={{fontFamily:'var(--font-display)',fontSize:'14px',fontWeight:600,display:'block',marginBottom:'3px'}}>Quer receber os próximos antes de todo mundo?</strong>
                   <p style={{fontSize:'12px',color:'var(--text-muted)'}}>Entre no grupo WhatsApp da Direct Network.</p>
                 </div>
-                <a href="https://chat.whatsapp.com/DylGoK7gscc9e4wJkqxspx" target="_blank" style={{display:'flex',alignItems:'center',gap:'7px',background:'#25D366',color:'#fff',fontSize:'12px',fontWeight:500,padding:'9px 16px',borderRadius:'6px',whiteSpace:'nowrap'}}>Entrar</a>
+                <a href="https://chat.whatsapp.com/DYcOSP7iF8U3OYgBHpU0tG" target="_blank" style={{display:'flex',alignItems:'center',gap:'7px',background:'#25D366',color:'#fff',fontSize:'12px',fontWeight:500,padding:'9px 16px',borderRadius:'6px',whiteSpace:'nowrap'}}>Entrar</a>
               </div>
             </div>
           </div>
