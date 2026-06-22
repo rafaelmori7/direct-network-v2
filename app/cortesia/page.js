@@ -17,7 +17,7 @@ const EVENTO = {
 };
 
 // URL do Google Apps Script
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw7i_CpxOcqZYYKkt6v1xl9fuVtp0xFUfHCDmwyH5v4O9F8bXH2dUqTLd8ZFaPPlEPOhA/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzV3DIPGFkVQ8T1LXu0EFbO6cEl_etVYrTqjjXLsj6GJghHP-D6orHLYEeL__gLJe_Org/exec';
 // ─────────────────────────────────────────────
 
 export default function CortesiaPage() {
