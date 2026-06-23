@@ -13,7 +13,7 @@ const EVENTO = {
   local: 'Casa Aragon',
   endereco: 'São Paulo — SP',
   imagemUrl: 'ddp1.jpg',       // coloque a imagem em /public/cathouse.jpg
-  linkCortesia: 'https://www.gandaya.dance/events/brasil-x-escocia-8544',
+  linkCortesia: 'https://www.gandaya.dance/events/ddp-em-sp-3e16?link=direct_',
 };
 
 // URL do Google Apps Script
