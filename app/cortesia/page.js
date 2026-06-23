@@ -12,7 +12,7 @@ const EVENTO = {
   horario: 'A partir de 22h',
   local: 'Casa Aragon',
   endereco: 'São Paulo — SP',
-  imagemUrl: '/cathouse.jpg',       // coloque a imagem em /public/cathouse.jpg
+  imagemUrl: '/DDP FAIXA.jpeg',       // coloque a imagem em /public/cathouse.jpg
   linkCortesia: 'https://www.gandaya.dance/events/brasil-x-escocia-8544',
 };
 
