@@ -7,9 +7,9 @@ import Image from 'next/image';
 // CONFIGURAÇÃO DO EVENTO — edite aqui
 // ─────────────────────────────────────────────
 const EVENTO = {
-  nome: 'Cat House SP',
-  data: '24 de Junho · 2025',
-  horario: 'A partir de 16h',
+  nome: 'DDP Diretoria',
+  data: '26 de Junho · 2025',
+  horario: 'A partir de 22h',
   local: 'Casa Aragon',
   endereco: 'São Paulo — SP',
   imagemUrl: '/cathouse.jpg',       // coloque a imagem em /public/cathouse.jpg
