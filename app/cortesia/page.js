@@ -8,7 +8,7 @@ import Image from 'next/image';
 // ─────────────────────────────────────────────
 const EVENTO = {
   nome: 'DDP Diretoria',
-  data: '26 de Junho · 2025',
+  data: '26 de Junho · 2026',
   horario: 'A partir de 22h',
   local: 'Casa Aragon',
   endereco: 'São Paulo — SP',
