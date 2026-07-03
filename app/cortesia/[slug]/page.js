@@ -182,7 +182,7 @@ export default function CortesiaPage() {
 
           {!resgatado ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <p style={{ fontSize: 14, color: '#aaa', lineHeight: 1.55 }}>
+              <p style={{ fontSize: 14, color: '#ddd', lineHeight: 1.55 }}>
                 Informe seu e-mail para liberar sua cortesia gratuita.
               </p>
               <div>
@@ -213,7 +213,7 @@ export default function CortesiaPage() {
                 <h2 style={{ fontSize: 20, fontWeight: 800, color: '#f0f0f0', marginBottom: 6 }}>
                   Cortesia liberada! 🎉
                 </h2>
-                <p style={{ fontSize: 14, color: '#888', lineHeight: 1.55 }}>
+                <p style={{ fontSize: 14, color: '#ddd', lineHeight: 1.55 }}>
                   Clique abaixo para garantir sua entrada gratuita.
                 </p>
               </div>
@@ -342,7 +342,7 @@ const styles = {
     borderRadius: 12,
     padding: '14px 16px',
     fontSize: 13,
-    color: '#00C853',
+    color: '#ffffff',
     wordBreak: 'break-all',
     textAlign: 'left',
     lineHeight: 1.5,
