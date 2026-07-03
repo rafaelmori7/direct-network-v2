@@ -167,7 +167,7 @@ export default function CortesiaPage() {
 
         <div style={{ padding: '24px 28px 32px' }}>
           <div style={{ marginBottom: 28 }}>
-            <span style={styles.badge}>Cortesia</span>
+            <span style={styles.badge}>🎟️ Garanta sua cortesia</span>
             <h1 style={styles.h1}>{evento.nome}</h1>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 14 }}>
               {evento.data && <InfoRow icon="📅" texto={evento.data} />}
@@ -183,7 +183,7 @@ export default function CortesiaPage() {
           {!resgatado ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <p style={{ fontSize: 14, color: '#aaa', lineHeight: 1.55 }}>
-                Informe seu e-mail para liberar o link do ingresso gratuito.
+                Informe seu e-mail para liberar sua cortesia gratuita.
               </p>
               <div>
                 <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: '#ccc', marginBottom: 8 }}>
@@ -200,7 +200,7 @@ export default function CortesiaPage() {
                 {erro && <p style={{ fontSize: 12, color: '#ff6b6b', marginTop: 6 }}>{erro}</p>}
               </div>
               <button onClick={handleSubmit} disabled={loading} style={{ ...styles.btnPrimary, opacity: loading ? 0.6 : 1, cursor: loading ? 'not-allowed' : 'pointer' }}>
-                {loading ? 'Aguarde...' : 'Liberar meu ingresso'}
+                {loading ? 'Aguarde...' : 'Liberar minha cortesia'}
               </button>
               <p style={{ fontSize: 11, color: '#444', textAlign: 'center' }}>
                 Seus dados são usados apenas para controle de acesso.
@@ -211,21 +211,21 @@ export default function CortesiaPage() {
               <div style={styles.checkIcon}>🎟️</div>
               <div>
                 <h2 style={{ fontSize: 20, fontWeight: 800, color: '#f0f0f0', marginBottom: 6 }}>
-                  Ingresso liberado!
+                  Cortesia liberada! 🎉
                 </h2>
                 <p style={{ fontSize: 14, color: '#888', lineHeight: 1.55 }}>
-                  Acesse o link abaixo para retirar sua cortesia.
+                  Clique abaixo para garantir sua entrada gratuita.
                 </p>
               </div>
               <div style={styles.linkBox}>{evento.linkCortesia}</div>
               <a href={evento.linkCortesia} target="_blank" rel="noopener noreferrer" style={styles.btnPrimary}>
-                Retirar ingresso →
+                Garantir minha cortesia →
               </a>
               <button onClick={copiarLink} style={styles.btnSecondary}>
                 {copiado ? '✓ Copiado!' : 'Copiar link'}
               </button>
               <p style={{ fontSize: 11, color: '#444' }}>
-                Guarde o link — ele é seu ingresso para {evento.nome}.
+                Guarde o link — ele é sua cortesia para {evento.nome}.
               </p>
             </div>
           )}
@@ -280,15 +280,15 @@ const styles = {
   },
   badge: {
     display: 'inline-block',
-    background: 'rgba(255,45,120,.12)',
-    border: '1px solid rgba(255,45,120,.25)',
+    background: 'rgba(0,200,83,.12)',
+    border: '1px solid rgba(0,200,83,.35)',
     borderRadius: 999,
     padding: '3px 12px',
     fontSize: 11,
     fontWeight: 600,
     letterSpacing: '.06em',
     textTransform: 'uppercase',
-    color: '#ff2d78',
+    color: '#00C853',
     marginBottom: 12,
   },
   h1: {
@@ -310,7 +310,7 @@ const styles = {
     boxSizing: 'border-box',
   },
   btnPrimary: {
-    background: '#ff2d78',
+    background: '#00C853',
     border: 'none',
     borderRadius: 12,
     color: '#fff',
@@ -342,7 +342,7 @@ const styles = {
     borderRadius: 12,
     padding: '14px 16px',
     fontSize: 13,
-    color: '#ff2d78',
+    color: '#00C853',
     wordBreak: 'break-all',
     textAlign: 'left',
     lineHeight: 1.5,
@@ -350,7 +350,7 @@ const styles = {
   checkIcon: {
     width: 56,
     height: 56,
-    background: 'rgba(255,45,120,.12)',
+    background: 'rgba(0,200,83,.12)',
     borderRadius: '50%',
     display: 'flex',
     alignItems: 'center',
