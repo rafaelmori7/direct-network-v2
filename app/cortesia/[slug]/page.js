@@ -31,9 +31,13 @@ async function getCortesia(slug) {
     local: item.local || '',
     endereco: item.endereo || '',
     imagemUrl,
+    // Feminino (campos originais)
     linkCortesia: item.linkCortesia || '',
     appsScriptUrl: item.appsScriptUrl || '',
-    ativo: item.ativo !== false, // default true se não definido
+    // Masculino (campos novos)
+    linkCortesiaMasc: item.linkCortesiaMasc || '',
+    appsScriptUrlMasc: item.appsScriptUrlMasc || '',
+    ativo: item.ativo !== false,
     mensagemEncerrada: item.mensagemEncerrada || 'As cortesias para este evento foram encerradas.',
     linkWhatsApp: item.linkWhatsApp || '',
   };
@@ -44,7 +48,8 @@ export default function CortesiaPage() {
   const slug = params?.slug;
 
   const [evento, setEvento] = useState(null);
-  const [status, setStatus] = useState('loading'); // loading | not-found | ready
+  const [status, setStatus] = useState('loading');
+  const [genero, setGenero] = useState(null); // null | 'masc' | 'fem'
   const [email, setEmail] = useState('');
   const [erro, setErro] = useState('');
   const [loading, setLoading] = useState(false);
@@ -59,6 +64,12 @@ export default function CortesiaPage() {
     });
   }, [slug]);
 
+  // tem masc/fem?
+  const temGenero = evento && evento.appsScriptUrlMasc && evento.linkCortesiaMasc;
+
+  const scriptUrl = genero === 'masc' ? evento?.appsScriptUrlMasc : evento?.appsScriptUrl;
+  const linkCortesia = genero === 'masc' ? evento?.linkCortesiaMasc : evento?.linkCortesia;
+
   function validarEmail(e) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim());
   }
@@ -71,13 +82,15 @@ export default function CortesiaPage() {
     }
     setLoading(true);
     try {
-      await fetch(evento.appsScriptUrl, {
+      await fetch(scriptUrl, {
         method: 'POST',
         mode: 'no-cors',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          nome: '',
           email: email.trim(),
           evento: evento.nome,
+          genero: genero === 'masc' ? 'Masculino' : 'Feminino',
           timestamp: new Date().toISOString(),
         }),
       });
@@ -87,35 +100,26 @@ export default function CortesiaPage() {
   }
 
   function copiarLink() {
-    navigator.clipboard.writeText(evento.linkCortesia).then(() => {
+    navigator.clipboard.writeText(linkCortesia).then(() => {
       setCopiado(true);
       setTimeout(() => setCopiado(false), 2000);
     });
   }
 
-  // ── Loading ──
   if (status === 'loading') {
-    return (
-      <main style={styles.main}>
-        <p style={{ color: '#888', fontSize: 14 }}>Carregando...</p>
-      </main>
-    );
+    return <main style={styles.main}><p style={{ color: '#888', fontSize: 14 }}>Carregando...</p></main>;
   }
 
-  // ── Not found ──
   if (status === 'not-found') {
     return (
       <main style={styles.main}>
         <div style={styles.card}>
-          <p style={{ color: '#888', fontSize: 15, textAlign: 'center' }}>
-            Cortesia não encontrada.
-          </p>
+          <p style={{ color: '#888', fontSize: 15, textAlign: 'center', padding: 32 }}>Cortesia não encontrada.</p>
         </div>
       </main>
     );
   }
 
-  // ── Encerrada ──
   if (!evento.ativo) {
     return (
       <main style={styles.main}>
@@ -132,12 +136,8 @@ export default function CortesiaPage() {
           <div style={{ padding: '24px 28px 32px', display: 'flex', flexDirection: 'column', gap: 20, textAlign: 'center' }}>
             <div style={{ fontSize: 32 }}>😔</div>
             <div>
-              <h2 style={{ fontSize: 20, fontWeight: 800, color: '#f0f0f0', marginBottom: 8 }}>
-                Cortesias encerradas
-              </h2>
-              <p style={{ fontSize: 14, color: '#888', lineHeight: 1.6 }}>
-                {evento.mensagemEncerrada}
-              </p>
+              <h2 style={{ fontSize: 20, fontWeight: 800, color: '#f0f0f0', marginBottom: 8 }}>Cortesias encerradas</h2>
+              <p style={{ fontSize: 14, color: '#888', lineHeight: 1.6 }}>{evento.mensagemEncerrada}</p>
             </div>
             {evento.linkWhatsApp && (
               <a href={evento.linkWhatsApp} target="_blank" rel="noopener noreferrer" style={styles.btnPrimary}>
@@ -150,7 +150,6 @@ export default function CortesiaPage() {
     );
   }
 
-  // ── Ativa ──
   return (
     <main style={styles.main}>
       <div style={{ marginBottom: 32 }}>
@@ -180,8 +179,32 @@ export default function CortesiaPage() {
 
           <div style={{ height: 1, background: '#242424', marginBottom: 28 }} />
 
-          {!resgatado ? (
+          {/* SELEÇÃO DE GÊNERO — só aparece se tiver masc/fem */}
+          {temGenero && !genero && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <p style={{ fontSize: 14, color: '#ddd', lineHeight: 1.55, textAlign: 'center' }}>
+                Selecione sua lista:
+              </p>
+              <button onClick={() => setGenero('masc')} style={styles.btnGenero}>
+                👨 Masculino
+              </button>
+              <button onClick={() => setGenero('fem')} style={styles.btnGenero}>
+                👩 Feminino
+              </button>
+            </div>
+          )}
+
+          {/* FORMULÁRIO — aparece após escolha de gênero (ou direto se não tiver masc/fem) */}
+          {(!temGenero || genero) && !resgatado && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {temGenero && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <button onClick={() => setGenero(null)} style={styles.btnVoltar}>← Voltar</button>
+                  <span style={{ fontSize: 13, color: '#888' }}>
+                    Lista {genero === 'masc' ? 'Masculino' : 'Feminino'}
+                  </span>
+                </div>
+              )}
               <p style={{ fontSize: 14, color: '#ddd', lineHeight: 1.55 }}>
                 Informe seu e-mail para liberar sua cortesia gratuita.
               </p>
@@ -206,7 +229,10 @@ export default function CortesiaPage() {
                 Seus dados são usados apenas para controle de acesso.
               </p>
             </div>
-          ) : (
+          )}
+
+          {/* LINK LIBERADO */}
+          {resgatado && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20, textAlign: 'center' }}>
               <div style={styles.checkIcon}>🎟️</div>
               <div>
@@ -217,8 +243,8 @@ export default function CortesiaPage() {
                   Clique abaixo para garantir sua entrada gratuita.
                 </p>
               </div>
-              <div style={styles.linkBox}>{evento.linkCortesia}</div>
-              <a href={evento.linkCortesia} target="_blank" rel="noopener noreferrer" style={styles.btnPrimary}>
+              <div style={styles.linkBox}>{linkCortesia}</div>
+              <a href={linkCortesia} target="_blank" rel="noopener noreferrer" style={styles.btnPrimary}>
                 Garantir minha cortesia →
               </a>
               <button onClick={copiarLink} style={styles.btnSecondary}>
@@ -335,6 +361,27 @@ const styles = {
     padding: '13px',
     width: '100%',
     fontFamily: 'inherit',
+  },
+  btnGenero: {
+    background: '#1a1a1a',
+    border: '1px solid #333',
+    borderRadius: 12,
+    color: '#f0f0f0',
+    cursor: 'pointer',
+    fontSize: 16,
+    fontWeight: 600,
+    padding: '18px',
+    width: '100%',
+    fontFamily: 'inherit',
+  },
+  btnVoltar: {
+    background: 'transparent',
+    border: 'none',
+    color: '#888',
+    cursor: 'pointer',
+    fontSize: 13,
+    fontFamily: 'inherit',
+    padding: 0,
   },
   linkBox: {
     background: '#0a0a0a',
