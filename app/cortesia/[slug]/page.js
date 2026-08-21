@@ -236,11 +236,13 @@ export default function CortesiaPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20, textAlign: 'center' }}>
               <div style={styles.checkIcon}>🎟️</div>
               <div>
-                <h2 style={{ fontSize: 20, fontWeight: 800, color: '#f0f0f0', marginBottom: 6 }}>
+                <h2 style={{ fontSize: 20, fontWeight: 800, color: '#f0f0f0', marginBottom: 12 }}>
                   Cortesia liberada! 🎉
                 </h2>
-                <p style={{ fontSize: 14, color: '#ddd', lineHeight: 1.55 }}>
-                  Clique abaixo para garantir sua entrada gratuita.
+                <p style={{ fontSize: 14, color: '#ddd', lineHeight: 1.7, textAlign: 'left' }}>
+                  Agora siga os passos:<br /><br />
+                  <strong style={{ color: '#fff' }}>1.</strong> Clique no botão abaixo<br />
+                  <strong style={{ color: '#fff' }}>2.</strong> Você será direcionado para a página para gerar a sua cortesia.
                 </p>
               </div>
               <div style={styles.linkBox}>{linkCortesia}</div>
