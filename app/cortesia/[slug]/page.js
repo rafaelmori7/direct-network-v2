@@ -183,7 +183,7 @@ export default function CortesiaPage() {
           {temGenero && !genero && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <p style={{ fontSize: 14, color: '#ddd', lineHeight: 1.55, textAlign: 'center' }}>
-                Selecione sua lista:
+                Qual cortesia você gostaria de gerar?
               </p>
               <button onClick={() => setGenero('masc')} style={styles.btnGenero}>
                 👨 Masculino
@@ -206,7 +206,7 @@ export default function CortesiaPage() {
                 </div>
               )}
               <p style={{ fontSize: 14, color: '#ddd', lineHeight: 1.55 }}>
-                Informe seu e-mail para liberar sua cortesia gratuita.
+                1. Informe seu e-mail para receber o link para gerar a cortesia.
               </p>
               <div>
                 <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: '#ccc', marginBottom: 8 }}>
@@ -223,7 +223,7 @@ export default function CortesiaPage() {
                 {erro && <p style={{ fontSize: 12, color: '#ff6b6b', marginTop: 6 }}>{erro}</p>}
               </div>
               <button onClick={handleSubmit} disabled={loading} style={{ ...styles.btnPrimary, opacity: loading ? 0.6 : 1, cursor: loading ? 'not-allowed' : 'pointer' }}>
-                {loading ? 'Aguarde...' : 'Liberar minha cortesia'}
+                {loading ? 'Aguarde...' : 'Enviar'}
               </button>
               <p style={{ fontSize: 11, color: '#444', textAlign: 'center' }}>
                 Seus dados são usados apenas para controle de acesso.
@@ -245,7 +245,7 @@ export default function CortesiaPage() {
               </div>
               <div style={styles.linkBox}>{linkCortesia}</div>
               <a href={linkCortesia} target="_blank" rel="noopener noreferrer" style={styles.btnPrimary}>
-                Garantir minha cortesia →
+                Clique aqui para gerar sua cortesia →
               </a>
               <button onClick={copiarLink} style={styles.btnSecondary}>
                 {copiado ? '✓ Copiado!' : 'Copiar link'}
