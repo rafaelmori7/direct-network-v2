@@ -1,128 +1,95 @@
-import Link from 'next/link'
 import Nav from '../components/Nav'
 import Footer from '../components/Footer'
-import { getListas } from '../../lib/contentful'
-
-export const revalidate = 300
 
 export const metadata = {
-  title: 'Listas VIP | Direct Network',
-  description: 'Coloque seu nome na lista VIP e entre grátis ou com desconto nas melhores festas de São Paulo.',
+  title: 'Quem Somos | Direct Network',
+  description: 'A Direct Network conecta você às melhores festas do Brasil com desconto exclusivo, lista VIP e cortesias. Curadoria ativa, parcerias diretas com produtores e venues.',
 }
 
-const DIAS = ['domingo','segunda','terça','quarta','quinta','sexta','sábado']
-const DIAS_ORDEM = ['quarta','quinta','sexta','sábado','domingo','segunda','terça']
-
-function getDiaSemana(dateStr) {
-  return DIAS[new Date(new Date(dateStr).toLocaleString('en-US', {timeZone:'America/Sao_Paulo'})).getDay()]
-}
-
-function formatDataCurta(dateStr) {
-  return new Date(dateStr).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', timeZone:'America/Sao_Paulo' }).replace('.', '')
-}
-
-export default async function ListasPage() {
-  let listas = []
-  try { listas = await getListas() } catch { listas = [] }
-
-  const grupos = {}
-  listas.forEach(lista => {
-    const dia = getDiaSemana(lista.fields.data)
-    if (!grupos[dia]) grupos[dia] = []
-    grupos[dia].push(lista)
-  })
-
-  const diasOrdenados = DIAS_ORDEM.filter(d => grupos[d])
-
+export default function QuemSomosPage() {
   return (
     <>
       <Nav />
       <main>
-        <section style={{padding:'64px 20px 40px',textAlign:'center',background:'var(--bg)'}}>
-          <div style={{display:'inline-flex',alignItems:'center',gap:'7px',fontSize:'11px',fontWeight:500,letterSpacing:'0.14em',textTransform:'uppercase',color:'#C8963C',background:'rgba(200,150,60,0.1)',border:'1px solid rgba(200,150,60,0.2)',padding:'5px 14px',borderRadius:'20px',marginBottom:'20px'}}>
-            Listas VIP — Entrada gratuita
+
+        {/* HERO */}
+        <section style={{padding:'72px var(--px) 56px',maxWidth:'800px',margin:'0 auto'}}>
+          <div style={{display:'inline-block',fontSize:'11px',fontWeight:500,letterSpacing:'0.14em',textTransform:'uppercase',color:'var(--pink)',background:'rgba(233,30,140,0.1)',border:'1px solid rgba(233,30,140,0.2)',padding:'5px 14px',borderRadius:'20px',marginBottom:'20px'}}>
+            Quem somos
           </div>
-          <h1 style={{fontFamily:'var(--font-display)',fontSize:'clamp(28px,5vw,44px)',fontWeight:700,lineHeight:1.1,letterSpacing:'-0.02em',marginBottom:'14px'}}>
-            Entre grátis nas<br />melhores festas de <span style={{color:'#C8963C'}}>SP</span>
+          <h1 style={{fontFamily:'var(--font-display)',fontSize:'clamp(30px,6vw,48px)',fontWeight:700,lineHeight:1.1,letterSpacing:'-0.02em',marginBottom:'20px'}}>
+            Acesso privilegiado<br />às melhores <span style={{color:'var(--pink)'}}>festas do Brasil</span>
           </h1>
-          <p style={{fontSize:'15px',color:'var(--text-muted)',lineHeight:1.6,maxWidth:'440px',margin:'0 auto'}}>
-            Coloque seu nome na lista VIP e garanta entrada gratuita ou com desconto especial na porta.
+          <p style={{fontSize:'17px',color:'var(--text-muted)',lineHeight:1.75,maxWidth:'600px'}}>
+            A Direct Network é uma agência de promoções e eventos com mais de 10 anos conectando pessoas às melhores festas do Brasil.
           </p>
         </section>
 
-        <section style={{maxWidth:'680px',margin:'0 auto',padding:'16px 20px 64px'}}>
-          {listas.length === 0 ? (
-            <div style={{textAlign:'center',padding:'60px 20px',color:'var(--text-faint)'}}>
-              <p style={{fontSize:'16px',marginBottom:'8px'}}>Em breve novas listas</p>
-              <p style={{fontSize:'13px'}}>Entre no grupo WhatsApp para receber primeiro.</p>
-            </div>
-          ) : (
-            <div style={{display:'flex',flexDirection:'column',gap:'32px'}}>
-              {diasOrdenados.map(dia => (
-                <div key={dia}>
-                  <div style={{display:'flex',alignItems:'center',gap:'12px',marginBottom:'12px'}}>
-                    <span style={{fontFamily:'var(--font-display)',fontSize:'13px',fontWeight:700,letterSpacing:'0.1em',textTransform:'uppercase',color:'#C8963C'}}>
-                      {dia.charAt(0).toUpperCase() + dia.slice(1)}
-                    </span>
-                    <span style={{fontSize:'12px',color:'var(--text-faint)'}}>
-                      {formatDataCurta(grupos[dia][0].fields.data)}
-                    </span>
-                    <div style={{flex:1,height:'1px',background:'var(--border)'}} />
-                  </div>
-
-                  <div style={{display:'flex',flexDirection:'column',gap:'1px'}}>
-                    {grupos[dia].map((lista, i) => {
-                      const f = lista.fields
-                      return (
-                        <Link
-                          key={lista.sys.id}
-                          href={`/listas/${f.slug}`}
-                          style={{
-                            display:'flex',
-                            alignItems:'center',
-                            justifyContent:'space-between',
-                            gap:'16px',
-                            padding:'14px 16px',
-                            background: i % 2 === 0 ? 'var(--bg2)' : 'var(--bg)',
-                            border:'1px solid var(--border)',
-                            borderRadius: grupos[dia].length === 1 ? '8px' :
-                                          i === 0 ? '8px 8px 0 0' :
-                                          i === grupos[dia].length - 1 ? '0 0 8px 8px' : '0',
-                            borderTop: i > 0 ? 'none' : '1px solid var(--border)',
-                            textDecoration:'none',
-                          }}
-                        >
-                          <div style={{flex:1,minWidth:0}}>
-                            <div style={{fontWeight:600,fontSize:'14px',color:'#fff',lineHeight:1.3,marginBottom:'3px',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
-                              {f.nome}
-                            </div>
-                            <div style={{fontSize:'12px',color:'var(--text-muted)'}}>
-                              {f.local}
-                              {f.benefcio && <span style={{marginLeft:'8px',color:'#C8963C'}}>· {f.benefcio}</span>}
-                            </div>
-                          </div>
-                          <div style={{flexShrink:0,fontSize:'12px',fontWeight:600,color:'#C8963C',border:'1px solid rgba(200,150,60,0.4)',padding:'6px 14px',borderRadius:'6px',whiteSpace:'nowrap'}}>
-                            Entrar na lista →
-                          </div>
-                        </Link>
-                      )
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+        {/* O QUE FAZEMOS */}
+        <section style={{maxWidth:'800px',margin:'0 auto',padding:'0 var(--px) 56px'}}>
+          <hr style={{border:'none',borderTop:'1px solid var(--border)',marginBottom:'48px'}} />
+          <div style={{fontSize:'11px',fontWeight:500,letterSpacing:'0.12em',textTransform:'uppercase',color:'var(--text-faint)',marginBottom:'16px'}}>O que fazemos</div>
+          <h2 style={{fontFamily:'var(--font-display)',fontSize:'clamp(22px,4vw,30px)',fontWeight:700,letterSpacing:'-0.02em',marginBottom:'20px'}}>
+            Selecionamos experiências que <span style={{color:'var(--pink)'}}>realmente valem a pena</span>
+          </h2>
+          <p style={{fontSize:'16px',color:'var(--text-muted)',lineHeight:1.8}}>
+            Trabalhamos diretamente com produtores, artistas e venues para garantir condições exclusivas — cupons de desconto, listas VIP e vantagens que você não encontra em outro lugar.
+          </p>
         </section>
 
-        <div style={{margin:'0 20px 48px',maxWidth:'680px',marginLeft:'auto',marginRight:'auto',background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:'var(--radius)',padding:'20px 24px',display:'flex',alignItems:'center',justifyContent:'space-between',gap:'20px',flexWrap:'wrap'}}>
-          <div>
-            <strong style={{fontFamily:'var(--font-display)',fontSize:'15px',fontWeight:600,display:'block',marginBottom:'3px'}}>Receba as listas antes de todo mundo</strong>
-            <p style={{fontSize:'13px',color:'var(--text-muted)'}}>Entre no grupo WhatsApp e nunca fique de fora.</p>
+        {/* DOIS NÍVEIS */}
+        <section style={{maxWidth:'800px',margin:'0 auto',padding:'0 var(--px) 80px'}}>
+          <hr style={{border:'none',borderTop:'1px solid var(--border)',marginBottom:'48px'}} />
+          <div style={{fontSize:'11px',fontWeight:500,letterSpacing:'0.12em',textTransform:'uppercase',color:'var(--text-faint)',marginBottom:'16px'}}>Acesso</div>
+          <h2 style={{fontFamily:'var(--font-display)',fontSize:'clamp(22px,4vw,30px)',fontWeight:700,letterSpacing:'-0.02em',marginBottom:'28px'}}>
+            Faça parte da nossa comunidade.<br />Não perca mais nenhum evento.
+          </h2>
+
+          <div className="plans-grid">
+            {/* Gratuito */}
+            <div style={{background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:'var(--radius)',padding:'24px',display:'flex',flexDirection:'column'}}>
+              <div style={{display:'inline-block',fontSize:'10px',fontWeight:600,letterSpacing:'0.1em',textTransform:'uppercase',color:'var(--pink)',background:'rgba(233,30,140,0.1)',border:'1px solid rgba(233,30,140,0.2)',padding:'3px 10px',borderRadius:'20px',marginBottom:'16px',alignSelf:'flex-start'}}>
+                Grupos gratuitos
+              </div>
+              <div style={{fontFamily:'var(--font-display)',fontSize:'20px',fontWeight:700,marginBottom:'4px'}}>Direct Network</div>
+              <div style={{fontSize:'13px',color:'var(--text-muted)',marginBottom:'20px'}}>Gratuito</div>
+              <div style={{display:'flex',flexDirection:'column',gap:'10px',flex:1}}>
+                {['Programação semanal completa','Desconto já aplicado no link','Listas VIP com horário','Pix sem taxa em eventos parceiros'].map(item => (
+                  <div key={item} style={{display:'flex',alignItems:'flex-start',gap:'8px',fontSize:'14px',color:'var(--text-muted)'}}>
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="var(--pink)" strokeWidth="1.5" style={{flexShrink:0,marginTop:'2px'}}><path d="M2 7l3 3 7-7"/></svg>
+                    {item}
+                  </div>
+                ))}
+              </div>
+              <a href="https://chat.whatsapp.com/DylGoK7gscc9e4wJkqxspx" target="_blank"
+                style={{display:'flex',alignItems:'center',justifyContent:'center',gap:'8px',marginTop:'24px',padding:'12px 20px',borderRadius:'7px',fontSize:'13px',fontWeight:600,background:'#25D366',color:'#fff'}}>
+                Entrar no grupo WhatsApp
+              </a>
+            </div>
+
+            {/* Direct Club */}
+            <div style={{background:'#0f0a00',border:'1px solid rgba(200,150,60,0.35)',borderRadius:'var(--radius)',padding:'24px',display:'flex',flexDirection:'column'}}>
+              <div style={{display:'inline-block',fontSize:'10px',fontWeight:600,letterSpacing:'0.1em',textTransform:'uppercase',color:'#C8963C',background:'rgba(200,150,60,0.1)',border:'1px solid rgba(200,150,60,0.25)',padding:'3px 10px',borderRadius:'20px',marginBottom:'16px',alignSelf:'flex-start'}}>
+                Direct Club
+              </div>
+              <div style={{fontFamily:'var(--font-display)',fontSize:'20px',fontWeight:700,marginBottom:'4px'}}>Acesso VIP</div>
+              <div style={{fontSize:'13px',color:'var(--text-muted)',marginBottom:'20px'}}>Veja os planos no site</div>
+              <div style={{display:'flex',flexDirection:'column',gap:'10px',flex:1}}>
+                {['Tudo do grupo gratuito','Lista VIP sem horário','Acesso a áreas VIP','Cortesias exclusivas','Eventos não divulgados publicamente'].map(item => (
+                  <div key={item} style={{display:'flex',alignItems:'flex-start',gap:'8px',fontSize:'14px',color:'var(--text-muted)'}}>
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#C8963C" strokeWidth="1.5" style={{flexShrink:0,marginTop:'2px'}}><path d="M2 7l3 3 7-7"/></svg>
+                    {item}
+                  </div>
+                ))}
+              </div>
+              <a href="https://www.directclub.com.br" target="_blank"
+                style={{display:'block',marginTop:'24px',textAlign:'center',padding:'12px 20px',borderRadius:'7px',fontSize:'13px',fontWeight:600,background:'#C8963C',color:'#fff'}}>
+                Conhecer o Direct Club →
+              </a>
+            </div>
           </div>
-          <a href="https://chat.whatsapp.com/DYcOSP7iF8U3OYgBHpU0tG" target="_blank" style={{display:'flex',alignItems:'center',gap:'8px',background:'#25D366',color:'#fff',fontSize:'13px',fontWeight:500,padding:'11px 20px',borderRadius:'6px',whiteSpace:'nowrap'}}>
-            Entrar no grupo
-          </a>
-        </div>
+        </section>
+
       </main>
       <Footer />
     </>
