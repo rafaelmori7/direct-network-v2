@@ -64,9 +64,9 @@ export default async function EventoPage({ params }) {
           <div className="detail-grid">
             {/* FLYER */}
             <div className="detail-flyer" style={{position:'sticky',top:'88px'}}>
-              <div style={{width:'100%',aspectRatio:'1/1',borderRadius:'12px',overflow:'hidden',background:'#534AB715',border:'1px solid rgba(83,74,183,0.2)'}}>
+              <div style={{width:'100%',borderRadius:'12px',overflow:'hidden',background:'#534AB715',border:'1px solid rgba(83,74,183,0.2)'}}>
                 {flyerUrl ? (
-                  <img src={`https:${flyerUrl}`} alt={f.nome} style={{width:'100%',height:'100%',objectFit:'cover'}} />
+                  <img src={`https:${flyerUrl}`} alt={f.nome} style={{width:'100%',height:'auto',display:'block'}} />
                 ) : (
                   <div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:'8px'}}>
                     <svg width="48" height="48" viewBox="0 0 48 48" fill="none"><rect x="5" y="7" width="38" height="34" rx="6" stroke="#534AB7" strokeWidth="1.5"/><path d="M16 7V4M32 7V4" stroke="#534AB7" strokeWidth="1.5" strokeLinecap="round"/><path d="M5 17h38" stroke="#534AB7" strokeWidth="1"/></svg>
