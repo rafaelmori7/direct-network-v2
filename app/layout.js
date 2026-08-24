@@ -7,6 +7,9 @@ export const metadata = {
     siteName: 'Direct Network',
     type: 'website',
   },
+  verification: {
+    google: 'AGQ-tnIrxxEND-84S-92SbITkPWO4_6Yy22tUA2GiTI',
+  },
 }
 
 export default function RootLayout({ children }) {
