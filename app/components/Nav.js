@@ -18,7 +18,6 @@ export default function Nav() {
           <img src="/logo.png" alt="Direct Network" style={{height:'28px',width:'auto'}} />
         </Link>
 
-        {/* Desktop */}
         <div className="nav-desktop" style={{display:'flex',alignItems:'center',gap:'32px'}}>
           <Link href="/" style={{fontSize:'13px',color:path==='/'?'#fff':'var(--text-muted)'}}>Festas</Link>
           <Link href="/listas" style={{fontSize:'13px',color:path.startsWith('/listas')?'#fff':'var(--text-muted)'}}>Listas VIP</Link>
@@ -29,7 +28,6 @@ export default function Nav() {
           </a>
         </div>
 
-        {/* Hambúrguer — só mobile */}
         <button
           onClick={()=>setOpen(!open)}
           className="nav-burger"
@@ -42,7 +40,6 @@ export default function Nav() {
         </button>
       </nav>
 
-      {/* Menu mobile — drawer */}
       {open && (
         <div style={{
           position:'fixed',top:'calc(32px + 56px)',left:0,right:0,bottom:0,
