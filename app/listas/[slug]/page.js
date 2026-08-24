@@ -4,6 +4,10 @@ import Footer from '../../components/Footer'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
+function formatarData(dateStr, opts) {
+  return new Date(dateStr).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo', ...opts })
+}
+
 export async function generateStaticParams() {
   try {
     const listas = await getListas()
@@ -16,9 +20,25 @@ export async function generateMetadata({ params }) {
     const lista = await getLista(params.slug)
     if (!lista) return {}
     const f = lista.fields
+    const flyerUrl = f.flyer?.fields?.file?.url
+    const title = `${f.nome} — Lista VIP, ${f.benefcio} | Direct Network`
+    const description = `Coloque seu nome na lista VIP de ${f.nome} em ${f.local} e garanta ${f.benefcio.toLowerCase()}.`
     return {
-      title: `${f.nome} — Lista VIP, ${f.benefcio} | Direct Network`,
-      description: `Coloque seu nome na lista VIP de ${f.nome} em ${f.local} e garanta ${f.benefcio.toLowerCase()}.`,
+      title,
+      description,
+      openGraph: {
+        title,
+        description,
+        type: 'website',
+        siteName: 'Direct Network',
+        images: flyerUrl ? [{ url: `https:${flyerUrl}?w=1200&fm=jpg&q=80`, width: 1200, height: 630, alt: f.nome }] : [],
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title,
+        description,
+        images: flyerUrl ? [`https:${flyerUrl}?w=1200&fm=jpg&q=80`] : [],
+      },
     }
   } catch { return {} }
 }
@@ -30,10 +50,24 @@ export default async function ListaPage({ params }) {
 
   const f = lista.fields
   const flyerUrl = f.flyer?.fields?.file?.url
-  const dataFormatada = new Date(f.data).toLocaleDateString('pt-BR', {weekday:'long',day:'2-digit',month:'long',year:'numeric'})
+  const dataFormatada = formatarData(f.data, {weekday:'long',day:'2-digit',month:'long',year:'numeric'})
+
+  const schema = {
+    '@context': 'https://schema.org',
+    '@type': 'Event',
+    name: f.nome,
+    description: `Lista VIP para ${f.nome} em ${f.local}. ${f.benefcio}.`,
+    startDate: f.data,
+    eventStatus: 'https://schema.org/EventScheduled',
+    eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
+    location: { '@type': 'Place', name: f.local, address: { '@type': 'PostalAddress', addressLocality: f.cidade, addressRegion: 'SP', addressCountry: 'BR' } },
+    organizer: { '@type': 'Organization', name: 'Direct Network', url: 'https://www.directnw.com.br' },
+    offers: { '@type': 'Offer', url: f.linkDeLista, price: '0', priceCurrency: 'BRL', availability: 'https://schema.org/InStock' },
+  }
 
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
       <Nav />
       <main>
         <div style={{background:'var(--bg)',padding:'16px 32px 0'}}>
@@ -50,7 +84,7 @@ export default async function ListaPage({ params }) {
           <div style={{position:'sticky',top:'88px'}}>
             <div style={{width:'100%',aspectRatio:'1/1',borderRadius:'12px',overflow:'hidden',background:'#BA751715',border:'1px solid rgba(186,117,23,0.2)',marginBottom:'12px'}}>
               {flyerUrl ? (
-                <img src={`https:${flyerUrl}`} alt={f.nome} style={{width:'100%',height:'100%',objectFit:'cover'}} />
+                <img src={`https:${flyerUrl}`} alt={`Flyer da lista VIP ${f.nome} em ${f.local}`} style={{width:'100%',height:'100%',objectFit:'cover'}} />
               ) : (
                 <div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:'8px'}}>
                   <svg width="48" height="48" viewBox="0 0 48 48" fill="none"><rect x="5" y="7" width="38" height="34" rx="6" stroke="#BA7517" strokeWidth="1.5"/><path d="M16 7V4M32 7V4" stroke="#BA7517" strokeWidth="1.5" strokeLinecap="round"/><path d="M5 17h38" stroke="#BA7517" strokeWidth="1"/></svg>
