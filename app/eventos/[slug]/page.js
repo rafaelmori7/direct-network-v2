@@ -4,6 +4,10 @@ import Footer from '../../components/Footer'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
+function formatarData(dateStr, opts) {
+  return new Date(dateStr).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo', ...opts })
+}
+
 export async function generateStaticParams() {
   try {
     const eventos = await getEventos()
@@ -17,7 +21,7 @@ export async function generateMetadata({ params }) {
     if (!evento) return {}
     const f = evento.fields
     return {
-      title: `${f.nome} — ${new Date(f.data).toLocaleDateString('pt-BR', {day:'2-digit',month:'long',year:'numeric'})} | Direct Network`,
+      title: `${f.nome} — ${formatarData(f.data, {day:'2-digit',month:'long',year:'numeric'})} | Direct Network`,
       description: `${f.nome} em ${f.local}, ${f.cidade}. Garanta seu ingresso com desconto exclusivo Direct Network.`,
     }
   } catch { return {} }
@@ -30,7 +34,7 @@ export default async function EventoPage({ params }) {
 
   const f = evento.fields
   const flyerUrl = f.flyer?.fields?.file?.url
-  const dataFormatada = new Date(f.data).toLocaleDateString('pt-BR', {weekday:'long',day:'2-digit',month:'long',year:'numeric'})
+  const dataFormatada = formatarData(f.data, {weekday:'long',day:'2-digit',month:'long',year:'numeric'})
 
   const schema = {
     '@context': 'https://schema.org',
