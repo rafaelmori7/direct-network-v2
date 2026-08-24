@@ -52,7 +52,7 @@ export default function Nav() {
           <Link href="/" onClick={()=>setOpen(false)} style={{fontSize:'17px',fontWeight:500,padding:'16px 0',borderBottom:'1px solid var(--border)',color:path==='/'?'var(--pink)':'#fff',display:'block'}}>Festas</Link>
           <Link href="/listas" onClick={()=>setOpen(false)} style={{fontSize:'17px',fontWeight:500,padding:'16px 0',borderBottom:'1px solid var(--border)',color:path.startsWith('/listas')?'var(--pink)':'#fff',display:'block'}}>Listas VIP</Link>
           <Link href="/quem-somos" onClick={()=>setOpen(false)} style={{fontSize:'17px',fontWeight:500,padding:'16px 0',borderBottom:'1px solid var(--border)',color:path==='/quem-somos'?'var(--pink)':'#fff',display:'block'}}>Quem somos</Link>
-          
+        <a
             href="https://chat.whatsapp.com/DYcOSP7iF8U3OYgBHpU0tG"
             target="_blank"
             onClick={()=>setOpen(false)}
