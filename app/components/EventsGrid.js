@@ -12,19 +12,18 @@ const GENERO_COLORS = {
 }
 
 function formatDate(dateStr) {
-  const d = new Date(dateStr)
-  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace('.', '')
+  return new Date(dateStr).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', timeZone: 'America/Sao_Paulo' }).replace('.', '')
 }
 
 function getMonthLabel(dateStr) {
-  const d = new Date(dateStr)
-  return d.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+  return new Date(dateStr).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric', timeZone: 'America/Sao_Paulo' })
     .replace(/^\w/, c => c.toUpperCase())
 }
 
 function getMonthKey(dateStr) {
-  const d = new Date(dateStr)
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+  const str = new Date(dateStr).toLocaleDateString('pt-BR', { year: 'numeric', month: '2-digit', timeZone: 'America/Sao_Paulo' })
+  const [m, y] = str.split('/')
+  return `${y}-${m}`
 }
 
 export default function EventsGrid({ eventos }) {
@@ -42,7 +41,6 @@ export default function EventsGrid({ eventos }) {
     return matchBusca && matchGenero
   })
 
-  // Agrupa por mês
   const porMes = {}
   filtrados.forEach(evento => {
     const key = evento.fields?.data ? getMonthKey(evento.fields.data) : 'sem-data'
@@ -54,7 +52,6 @@ export default function EventsGrid({ eventos }) {
 
   return (
     <section style={{padding:'0 var(--px) 48px'}}>
-      {/* Busca */}
       <div style={{marginBottom:'16px'}}>
         <input
           type="text"
@@ -65,7 +62,6 @@ export default function EventsGrid({ eventos }) {
         />
       </div>
 
-      {/* Filtro gênero */}
       <div style={{display:'flex',gap:'8px',flexWrap:'wrap',marginBottom:'32px'}}>
         {generos.map(g => (
           <button
@@ -83,7 +79,6 @@ export default function EventsGrid({ eventos }) {
         ))}
       </div>
 
-      {/* Grid agrupado por mês */}
       {filtrados.length === 0 ? (
         <div style={{textAlign:'center',padding:'60px 20px',color:'var(--text-faint)'}}>
           <p style={{fontSize:'16px',marginBottom:'8px'}}>Nenhum evento encontrado</p>
