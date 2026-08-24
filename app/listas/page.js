@@ -14,11 +14,17 @@ const DIAS = ['domingo','segunda','terça','quarta','quinta','sexta','sábado']
 const DIAS_ORDEM = ['quarta','quinta','sexta','sábado','domingo','segunda','terça']
 
 function getDiaSemana(dateStr) {
-  return DIAS[new Date(new Date(dateStr).toLocaleString('en-US', {timeZone:'America/Sao_Paulo'})).getDay()]
+  const d = new Date(dateStr)
+  const offsetMs = -3 * 60 * 60 * 1000
+  const local = new Date(d.getTime() + offsetMs + d.getTimezoneOffset() * 60000)
+  return DIAS[local.getDay()]
 }
 
 function formatDataCurta(dateStr) {
-  return new Date(dateStr).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', timeZone:'America/Sao_Paulo' }).replace('.', '')
+  const d = new Date(dateStr)
+  const offsetMs = -3 * 60 * 60 * 1000
+  const local = new Date(d.getTime() + offsetMs + d.getTimezoneOffset() * 60000)
+  return local.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace('.', '')
 }
 
 export default async function ListasPage() {
