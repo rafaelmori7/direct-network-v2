@@ -2,7 +2,7 @@ import './globals.css'
 
 export const metadata = {
   title: 'Direct Network — As melhores festas com desconto exclusivo',
-  description: 'Agenda das melhores festas de São Paulo e do Brasil com descontos exclusivos já aplicados no link.',
+  description: 'Agenda de festas em São Paulo com desconto exclusivo já aplicado no link. Eletrônica, pagode, sertanejo, open bar e muito mais. Listas VIP gratuitas toda semana.',
   openGraph: {
     siteName: 'Direct Network',
     type: 'website',
