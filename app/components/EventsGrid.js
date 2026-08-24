@@ -62,13 +62,15 @@ export default function EventsGrid({ eventos }) {
         />
       </div>
 
-      <div style={{display:'flex',gap:'8px',flexWrap:'wrap',marginBottom:'32px'}}>
+      <div style={{display:'flex',gap:'8px',overflowX:'auto',marginBottom:'32px',paddingBottom:'4px',scrollbarWidth:'none',msOverflowStyle:'none'}}>
+        <style>{`div::-webkit-scrollbar{display:none}`}</style>
         {generos.map(g => (
           <button
             key={g}
             onClick={() => setGeneroFiltro(g)}
             style={{
               fontSize:'12px',fontWeight:500,padding:'6px 14px',borderRadius:'20px',cursor:'pointer',transition:'all 0.15s',
+              flexShrink:0,
               background: generoFiltro === g ? 'var(--pink)' : 'var(--bg2)',
               color: generoFiltro === g ? '#fff' : 'var(--text-muted)',
               border: generoFiltro === g ? '1px solid var(--pink)' : '1px solid var(--border)',
