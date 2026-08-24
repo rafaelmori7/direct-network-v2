@@ -14,18 +14,17 @@ const DIAS = ['domingo','segunda','terça','quarta','quinta','sexta','sábado']
 const DIAS_ORDEM = ['quarta','quinta','sexta','sábado','domingo','segunda','terça']
 
 function getDiaSemana(dateStr) {
-  return DIAS[new Date(dateStr).getDay()]
+  return DIAS[new Date(new Date(dateStr).toLocaleString('en-US', {timeZone:'America/Sao_Paulo'})).getDay()]
 }
 
 function formatDataCurta(dateStr) {
-  return new Date(dateStr).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace('.', '')
+  return new Date(dateStr).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', timeZone:'America/Sao_Paulo' }).replace('.', '')
 }
 
 export default async function ListasPage() {
   let listas = []
   try { listas = await getListas() } catch { listas = [] }
 
-  // Agrupa por dia da semana
   const grupos = {}
   listas.forEach(lista => {
     const dia = getDiaSemana(lista.fields.data)
@@ -33,7 +32,6 @@ export default async function ListasPage() {
     grupos[dia].push(lista)
   })
 
-  // Ordena dias
   const diasOrdenados = DIAS_ORDEM.filter(d => grupos[d])
 
   return (
@@ -62,7 +60,6 @@ export default async function ListasPage() {
             <div style={{display:'flex',flexDirection:'column',gap:'32px'}}>
               {diasOrdenados.map(dia => (
                 <div key={dia}>
-                  {/* Header do dia */}
                   <div style={{display:'flex',alignItems:'center',gap:'12px',marginBottom:'12px'}}>
                     <span style={{fontFamily:'var(--font-display)',fontSize:'13px',fontWeight:700,letterSpacing:'0.1em',textTransform:'uppercase',color:'#C8963C'}}>
                       {dia.charAt(0).toUpperCase() + dia.slice(1)}
@@ -73,7 +70,6 @@ export default async function ListasPage() {
                     <div style={{flex:1,height:'1px',background:'var(--border)'}} />
                   </div>
 
-                  {/* Listas do dia */}
                   <div style={{display:'flex',flexDirection:'column',gap:'1px'}}>
                     {grupos[dia].map((lista, i) => {
                       const f = lista.fields
@@ -89,7 +85,7 @@ export default async function ListasPage() {
                             padding:'14px 16px',
                             background: i % 2 === 0 ? 'var(--bg2)' : 'var(--bg)',
                             border:'1px solid var(--border)',
-                            borderRadius: i === 0 && grupos[dia].length === 1 ? '8px' :
+                            borderRadius: grupos[dia].length === 1 ? '8px' :
                                           i === 0 ? '8px 8px 0 0' :
                                           i === grupos[dia].length - 1 ? '0 0 8px 8px' : '0',
                             borderTop: i > 0 ? 'none' : '1px solid var(--border)',
