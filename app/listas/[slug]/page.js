@@ -82,11 +82,11 @@ export default async function ListaPage({ params }) {
 
         <div style={{maxWidth:'960px',margin:'0 auto',padding:'0 32px 64px',display:'grid',gridTemplateColumns:'340px 1fr',gap:'40px',alignItems:'start'}}>
           <div style={{position:'sticky',top:'88px'}}>
-            <div style={{width:'100%',aspectRatio:'1/1',borderRadius:'12px',overflow:'hidden',background:'#BA751715',border:'1px solid rgba(186,117,23,0.2)',marginBottom:'12px'}}>
+            <div style={{width:'100%',borderRadius:'12px',overflow:'hidden',background:'#BA751715',border:'1px solid rgba(186,117,23,0.2)',marginBottom:'12px'}}>
               {flyerUrl ? (
-                <img src={`https:${flyerUrl}`} alt={`Flyer da lista VIP ${f.nome} em ${f.local}`} style={{width:'100%',height:'100%',objectFit:'cover'}} />
+                <img src={`https:${flyerUrl}`} alt={`Flyer da lista VIP ${f.nome} em ${f.local}`} style={{width:'100%',height:'auto',display:'block'}} />
               ) : (
-                <div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:'8px'}}>
+                <div style={{width:'100%',aspectRatio:'9/16',display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:'8px'}}>
                   <svg width="48" height="48" viewBox="0 0 48 48" fill="none"><rect x="5" y="7" width="38" height="34" rx="6" stroke="#BA7517" strokeWidth="1.5"/><path d="M16 7V4M32 7V4" stroke="#BA7517" strokeWidth="1.5" strokeLinecap="round"/><path d="M5 17h38" stroke="#BA7517" strokeWidth="1"/></svg>
                   <span style={{fontSize:'11px',color:'var(--text-faint)'}}>Flyer do evento</span>
                 </div>
