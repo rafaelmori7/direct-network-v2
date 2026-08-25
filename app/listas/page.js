@@ -48,8 +48,8 @@ export default async function ListasPage() {
           <div style={{display:'inline-flex',alignItems:'center',gap:'7px',fontSize:'11px',fontWeight:500,letterSpacing:'0.14em',textTransform:'uppercase',color:'#C8963C',background:'rgba(200,150,60,0.1)',border:'1px solid rgba(200,150,60,0.2)',padding:'5px 14px',borderRadius:'20px',marginBottom:'20px'}}>
             Listas VIP — Entrada gratuita
           </div>
-          <h1 style={{fontFamily:'var(--font-display)',fontSize:'clamp(28px,5vw,44px)',fontWeight:700,lineHeight:1.1,letterSpacing:'-0.02em',marginBottom:'14px'}}>
-            Entre grátis nas<br />melhores festas de <span style={{color:'#C8963C'}}>SP</span>
+                   <h1 style={{fontFamily:'var(--font-display)',fontSize:'clamp(28px,5vw,44px)',fontWeight:700,lineHeight:1.1,letterSpacing:'-0.02em',marginBottom:'14px'}}>
+            Acesso VIP aos melhores<br />clubs e bares de <span style={{color:'#C8963C'}}>SP</span>
           </h1>
           <p style={{fontSize:'15px',color:'var(--text-muted)',lineHeight:1.6,maxWidth:'440px',margin:'0 auto'}}>
             Coloque seu nome na lista VIP e garanta entrada gratuita ou com desconto especial na porta.
