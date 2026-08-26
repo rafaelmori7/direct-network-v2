@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 
 const SPACE_ID = 'jlayhg56ixnc'
 const ACCESS_TOKEN = 'LlltVYQHPrduF1DBWcyJRRuGws0YpaenPH9ljMSm7F0'
@@ -49,10 +49,10 @@ async function fetchEventos() {
   return data.items || []
 }
 
-function gerarTextoListas(listas, incluirFestas, eventos) {
+function gerarTextoListas(listas, incluirFestas, eventos, soFestas = false) {
   const { inicio, fim } = getSemanaAtual()
 
-  const listasSemana = listas.filter(l => {
+  const listasSemana = soFestas ? [] : listas.filter(l => {
     const d = new Date(l.fields.data)
     const offsetMs = -3 * 60 * 60 * 1000
     const local = new Date(d.getTime() + offsetMs + d.getTimezoneOffset() * 60000)
@@ -60,7 +60,7 @@ function gerarTextoListas(listas, incluirFestas, eventos) {
     return local >= inicio && local <= fim
   })
 
-  const eventosSemana = incluirFestas ? eventos.filter(e => {
+  const eventosSemana = (incluirFestas || soFestas) ? eventos.filter(e => {
     const d = new Date(e.fields.data)
     const offsetMs = -3 * 60 * 60 * 1000
     const local = new Date(d.getTime() + offsetMs + d.getTimezoneOffset() * 60000)
@@ -68,7 +68,6 @@ function gerarTextoListas(listas, incluirFestas, eventos) {
     return local >= inicio && local <= fim
   }) : []
 
-  // Agrupa por dia
   const porDia = {}
 
   listasSemana.forEach(l => {
@@ -143,7 +142,7 @@ export default function AdminAgenda() {
   const [listas, setListas] = useState([])
   const [eventos, setEventos] = useState([])
   const [loading, setLoading] = useState(false)
-  const [modo, setModo] = useState('listas') // listas | listas+festas | calendario
+  const [modo, setModo] = useState('listas')
   const [copiado, setCopiado] = useState(false)
 
   function autenticar() {
@@ -163,6 +162,8 @@ export default function AdminAgenda() {
   const texto = autenticado
     ? modo === 'calendario'
       ? gerarTextoCalendario(eventos)
+      : modo === 'festas'
+      ? gerarTextoListas([], false, eventos, true)
       : gerarTextoListas(listas, modo === 'listas+festas', eventos)
     : ''
 
@@ -202,10 +203,10 @@ export default function AdminAgenda() {
         <div style={{fontFamily:'Syne, sans-serif',fontSize:'22px',fontWeight:700,color:'#fff',marginBottom:'4px'}}>Agenda</div>
         <div style={{fontSize:'13px',color:'#888',marginBottom:'24px'}}>Direct Network</div>
 
-        {/* MODOS */}
         <div style={{display:'flex',gap:'8px',flexWrap:'wrap',marginBottom:'20px'}}>
           {[
             { key:'listas', label:'📝 Só listas da semana' },
+            { key:'festas', label:'🎟️ Só festas da semana' },
             { key:'listas+festas', label:'📝🎟️ Listas + Festas da semana' },
             { key:'calendario', label:'🗓️ Calendário completo' },
           ].map(m => (
