@@ -8,6 +8,10 @@ function formatarData(dateStr, opts) {
   return new Date(dateStr).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo', ...opts })
 }
 
+function formatarHorario(dateStr) {
+  return new Date(dateStr).toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' })
+}
+
 export async function generateStaticParams() {
   try {
     const eventos = await getEventos()
@@ -52,6 +56,7 @@ export default async function EventoPage({ params }) {
   const f = evento.fields
   const flyerUrl = f.flyer?.fields?.file?.url
   const dataFormatada = formatarData(f.data, {weekday:'long',day:'2-digit',month:'long',year:'numeric'})
+  const horario = formatarHorario(f.data)
 
   const schema = {
     '@context': 'https://schema.org',
@@ -107,6 +112,7 @@ export default async function EventoPage({ params }) {
 
               <div style={{display:'flex',flexWrap:'wrap',gap:'10px'}}>
                 <div style={{fontSize:'13px',color:'var(--text-muted)',background:'var(--bg2)',border:'1px solid var(--border)',padding:'7px 14px',borderRadius:'6px'}}>{dataFormatada}</div>
+                <div style={{fontSize:'13px',color:'var(--text-muted)',background:'var(--bg2)',border:'1px solid var(--border)',padding:'7px 14px',borderRadius:'6px'}}>A partir das {horario}</div>
                 <div style={{fontSize:'13px',color:'var(--text-muted)',background:'var(--bg2)',border:'1px solid var(--border)',padding:'7px 14px',borderRadius:'6px'}}>{f.cidade}</div>
                 {f.plataforma && <div style={{fontSize:'11px',fontWeight:500,padding:'4px 10px',borderRadius:'4px',background:'var(--bg3)',border:'1px solid var(--border)',color:'var(--text-muted)'}}>{f.plataforma}</div>}
               </div>
@@ -128,7 +134,7 @@ export default async function EventoPage({ params }) {
                 <a href={f.linkAfiliado} target="_blank" style={{display:'flex',alignItems:'center',justifyContent:'center',width:'100%',background:'var(--pink)',color:'#fff',fontFamily:'var(--font-display)',fontSize:'15px',fontWeight:600,padding:'16px',borderRadius:'8px'}}>
                   Garantir ingresso com desconto
                 </a>
-                             {f.linkPix && (
+                {f.linkPix && (
                   <a href={f.linkPix} target="_blank" style={{display:'flex',alignItems:'center',justifyContent:'center',width:'100%',background:'#32BCAD',color:'#fff',fontFamily:'var(--font-display)',fontSize:'15px',fontWeight:600,padding:'16px',borderRadius:'8px'}}>
                     Pagar no Pix sem taxa
                   </a>
@@ -146,7 +152,7 @@ export default async function EventoPage({ params }) {
               )}
 
               <div style={{background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:'var(--radius)',overflow:'hidden'}}>
-                {[['Data',dataFormatada],['Local',f.local],['Cidade',f.cidade],['Gênero',f.gnero]].map(([label,value]) => (
+                {[['Data',dataFormatada],['Horário',`A partir das ${horario}`],['Local',f.local],['Cidade',f.cidade],['Gênero',f.gnero]].map(([label,value]) => (
                   <div key={label} style={{display:'flex',alignItems:'center',gap:'12px',padding:'12px 16px',borderBottom:'1px solid var(--border)'}}>
                     <div style={{width:'30px',height:'30px',borderRadius:'6px',background:'var(--bg3)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
                       <svg width="14" height="14" viewBox="0 0 15 15" fill="none" stroke="var(--text-muted)" strokeWidth="1.2"><rect x="1" y="2.5" width="13" height="11" rx="2"/><path d="M5 1.5v2M10 1.5v2M1 7h13"/></svg>
