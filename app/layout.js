@@ -1,4 +1,5 @@
 import './globals.css'
+import { GoogleAnalytics } from '@next/third-parties/google'
 
 export const metadata = {
   title: 'Direct Network — As melhores festas com desconto exclusivo',
@@ -20,6 +21,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="pt-BR">
       <body>{children}</body>
+      <GoogleAnalytics gaId="G-RFHFTJEJ5D" />
     </html>
   )
 }
