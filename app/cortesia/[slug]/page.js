@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 
 const SPACE_ID = 'jlayhg56ixnc';
 const ACCESS_TOKEN = 'LlltVYQHPrduF1DBWcyJRRuGws0YpaenPH9ljMSm7F0';
-const LINK_GRUPO = 'https://chat.whatsapp.com/DYcOSP7iF8U3OYgBHpU0tG';
+const LINK_GRUPO = 'https://curt.link/grupo-direct';
 
 async function getCortesia(slug) {
   const url = `https://cdn.contentful.com/spaces/${SPACE_ID}/entries?content_type=cortesia&fields.slug=${slug}&include=1`;
