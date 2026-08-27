@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 
 const SPACE_ID = 'jlayhg56ixnc';
 const ACCESS_TOKEN = 'LlltVYQHPrduF1DBWcyJRRuGws0YpaenPH9ljMSm7F0';
-const LINK_GRUPO = 'https://curt.link/grupo-direct';
+const LINK_GRUPO = 'https://chat.whatsapp.com/DYcOSP7iF8U3OYgBHpU0tG';
 
 async function getCortesia(slug) {
   const url = `https://cdn.contentful.com/spaces/${SPACE_ID}/entries?content_type=cortesia&fields.slug=${slug}&include=1`;
@@ -179,7 +179,7 @@ export default function CortesiaPage() {
           {/* SELEÇÃO DE GÊNERO */}
           {temGenero && !genero && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <p style={{ fontSize: 14, color: '#ddd', lineHeight: 1.55, textAlign: 'center' }}>
+              <p style={{ fontSize: 15, fontWeight: 600, color: '#ddd', lineHeight: 1.55, textAlign: 'center' }}>
                 Qual cortesia você gostaria de gerar?
               </p>
               <button onClick={() => setGenero('masc')} style={styles.btnGenero}>👨 Masculino</button>
@@ -198,11 +198,11 @@ export default function CortesiaPage() {
                   </span>
                 </div>
               )}
-              <p style={{ fontSize: 14, color: '#ddd', lineHeight: 1.55 }}>
+              <p style={{ fontSize: 15, fontWeight: 600, color: '#ddd', lineHeight: 1.55 }}>
                 1. Informe seu e-mail para receber o link para gerar a cortesia.
               </p>
               <div>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: '#ccc', marginBottom: 8 }}>
+                <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#ccc', marginBottom: 8 }}>
                   Seu e-mail
                 </label>
                 <input
@@ -218,7 +218,7 @@ export default function CortesiaPage() {
               <button onClick={handleSubmit} disabled={loading} style={{ ...styles.btnPrimary, opacity: loading ? 0.6 : 1, cursor: loading ? 'not-allowed' : 'pointer' }}>
                 {loading ? 'Aguarde...' : 'Enviar'}
               </button>
-              <p style={{ fontSize: 11, color: '#444', textAlign: 'center' }}>
+              <p style={{ fontSize: 12, color: '#444', textAlign: 'center' }}>
                 Seus dados são usados apenas para controle de acesso.
               </p>
             </div>
@@ -229,10 +229,10 @@ export default function CortesiaPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16, textAlign: 'center' }}>
               <div style={styles.checkIcon}>🎟️</div>
               <div>
-                <h2 style={{ fontSize: 20, fontWeight: 800, color: '#f0f0f0', marginBottom: 12 }}>
+                <h2 style={{ fontSize: 22, fontWeight: 800, color: '#f0f0f0', marginBottom: 12 }}>
                   Cortesia liberada! 🎉
                 </h2>
-                <p style={{ fontSize: 14, color: '#ddd', lineHeight: 1.7, textAlign: 'left' }}>
+                <p style={{ fontSize: 15, fontWeight: 600, color: '#ddd', lineHeight: 1.7, textAlign: 'left' }}>
                   Agora siga os passos:<br /><br />
                   <strong style={{ color: '#fff' }}>1.</strong> Clique no botão abaixo<br />
                   <strong style={{ color: '#fff' }}>2.</strong> Você será direcionado para a página para gerar a sua cortesia.
@@ -246,12 +246,10 @@ export default function CortesiaPage() {
                 {copiado ? '✓ Copiado!' : 'Copiar link'}
               </button>
 
-              {/* DIVISOR */}
               <div style={{ height: 1, background: '#242424', margin: '4px 0' }} />
 
-              {/* GRUPO WHATSAPP — discreto, abaixo de tudo */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <p style={{ fontSize: 12, color: '#555', textAlign: 'center' }}>
+                <p style={{ fontSize: 13, color: '#555', textAlign: 'center' }}>
                   Quer receber mais eventos e benefícios exclusivos?
                 </p>
                 <a href={LINK_GRUPO} target="_blank" rel="noopener noreferrer"
@@ -274,8 +272,8 @@ export default function CortesiaPage() {
 function InfoRow({ icon, texto }) {
   return (
     <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-      <span style={{ fontSize: 13 }}>{icon}</span>
-      <span style={{ fontSize: 13, color: '#888', lineHeight: 1.5 }}>{texto}</span>
+      <span style={{ fontSize: 14 }}>{icon}</span>
+      <span style={{ fontSize: 14, fontWeight: 500, color: '#aaa', lineHeight: 1.5 }}>{texto}</span>
     </div>
   );
 }
@@ -328,7 +326,7 @@ const styles = {
     marginBottom: 12,
   },
   h1: {
-    fontSize: 26,
+    fontSize: 28,
     fontWeight: 800,
     color: '#f0f0f0',
     lineHeight: 1.2,
@@ -352,7 +350,7 @@ const styles = {
     color: '#fff',
     cursor: 'pointer',
     fontSize: 15,
-    fontWeight: 600,
+    fontWeight: 700,
     padding: '15px',
     width: '100%',
     fontFamily: 'inherit',
@@ -379,7 +377,7 @@ const styles = {
     color: '#f0f0f0',
     cursor: 'pointer',
     fontSize: 16,
-    fontWeight: 600,
+    fontWeight: 700,
     padding: '18px',
     width: '100%',
     fontFamily: 'inherit',
