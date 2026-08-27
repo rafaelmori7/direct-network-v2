@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 
 const SPACE_ID = 'jlayhg56ixnc';
 const ACCESS_TOKEN = 'LlltVYQHPrduF1DBWcyJRRuGws0YpaenPH9ljMSm7F0';
+const LINK_GRUPO = 'https://chat.whatsapp.com/DYcOSP7iF8U3OYgBHpU0tG';
 
 async function getCortesia(slug) {
   const url = `https://cdn.contentful.com/spaces/${SPACE_ID}/entries?content_type=cortesia&fields.slug=${slug}&include=1`;
@@ -31,10 +32,8 @@ async function getCortesia(slug) {
     local: item.local || '',
     endereco: item.endereo || '',
     imagemUrl,
-    // Feminino (campos originais)
     linkCortesia: item.linkCortesia || '',
     appsScriptUrl: item.appsScriptUrl || '',
-    // Masculino (campos novos)
     linkCortesiaMasc: item.linkCortesiaMasc || '',
     appsScriptUrlMasc: item.appsScriptUrlMasc || '',
     ativo: item.ativo !== false,
@@ -49,7 +48,7 @@ export default function CortesiaPage() {
 
   const [evento, setEvento] = useState(null);
   const [status, setStatus] = useState('loading');
-  const [genero, setGenero] = useState(null); // null | 'masc' | 'fem'
+  const [genero, setGenero] = useState(null);
   const [email, setEmail] = useState('');
   const [erro, setErro] = useState('');
   const [loading, setLoading] = useState(false);
@@ -64,9 +63,7 @@ export default function CortesiaPage() {
     });
   }, [slug]);
 
-  // tem masc/fem?
   const temGenero = evento && evento.appsScriptUrlMasc && evento.linkCortesiaMasc;
-
   const scriptUrl = genero === 'masc' ? evento?.appsScriptUrlMasc : evento?.appsScriptUrl;
   const linkCortesia = genero === 'masc' ? evento?.linkCortesiaMasc : evento?.linkCortesia;
 
@@ -179,22 +176,18 @@ export default function CortesiaPage() {
 
           <div style={{ height: 1, background: '#242424', marginBottom: 28 }} />
 
-          {/* SELEÇÃO DE GÊNERO — só aparece se tiver masc/fem */}
+          {/* SELEÇÃO DE GÊNERO */}
           {temGenero && !genero && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <p style={{ fontSize: 14, color: '#ddd', lineHeight: 1.55, textAlign: 'center' }}>
                 Qual cortesia você gostaria de gerar?
               </p>
-              <button onClick={() => setGenero('masc')} style={styles.btnGenero}>
-                👨 Masculino
-              </button>
-              <button onClick={() => setGenero('fem')} style={styles.btnGenero}>
-                👩 Feminino
-              </button>
+              <button onClick={() => setGenero('masc')} style={styles.btnGenero}>👨 Masculino</button>
+              <button onClick={() => setGenero('fem')} style={styles.btnGenero}>👩 Feminino</button>
             </div>
           )}
 
-          {/* FORMULÁRIO — aparece após escolha de gênero (ou direto se não tiver masc/fem) */}
+          {/* FORMULÁRIO */}
           {(!temGenero || genero) && !resgatado && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               {temGenero && (
@@ -233,7 +226,7 @@ export default function CortesiaPage() {
 
           {/* LINK LIBERADO */}
           {resgatado && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 20, textAlign: 'center' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16, textAlign: 'center' }}>
               <div style={styles.checkIcon}>🎟️</div>
               <div>
                 <h2 style={{ fontSize: 20, fontWeight: 800, color: '#f0f0f0', marginBottom: 12 }}>
@@ -252,6 +245,21 @@ export default function CortesiaPage() {
               <button onClick={copiarLink} style={styles.btnSecondary}>
                 {copiado ? '✓ Copiado!' : 'Copiar link'}
               </button>
+
+              {/* DIVISOR */}
+              <div style={{ height: 1, background: '#242424', margin: '4px 0' }} />
+
+              {/* GRUPO WHATSAPP — discreto, abaixo de tudo */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <p style={{ fontSize: 12, color: '#555', textAlign: 'center' }}>
+                  Quer receber mais eventos e benefícios exclusivos?
+                </p>
+                <a href={LINK_GRUPO} target="_blank" rel="noopener noreferrer"
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '12px', borderRadius: 12, border: '1px solid #25D366', color: '#25D366', fontSize: 13, fontWeight: 600, textDecoration: 'none', background: 'transparent' }}>
+                  Entrar no grupo WhatsApp
+                </a>
+              </div>
+
               <p style={{ fontSize: 11, color: '#444' }}>
                 Guarde o link — ele é sua cortesia para {evento.nome}.
               </p>
