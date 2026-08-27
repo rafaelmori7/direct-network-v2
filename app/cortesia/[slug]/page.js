@@ -94,6 +94,7 @@ export default function CortesiaPage() {
     } catch (_) {}
     setLoading(false);
     setResgatado(true);
+    window.open(linkCortesia, '_blank');
   }
 
   function copiarLink() {
@@ -233,12 +234,10 @@ export default function CortesiaPage() {
                   Cortesia liberada! 🎉
                 </h2>
                 <p style={{ fontSize: 15, fontWeight: 600, color: '#ddd', lineHeight: 1.7, textAlign: 'left' }}>
-                  Agora siga os passos:<br /><br />
-                  <strong style={{ color: '#fff' }}>1.</strong> Clique no botão abaixo<br />
-                  <strong style={{ color: '#fff' }}>2.</strong> Você será direcionado para a página para gerar a sua cortesia.
+                  A página para gerar sua cortesia foi aberta automaticamente.<br /><br />
+                  Caso não tenha aberto, clique no botão abaixo.
                 </p>
               </div>
-              <div style={styles.linkBox}>{linkCortesia}</div>
               <a href={linkCortesia} target="_blank" rel="noopener noreferrer" style={styles.btnPrimary}>
                 Clique aqui para gerar sua cortesia →
               </a>
