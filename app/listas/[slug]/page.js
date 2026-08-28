@@ -58,6 +58,8 @@ export default async function ListaPage({ params }) {
     name: f.nome,
     description: `Lista VIP para ${f.nome} em ${f.local}. ${f.benefcio}.`,
     startDate: f.data,
+    endDate: new Date(new Date(f.data).getTime() + 6 * 60 * 60 * 1000).toISOString(),
+    ...(flyerUrl && { image: [`https:${flyerUrl}?w=1200&fm=jpg&q=80`] }),
     eventStatus: 'https://schema.org/EventScheduled',
     eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
     location: { '@type': 'Place', name: f.local, address: { '@type': 'PostalAddress', addressLocality: f.cidade, addressRegion: 'SP', addressCountry: 'BR' } },
