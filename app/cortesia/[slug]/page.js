@@ -39,6 +39,7 @@ async function getCortesia(slug) {
     ativo: item.ativo !== false,
     mensagemEncerrada: item.mensagemEncerrada || 'As cortesias para este evento foram encerradas.',
     linkWhatsApp: item.linkWhatsApp || '',
+    descricao: item.descricao || '',
   };
 }
 
@@ -174,6 +175,18 @@ export default function CortesiaPage() {
               )}
             </div>
           </div>
+
+          {evento.descricao && (
+            <div style={{ marginBottom: 28 }}>
+              <div style={{ height: 1, background: '#242424', marginBottom: 20 }} />
+              <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#666', marginBottom: 10 }}>
+                Sobre o evento
+              </div>
+              <div style={{ fontSize: 14, color: '#999', lineHeight: 1.7, whiteSpace: 'pre-line' }}>
+                {evento.descricao}
+              </div>
+            </div>
+          )}
 
           <div style={{ height: 1, background: '#242424', marginBottom: 28 }} />
 
