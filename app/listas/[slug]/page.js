@@ -61,7 +61,7 @@ export default async function ListaPage({ params }) {
     '@context': 'https://schema.org',
     '@type': 'Event',
     name: f.nome,
-    description: `Lista VIP para ${f.nome} em ${f.local}. ${f.benefcio}.`,
+    description: f.descricao || `Lista VIP para ${f.nome} em ${f.local}. ${f.benefcio}.`,
     startDate: f.data,
     endDate: new Date(new Date(f.data).getTime() + 6 * 60 * 60 * 1000).toISOString(),
     ...(flyerUrl && { image: [`https:${flyerUrl}?w=1200&fm=jpg&q=80`] }),
@@ -159,6 +159,17 @@ export default async function ListaPage({ params }) {
                     <div style={{fontSize:'13px',color:'var(--text-muted)',lineHeight:1.5,paddingTop:'2px'}}>{txt}</div>
                   </div>
                 ))}
+              </div>
+            </>
+          )}
+
+          {/* DESCRIÇÃO — só aparece se tiver */}
+          {f.descricao && (
+            <>
+              <hr style={{border:'none',borderTop:'1px solid var(--border)'}} />
+              <div>
+                <div style={{fontSize:'11px',fontWeight:500,letterSpacing:'0.1em',textTransform:'uppercase',color:'var(--text-faint)',marginBottom:'12px'}}>Sobre o evento</div>
+                <div style={{fontSize:'15px',color:'var(--text-muted)',lineHeight:1.75,whiteSpace:'pre-line'}}>{f.descricao}</div>
               </div>
             </>
           )}
