@@ -216,12 +216,12 @@ export default function CortesiaPage() {
                 />
                 {erro && <p style={{ fontSize: 12, color: '#ff6b6b', marginTop: 6 }}>{erro}</p>}
               </div>
+              <p style={{ fontSize: 12, color: '#777', lineHeight: 1.5 }}>
+                Ao enviar, você concorda em receber por e-mail novidades e eventos da Direct Network. Pode cancelar quando quiser.
+              </p>
               <button onClick={handleSubmit} disabled={loading} style={{ ...styles.btnPrimary, opacity: loading ? 0.6 : 1, cursor: loading ? 'not-allowed' : 'pointer' }}>
                 {loading ? 'Aguarde...' : 'Enviar'}
               </button>
-              <p style={{ fontSize: 12, color: '#444', textAlign: 'center' }}>
-                Seus dados são usados apenas para controle de acesso.
-              </p>
             </div>
           )}
 
