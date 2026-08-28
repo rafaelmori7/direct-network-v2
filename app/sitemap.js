@@ -1,44 +1,50 @@
-import { getEventos, getListas } from '../lib/contentful'
+import { getTodosEventos, getTodasListas } from '../lib/contentful'
 
 export default async function sitemap() {
   const baseUrl = 'https://www.directnw.com.br'
+  const agora = new Date()
 
   let eventos = []
   let listas = []
+  try { eventos = await getTodosEventos() } catch {}
+  try { listas = await getTodasListas() } catch {}
 
-  try { eventos = await getEventos() } catch {}
-  try { listas = await getListas() } catch {}
+  const eventoUrls = eventos.map(e => {
+    const passou = new Date(e.fields.data) < agora
+    return {
+      url: `${baseUrl}/eventos/${e.fields.slug}`,
+      lastModified: new Date(e.sys.updatedAt),
+      changeFrequency: passou ? 'yearly' : 'weekly',
+      priority: passou ? 0.3 : 0.8,
+    }
+  })
 
-  const eventoUrls = eventos.map(e => ({
-    url: `${baseUrl}/eventos/${e.fields.slug}`,
-    lastModified: new Date(e.sys.updatedAt),
-    changeFrequency: 'weekly',
-    priority: 0.8,
-  }))
-
-  const listaUrls = listas.map(l => ({
-    url: `${baseUrl}/listas/${l.fields.slug}`,
-    lastModified: new Date(l.sys.updatedAt),
-    changeFrequency: 'weekly',
-    priority: 0.7,
-  }))
+  const listaUrls = listas.map(l => {
+    const passou = new Date(l.fields.data) < agora
+    return {
+      url: `${baseUrl}/listas/${l.fields.slug}`,
+      lastModified: new Date(l.sys.updatedAt),
+      changeFrequency: passou ? 'yearly' : 'weekly',
+      priority: passou ? 0.3 : 0.7,
+    }
+  })
 
   return [
     {
       url: baseUrl,
-      lastModified: new Date(),
+      lastModified: agora,
       changeFrequency: 'daily',
       priority: 1,
     },
     {
       url: `${baseUrl}/quem-somos`,
-      lastModified: new Date(),
+      lastModified: agora,
       changeFrequency: 'monthly',
       priority: 0.5,
     },
     {
       url: `${baseUrl}/listas`,
-      lastModified: new Date(),
+      lastModified: agora,
       changeFrequency: 'daily',
       priority: 0.7,
     },
