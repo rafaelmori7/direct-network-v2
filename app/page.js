@@ -1,9 +1,20 @@
 import Nav from './components/Nav'
 import Footer from './components/Footer'
 import EventsGrid from './components/EventsGrid'
-import { getEventos } from '../lib/contentful'
+import Link from 'next/link'
+import { getEventos, getTodosEventos, getTodasListas } from '../lib/contentful'
 
 export const revalidate = 300
+
+function slugify(str) {
+  return String(str || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
 
 export default async function Home() {
   let eventos = []
@@ -11,6 +22,21 @@ export default async function Home() {
     eventos = await getEventos()
   } catch (e) {
     eventos = []
+  }
+
+  // Monta a lista de gêneros a partir de tudo que existe no Contentful
+  let generos = []
+  try {
+    const [todosEventos, todasListas] = await Promise.all([getTodosEventos(), getTodasListas()])
+    const mapa = new Map()
+    ;[...todosEventos, ...todasListas].forEach(i => {
+      const nome = i.fields.gnero
+      const slug = slugify(nome)
+      if (slug && !mapa.has(slug)) mapa.set(slug, nome)
+    })
+    generos = Array.from(mapa, ([slug, nome]) => ({ slug, nome })).sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
+  } catch (e) {
+    generos = []
   }
 
   return (
@@ -30,6 +56,26 @@ export default async function Home() {
             Código já aplicado no link. Só clicar e garantir seu ingresso.
           </p>
         </section>
+
+        {/* GÊNEROS */}
+        {generos.length > 0 && (
+          <nav aria-label="Festas por gênero" style={{padding:'0 var(--px) 32px',display:'flex',flexDirection:'column',alignItems:'center',gap:'12px'}}>
+            <div style={{fontSize:'11px',fontWeight:500,letterSpacing:'0.1em',textTransform:'uppercase',color:'var(--text-faint)'}}>
+              Navegue por gênero
+            </div>
+            <div style={{display:'flex',flexWrap:'wrap',gap:'8px',justifyContent:'center',maxWidth:'640px'}}>
+              {generos.map(g => (
+                <Link
+                  key={g.slug}
+                  href={`/festas/${g.slug}`}
+                  style={{fontSize:'13px',fontWeight:500,color:'var(--text-muted)',background:'var(--bg2)',border:'1px solid var(--border)',padding:'9px 18px',borderRadius:'20px',whiteSpace:'nowrap'}}
+                >
+                  {g.nome}
+                </Link>
+              ))}
+            </div>
+          </nav>
+        )}
 
         {/* EVENTS COM FILTRO */}
         <EventsGrid eventos={eventos} />
