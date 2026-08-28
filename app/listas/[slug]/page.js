@@ -1,4 +1,4 @@
-import { getLista, getListas } from '../../../lib/contentful'
+import { getLista, getTodasListas } from '../../../lib/contentful'
 import Nav from '../../components/Nav'
 import Footer from '../../components/Footer'
 import Link from 'next/link'
@@ -10,7 +10,7 @@ function formatarData(dateStr, opts) {
 
 export async function generateStaticParams() {
   try {
-    const listas = await getListas()
+    const listas = await getTodasListas()
     return listas.map(l => ({ slug: l.fields.slug }))
   } catch { return [] }
 }
@@ -21,8 +21,12 @@ export async function generateMetadata({ params }) {
     if (!lista) return {}
     const f = lista.fields
     const flyerUrl = f.flyer?.fields?.file?.url
+    const passou = new Date(f.data) < new Date()
+    const dataCurta = formatarData(f.data, {day:'2-digit',month:'long',year:'numeric'})
     const title = `${f.nome} — Lista VIP, ${f.benefcio} | Direct Network`
-    const description = `Coloque seu nome na lista VIP de ${f.nome} em ${f.local} e garanta ${f.benefcio.toLowerCase()}.`
+    const description = passou
+      ? `A lista VIP de ${f.nome} em ${f.local} aconteceu em ${dataCurta}. Veja as listas VIP abertas agora.`
+      : `Coloque seu nome na lista VIP de ${f.nome} em ${f.local} e garanta ${f.benefcio.toLowerCase()}.`
     return {
       title,
       description,
@@ -51,6 +55,7 @@ export default async function ListaPage({ params }) {
   const f = lista.fields
   const flyerUrl = f.flyer?.fields?.file?.url
   const dataFormatada = formatarData(f.data, {weekday:'long',day:'2-digit',month:'long',year:'numeric'})
+  const passou = new Date(f.data) < new Date()
 
   const schema = {
     '@context': 'https://schema.org',
@@ -64,7 +69,7 @@ export default async function ListaPage({ params }) {
     eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
     location: { '@type': 'Place', name: f.local, address: { '@type': 'PostalAddress', addressLocality: f.cidade, addressRegion: 'SP', addressCountry: 'BR' } },
     organizer: { '@type': 'Organization', name: 'Direct Network', url: 'https://www.directnw.com.br' },
-    offers: { '@type': 'Offer', url: f.linkDeLista, price: '0', priceCurrency: 'BRL', availability: 'https://schema.org/InStock' },
+    ...(!passou && { offers: { '@type': 'Offer', url: f.linkDeLista, price: '0', priceCurrency: 'BRL', availability: 'https://schema.org/InStock' } }),
   }
 
   return (
@@ -86,8 +91,15 @@ export default async function ListaPage({ params }) {
 
           {/* INFORMAÇÕES PRINCIPAIS */}
           <div>
-            <div style={{display:'inline-flex',alignItems:'center',gap:'7px',fontSize:'11px',fontWeight:600,letterSpacing:'0.1em',textTransform:'uppercase',color:'#C8963C',background:'rgba(200,150,60,0.1)',border:'1px solid rgba(200,150,60,0.25)',padding:'5px 14px',borderRadius:'20px',marginBottom:'10px'}}>
-              Lista VIP — {f.gnero}
+            <div style={{display:'flex',flexWrap:'wrap',gap:'8px',marginBottom:'10px'}}>
+              <div style={{display:'inline-flex',alignItems:'center',gap:'7px',fontSize:'11px',fontWeight:600,letterSpacing:'0.1em',textTransform:'uppercase',color:'#C8963C',background:'rgba(200,150,60,0.1)',border:'1px solid rgba(200,150,60,0.25)',padding:'5px 14px',borderRadius:'20px'}}>
+                Lista VIP — {f.gnero}
+              </div>
+              {passou && (
+                <div style={{display:'inline-flex',alignItems:'center',fontSize:'11px',fontWeight:600,letterSpacing:'0.1em',textTransform:'uppercase',color:'var(--text-muted)',background:'var(--bg3)',border:'1px solid var(--border)',padding:'5px 14px',borderRadius:'20px'}}>
+                  Encerrada
+                </div>
+              )}
             </div>
             <h1 style={{fontFamily:'var(--font-display)',fontSize:'clamp(22px,5vw,32px)',fontWeight:700,lineHeight:1.1,letterSpacing:'-0.02em',marginBottom:'6px'}}>{f.nome}</h1>
             <div style={{fontSize:'15px',color:'var(--text-muted)'}}>{f.local}</div>
@@ -100,40 +112,60 @@ export default async function ListaPage({ params }) {
 
           <hr style={{border:'none',borderTop:'1px solid var(--border)'}} />
 
-          {/* BENEFÍCIO */}
-          <div style={{background:'rgba(200,150,60,0.08)',border:'1px solid rgba(200,150,60,0.2)',borderRadius:'var(--radius)',padding:'16px 18px',display:'flex',alignItems:'center',gap:'12px'}}>
-            <div style={{width:'40px',height:'40px',borderRadius:'8px',background:'rgba(200,150,60,0.15)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-              <svg width="20" height="20" viewBox="0 0 22 22" fill="none" stroke="#C8963C" strokeWidth="1.5" strokeLinecap="round"><polygon points="11,2 13.5,8 20,8.5 15,13 16.5,20 11,17 5.5,20 7,13 2,8.5 8.5,8"/></svg>
-            </div>
-            <div>
-              <div style={{fontFamily:'var(--font-display)',fontSize:'14px',fontWeight:600,color:'#C8963C',marginBottom:'2px'}}>{f.benefcio}</div>
-              <div style={{fontSize:'12px',color:'var(--text-muted)'}}>Coloque seu nome pelo link — sem custo</div>
-            </div>
-          </div>
-
-          {/* BOTÃO PRINCIPAL */}
-          <a href={f.linkDeLista} target="_blank" style={{display:'flex',alignItems:'center',justifyContent:'center',gap:'10px',width:'100%',background:'#C8963C',color:'#fff',fontFamily:'var(--font-display)',fontSize:'15px',fontWeight:600,padding:'16px',borderRadius:'8px'}}>
-            Colocar nome na lista
-          </a>
-
-          {/* COMO FUNCIONA */}
-          <div style={{background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:'var(--radius)',padding:'16px 18px'}}>
-            <div style={{fontSize:'11px',fontWeight:500,letterSpacing:'0.1em',textTransform:'uppercase',color:'var(--text-faint)',marginBottom:'12px'}}>Como funciona</div>
-            {[
-              ['1','Clique em "Colocar nome na lista" e preencha com seu nome completo'],
-              ['2','No dia do evento, chegue até o horário indicado para garantir a entrada'],
-              ['3','Na porta, diga que está na lista Direct Network e apresente seu documento'],
-            ].map(([n, txt]) => (
-              <div key={n} style={{display:'flex',alignItems:'flex-start',gap:'12px',marginBottom:'10px'}}>
-                <div style={{width:'22px',height:'22px',borderRadius:'50%',background:'var(--bg3)',border:'1px solid var(--border)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'11px',fontWeight:600,color:'var(--text-muted)',flexShrink:0}}>{n}</div>
-                <div style={{fontSize:'13px',color:'var(--text-muted)',lineHeight:1.5,paddingTop:'2px'}}>{txt}</div>
+          {passou ? (
+            <>
+              <div style={{background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:'var(--radius)',padding:'20px',textAlign:'center'}}>
+                <div style={{fontFamily:'var(--font-display)',fontSize:'16px',fontWeight:600,marginBottom:'6px'}}>Esta lista já encerrou</div>
+                <p style={{fontSize:'13px',color:'var(--text-muted)',lineHeight:1.6}}>Aconteceu em {dataFormatada}. Veja as listas VIP abertas agora.</p>
               </div>
-            ))}
-          </div>
+
+              <div style={{display:'flex',flexDirection:'column',gap:'10px'}}>
+                <Link href="/listas" style={{display:'flex',alignItems:'center',justifyContent:'center',width:'100%',background:'#C8963C',color:'#fff',fontFamily:'var(--font-display)',fontSize:'15px',fontWeight:600,padding:'16px',borderRadius:'8px'}}>
+                  Ver listas VIP abertas
+                </Link>
+                <Link href="/" style={{display:'flex',alignItems:'center',justifyContent:'center',width:'100%',background:'var(--bg2)',border:'1px solid var(--border)',color:'var(--text)',fontFamily:'var(--font-display)',fontSize:'15px',fontWeight:600,padding:'16px',borderRadius:'8px'}}>
+                  Ver próximos eventos
+                </Link>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* BENEFÍCIO */}
+              <div style={{background:'rgba(200,150,60,0.08)',border:'1px solid rgba(200,150,60,0.2)',borderRadius:'var(--radius)',padding:'16px 18px',display:'flex',alignItems:'center',gap:'12px'}}>
+                <div style={{width:'40px',height:'40px',borderRadius:'8px',background:'rgba(200,150,60,0.15)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                  <svg width="20" height="20" viewBox="0 0 22 22" fill="none" stroke="#C8963C" strokeWidth="1.5" strokeLinecap="round"><polygon points="11,2 13.5,8 20,8.5 15,13 16.5,20 11,17 5.5,20 7,13 2,8.5 8.5,8"/></svg>
+                </div>
+                <div>
+                  <div style={{fontFamily:'var(--font-display)',fontSize:'14px',fontWeight:600,color:'#C8963C',marginBottom:'2px'}}>{f.benefcio}</div>
+                  <div style={{fontSize:'12px',color:'var(--text-muted)'}}>Coloque seu nome pelo link — sem custo</div>
+                </div>
+              </div>
+
+              {/* BOTÃO PRINCIPAL */}
+              <a href={f.linkDeLista} target="_blank" style={{display:'flex',alignItems:'center',justifyContent:'center',gap:'10px',width:'100%',background:'#C8963C',color:'#fff',fontFamily:'var(--font-display)',fontSize:'15px',fontWeight:600,padding:'16px',borderRadius:'8px'}}>
+                Colocar nome na lista
+              </a>
+
+              {/* COMO FUNCIONA */}
+              <div style={{background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:'var(--radius)',padding:'16px 18px'}}>
+                <div style={{fontSize:'11px',fontWeight:500,letterSpacing:'0.1em',textTransform:'uppercase',color:'var(--text-faint)',marginBottom:'12px'}}>Como funciona</div>
+                {[
+                  ['1','Clique em "Colocar nome na lista" e preencha com seu nome completo'],
+                  ['2','No dia do evento, chegue até o horário indicado para garantir a entrada'],
+                  ['3','Na porta, diga que está na lista Direct Network e apresente seu documento'],
+                ].map(([n, txt]) => (
+                  <div key={n} style={{display:'flex',alignItems:'flex-start',gap:'12px',marginBottom:'10px'}}>
+                    <div style={{width:'22px',height:'22px',borderRadius:'50%',background:'var(--bg3)',border:'1px solid var(--border)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'11px',fontWeight:600,color:'var(--text-muted)',flexShrink:0}}>{n}</div>
+                    <div style={{fontSize:'13px',color:'var(--text-muted)',lineHeight:1.5,paddingTop:'2px'}}>{txt}</div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
 
           {/* FLYER — só aparece se tiver */}
           {flyerUrl && (
-            <div style={{borderRadius:'12px',overflow:'hidden',border:'1px solid var(--border)'}}>
+            <div style={{borderRadius:'12px',overflow:'hidden',border:'1px solid var(--border)',opacity: passou ? 0.65 : 1}}>
               <img src={`https:${flyerUrl}`} alt={`Flyer da lista VIP ${f.nome} em ${f.local}`} style={{width:'100%',height:'auto',display:'block'}} />
             </div>
           )}
