@@ -1,4 +1,4 @@
-import { getEvento, getEventos } from '../../../lib/contentful'
+import { getEvento, getTodosEventos } from '../../../lib/contentful'
 import Nav from '../../components/Nav'
 import Footer from '../../components/Footer'
 import Link from 'next/link'
@@ -14,7 +14,7 @@ function formatarHorario(dateStr) {
 
 export async function generateStaticParams() {
   try {
-    const eventos = await getEventos()
+    const eventos = await getTodosEventos()
     return eventos.map(e => ({ slug: e.fields.slug }))
   } catch { return [] }
 }
@@ -26,8 +26,13 @@ export async function generateMetadata({ params }) {
     const f = evento.fields
     const flyerUrl = f.flyer?.fields?.file?.url
     const dataFormatada = formatarData(f.data, {day:'2-digit',month:'long',year:'numeric'})
-    const title = `${f.nome} — ${dataFormatada} | Direct Network`
-    const description = `${f.nome} em ${f.local}, ${f.cidade}. Garanta seu ingresso com desconto exclusivo Direct Network.`
+    const passou = new Date(f.data) < new Date()
+    const title = passou
+      ? `${f.nome} — ${dataFormatada} | Direct Network`
+      : `${f.nome} — ${dataFormatada} | Direct Network`
+    const description = passou
+      ? `${f.nome} aconteceu em ${dataFormatada} no ${f.local}, ${f.cidade}. Veja os próximos eventos com desconto exclusivo Direct Network.`
+      : `${f.nome} em ${f.local}, ${f.cidade}. Garanta seu ingresso com desconto exclusivo Direct Network.`
     return {
       title,
       description,
@@ -57,6 +62,7 @@ export default async function EventoPage({ params }) {
   const flyerUrl = f.flyer?.fields?.file?.url
   const dataFormatada = formatarData(f.data, {weekday:'long',day:'2-digit',month:'long',year:'numeric'})
   const horario = formatarHorario(f.data)
+  const passou = new Date(f.data) < new Date()
 
   const schema = {
     '@context': 'https://schema.org',
@@ -70,7 +76,7 @@ export default async function EventoPage({ params }) {
     eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
     location: { '@type': 'Place', name: f.local, address: { '@type': 'PostalAddress', addressLocality: f.cidade, addressRegion: 'SP', addressCountry: 'BR' } },
     organizer: { '@type': 'Organization', name: 'Direct Network', url: 'https://www.directnw.com.br' },
-    offers: { '@type': 'Offer', url: f.linkAfiliado, availability: 'https://schema.org/InStock' },
+    ...(!passou && { offers: { '@type': 'Offer', url: f.linkAfiliado, availability: 'https://schema.org/InStock' } }),
   }
 
   return (
@@ -92,7 +98,7 @@ export default async function EventoPage({ params }) {
           <div className="detail-grid">
             {/* FLYER */}
             <div className="detail-flyer" style={{position:'sticky',top:'88px'}}>
-              <div style={{width:'100%',borderRadius:'12px',overflow:'hidden',background:'#534AB715',border:'1px solid rgba(83,74,183,0.2)'}}>
+              <div style={{width:'100%',borderRadius:'12px',overflow:'hidden',background:'#534AB715',border:'1px solid rgba(83,74,183,0.2)',opacity: passou ? 0.65 : 1}}>
                 {flyerUrl ? (
                   <img src={`https:${flyerUrl}`} alt={`Flyer do evento ${f.nome} em ${f.cidade}`} style={{width:'100%',height:'auto',display:'block'}} />
                 ) : (
@@ -107,7 +113,12 @@ export default async function EventoPage({ params }) {
             {/* CONTENT */}
             <div style={{display:'flex',flexDirection:'column',gap:'20px',paddingTop:'4px'}}>
               <div>
-                <div style={{display:'inline-block',fontSize:'11px',fontWeight:500,letterSpacing:'0.08em',textTransform:'uppercase',color:'var(--pink)',background:'rgba(233,30,140,0.1)',border:'1px solid rgba(233,30,140,0.2)',padding:'4px 12px',borderRadius:'20px',marginBottom:'8px'}}>{f.gnero}</div>
+                <div style={{display:'flex',flexWrap:'wrap',gap:'8px',marginBottom:'8px'}}>
+                  <div style={{display:'inline-block',fontSize:'11px',fontWeight:500,letterSpacing:'0.08em',textTransform:'uppercase',color:'var(--pink)',background:'rgba(233,30,140,0.1)',border:'1px solid rgba(233,30,140,0.2)',padding:'4px 12px',borderRadius:'20px'}}>{f.gnero}</div>
+                  {passou && (
+                    <div style={{display:'inline-block',fontSize:'11px',fontWeight:500,letterSpacing:'0.08em',textTransform:'uppercase',color:'var(--text-muted)',background:'var(--bg3)',border:'1px solid var(--border)',padding:'4px 12px',borderRadius:'20px'}}>Evento encerrado</div>
+                  )}
+                </div>
                 <h1 style={{fontFamily:'var(--font-display)',fontSize:'clamp(24px,5vw,36px)',fontWeight:700,lineHeight:1.1,letterSpacing:'-0.02em',marginBottom:'6px'}}>{f.nome}</h1>
                 <div style={{fontSize:'15px',color:'var(--text-muted)'}}>{f.local}</div>
               </div>
@@ -121,27 +132,47 @@ export default async function EventoPage({ params }) {
 
               <hr style={{border:'none',borderTop:'1px solid var(--border)'}} />
 
-              <div style={{background:'rgba(233,30,140,0.05)',border:'1px solid rgba(233,30,140,0.25)',borderRadius:'var(--radius)',padding:'16px',display:'flex',alignItems:'center',gap:'12px'}}>
-                <div style={{width:'40px',height:'40px',borderRadius:'8px',background:'rgba(233,30,140,0.12)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                  <svg width="20" height="20" viewBox="0 0 22 22" fill="none" stroke="#E91E8C" strokeWidth="1.5" strokeLinecap="round"><path d="M10 3H6a2 2 0 00-2 2v4l8.5 8.5a1.5 1.5 0 002.1 0l4-4a1.5 1.5 0 000-2.1L10 3z"/><circle cx="7.5" cy="7.5" r="1" fill="#E91E8C" stroke="none"/></svg>
-                </div>
-                <div>
-                  <div style={{fontFamily:'var(--font-display)',fontSize:'14px',fontWeight:600,marginBottom:'2px'}}>Desconto exclusivo Direct Network</div>
-                  <div style={{fontSize:'12px',color:'var(--text-muted)'}}>Já aplicado no link — só clicar e comprar</div>
-                </div>
-              </div>
+              {passou ? (
+                <>
+                  <div style={{background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:'var(--radius)',padding:'20px',textAlign:'center'}}>
+                    <div style={{fontFamily:'var(--font-display)',fontSize:'16px',fontWeight:600,marginBottom:'6px'}}>Este evento já aconteceu</div>
+                    <p style={{fontSize:'13px',color:'var(--text-muted)',lineHeight:1.6}}>Aconteceu em {dataFormatada}. Confira a agenda dos próximos eventos com desconto exclusivo.</p>
+                  </div>
 
-              {/* BOTÕES DE COMPRA */}
-              <div style={{display:'flex',flexDirection:'column',gap:'10px'}}>
-                <a href={f.linkAfiliado} target="_blank" style={{display:'flex',alignItems:'center',justifyContent:'center',width:'100%',background:'var(--pink)',color:'#fff',fontFamily:'var(--font-display)',fontSize:'15px',fontWeight:600,padding:'16px',borderRadius:'8px'}}>
-                  Garantir ingresso com desconto
-                </a>
-                {f.linkPix && (
-                  <a href={f.linkPix} target="_blank" style={{display:'flex',alignItems:'center',justifyContent:'center',width:'100%',background:'#32BCAD',color:'#fff',fontFamily:'var(--font-display)',fontSize:'15px',fontWeight:600,padding:'16px',borderRadius:'8px'}}>
-                    Pagar no Pix sem taxa
-                  </a>
-                )}
-              </div>
+                  <div style={{display:'flex',flexDirection:'column',gap:'10px'}}>
+                    <Link href="/" style={{display:'flex',alignItems:'center',justifyContent:'center',width:'100%',background:'var(--pink)',color:'#fff',fontFamily:'var(--font-display)',fontSize:'15px',fontWeight:600,padding:'16px',borderRadius:'8px'}}>
+                      Ver próximos eventos
+                    </Link>
+                    <Link href="/listas" style={{display:'flex',alignItems:'center',justifyContent:'center',width:'100%',background:'var(--bg2)',border:'1px solid var(--border)',color:'var(--text)',fontFamily:'var(--font-display)',fontSize:'15px',fontWeight:600,padding:'16px',borderRadius:'8px'}}>
+                      Ver listas VIP
+                    </Link>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div style={{background:'rgba(233,30,140,0.05)',border:'1px solid rgba(233,30,140,0.25)',borderRadius:'var(--radius)',padding:'16px',display:'flex',alignItems:'center',gap:'12px'}}>
+                    <div style={{width:'40px',height:'40px',borderRadius:'8px',background:'rgba(233,30,140,0.12)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                      <svg width="20" height="20" viewBox="0 0 22 22" fill="none" stroke="#E91E8C" strokeWidth="1.5" strokeLinecap="round"><path d="M10 3H6a2 2 0 00-2 2v4l8.5 8.5a1.5 1.5 0 002.1 0l4-4a1.5 1.5 0 000-2.1L10 3z"/><circle cx="7.5" cy="7.5" r="1" fill="#E91E8C" stroke="none"/></svg>
+                    </div>
+                    <div>
+                      <div style={{fontFamily:'var(--font-display)',fontSize:'14px',fontWeight:600,marginBottom:'2px'}}>Desconto exclusivo Direct Network</div>
+                      <div style={{fontSize:'12px',color:'var(--text-muted)'}}>Já aplicado no link — só clicar e comprar</div>
+                    </div>
+                  </div>
+
+                  {/* BOTÕES DE COMPRA */}
+                  <div style={{display:'flex',flexDirection:'column',gap:'10px'}}>
+                    <a href={f.linkAfiliado} target="_blank" style={{display:'flex',alignItems:'center',justifyContent:'center',width:'100%',background:'var(--pink)',color:'#fff',fontFamily:'var(--font-display)',fontSize:'15px',fontWeight:600,padding:'16px',borderRadius:'8px'}}>
+                      Garantir ingresso com desconto
+                    </a>
+                    {f.linkPix && (
+                      <a href={f.linkPix} target="_blank" style={{display:'flex',alignItems:'center',justifyContent:'center',width:'100%',background:'#32BCAD',color:'#fff',fontFamily:'var(--font-display)',fontSize:'15px',fontWeight:600,padding:'16px',borderRadius:'8px'}}>
+                        Pagar no Pix sem taxa
+                      </a>
+                    )}
+                  </div>
+                </>
+              )}
 
               {f.descrio && (
                 <>
