@@ -4,6 +4,15 @@ import { useState } from 'react'
 const SPACE_ID = 'jlayhg56ixnc'
 const ACCESS_TOKEN = 'LlltVYQHPrduF1DBWcyJRRuGws0YpaenPH9ljMSm7F0'
 const SENHA = '121576'
+const SITE = 'https://www.directnw.com.br'
+
+function urlLista(f) {
+  return f.slug ? `${SITE}/listas/${f.slug}` : (f.linkCurto || f.linkDeLista || '')
+}
+
+function urlEvento(f) {
+  return f.slug ? `${SITE}/eventos/${f.slug}` : (f.linkCurto || f.linkAfiliado || '')
+}
 
 function formatDataCurta(dateStr) {
   const d = new Date(dateStr)
@@ -102,13 +111,13 @@ function gerarTextoListas(listas, incluirFestas, eventos, soFestas = false) {
     listas.forEach(l => {
       const f = l.fields
       texto += `* ${f.nome} — ${f.local}\n`
-      texto += `📝 ${f.benefcio}: ${f.linkCurto || f.linkDeLista || ''}\n`
+      texto += `📝 ${f.benefcio}: ${urlLista(f)}\n`
     })
 
     eventos.forEach(e => {
       const f = e.fields
       texto += `* ${f.nome}\n`
-      texto += `🎟️ ${f.linkCurto || f.linkAfiliado || ''}\n`
+      texto += `🎟️ ${urlEvento(f)}\n`
     })
 
     texto += '\n'
@@ -124,8 +133,7 @@ function gerarTextoCalendario(eventos) {
     const f = e.fields
     const data = formatDataCurta(f.data)
     texto += `📅 ${data} - ${f.nome}\n`
-    texto += `🎟️ ${f.linkCurto || f.linkAfiliado || ''}\n`
-    if (f.linkPix) texto += `💰 Pix sem taxa: ${f.linkPix}\n`
+    texto += `🎟️ ${urlEvento(f)}\n`
     texto += '\n'
   })
 
