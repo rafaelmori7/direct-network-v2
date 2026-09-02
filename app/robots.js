@@ -3,7 +3,7 @@ export default function robots() {
     rules: {
       userAgent: '*',
       allow: '/',
-      disallow: ['/cortesia/', '/api/'],
+      disallow: ['/api/'],
     },
     sitemap: 'https://www.directnw.com.br/sitemap.xml',
   }
