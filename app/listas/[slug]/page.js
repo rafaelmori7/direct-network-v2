@@ -27,14 +27,17 @@ export async function generateMetadata({ params }) {
     const description = passou
       ? `A lista VIP de ${f.nome} em ${f.local} aconteceu em ${dataCurta}. Veja as listas VIP abertas agora.`
       : `Coloque seu nome na lista VIP de ${f.nome} em ${f.local} e garanta ${f.benefcio.toLowerCase()}.`
+    const url = `https://www.directnw.com.br/listas/${params.slug}`
     return {
       title,
       description,
+      alternates: { canonical: `/listas/${params.slug}` },
       openGraph: {
         title,
         description,
         type: 'website',
         siteName: 'Direct Network',
+        url,
         images: flyerUrl ? [{ url: `https:${flyerUrl}?w=1200&fm=jpg&q=80`, width: 1200, height: 630, alt: f.nome }] : [],
       },
       twitter: {

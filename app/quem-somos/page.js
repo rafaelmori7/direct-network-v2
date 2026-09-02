@@ -4,6 +4,7 @@ import Footer from '../components/Footer'
 export const metadata = {
   title: 'Quem Somos | Direct Network',
   description: 'A Direct Network conecta você às melhores festas do Brasil com desconto exclusivo, lista VIP e cortesias. Curadoria ativa, parcerias diretas com produtores e venues.',
+  alternates: { canonical: '/quem-somos' },
 }
 
 export default function QuemSomosPage() {

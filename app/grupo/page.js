@@ -4,6 +4,7 @@ import Footer from '../components/Footer'
 export const metadata = {
   title: 'Entrar no Grupo — Direct Network',
   description: 'Escolha entre o grupo gratuito ou o acesso VIP da Direct Network.',
+  alternates: { canonical: '/grupo' },
 }
 
 export default function GrupoPage() {

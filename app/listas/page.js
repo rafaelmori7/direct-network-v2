@@ -8,6 +8,7 @@ export const revalidate = 300
 export const metadata = {
   title: 'Listas VIP | Direct Network',
   description: 'Coloque seu nome na lista VIP e entre grátis ou com desconto nas melhores festas de São Paulo.',
+  alternates: { canonical: '/listas' },
 }
 
 const DIAS = ['domingo','segunda','terça','quarta','quinta','sexta','sábado']
