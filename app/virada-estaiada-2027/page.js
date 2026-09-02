@@ -5,15 +5,19 @@ const TITLE = 'Virada Estaiada 2027 | Ingressos com Desconto — Cupom DIRECT'
 const DESCRIPTION = 'Ingressos para a Virada Estaiada 2027 com desconto pelo cupom DIRECT. Open bar e open food premium no Varanda Estaiada, 31 de dezembro, das 20h às 3h.'
 const IMAGE_PATH = '/virada-estaiada-2027.jpg'
 const IMAGE_URL = `https://www.directnw.com.br${IMAGE_PATH}`
+const PAGE_PATH = '/virada-estaiada-2027'
+const PAGE_URL = `https://www.directnw.com.br${PAGE_PATH}`
 
 export const metadata = {
   title: TITLE,
   description: DESCRIPTION,
+  alternates: { canonical: PAGE_PATH },
   openGraph: {
     title: TITLE,
     description: DESCRIPTION,
     type: 'website',
     siteName: 'Direct Network',
+    url: PAGE_URL,
     images: [{ url: IMAGE_PATH, width: 1200, height: 630, alt: 'Virada Estaiada' }],
   },
   twitter: {

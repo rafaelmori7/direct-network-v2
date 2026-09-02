@@ -33,14 +33,17 @@ export async function generateMetadata({ params }) {
     const description = passou
       ? `${f.nome} aconteceu em ${dataFormatada} no ${f.local}, ${f.cidade}. Veja os próximos eventos com desconto exclusivo Direct Network.`
       : `${f.nome} em ${f.local}, ${f.cidade}. Garanta seu ingresso com desconto exclusivo Direct Network.`
+    const url = `https://www.directnw.com.br/eventos/${params.slug}`
     return {
       title,
       description,
+      alternates: { canonical: `/eventos/${params.slug}` },
       openGraph: {
         title,
         description,
         type: 'website',
         siteName: 'Direct Network',
+        url,
         images: flyerUrl ? [{ url: `https:${flyerUrl}?w=1200&fm=jpg&q=80`, width: 1200, height: 630, alt: f.nome }] : [],
       },
       twitter: {

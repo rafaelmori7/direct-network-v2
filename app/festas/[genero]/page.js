@@ -66,7 +66,8 @@ export async function generateMetadata({ params }) {
   return {
     title,
     description,
-    openGraph: { title, description, type: 'website', siteName: 'Direct Network' },
+    alternates: { canonical: `/festas/${params.genero}` },
+    openGraph: { title, description, type: 'website', siteName: 'Direct Network', url: `https://www.directnw.com.br/festas/${params.genero}` },
   }
 }
 
