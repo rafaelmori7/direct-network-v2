@@ -48,6 +48,12 @@ export default async function sitemap() {
       changeFrequency: 'daily',
       priority: 0.7,
     },
+    {
+      url: `${baseUrl}/virada-estaiada-2027`,
+      lastModified: agora,
+      changeFrequency: 'weekly',
+      priority: 0.8,
+    },
     ...eventoUrls,
     ...listaUrls,
   ]
