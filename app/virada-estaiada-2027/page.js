@@ -3,11 +3,25 @@ import Footer from '../components/Footer'
 
 const TITLE = 'Virada Estaiada 2027 | Ingressos com Desconto — Cupom DIRECT'
 const DESCRIPTION = 'Ingressos para a Virada Estaiada 2027 com desconto pelo cupom DIRECT. Open bar e open food premium no Varanda Estaiada, 31 de dezembro, das 20h às 3h.'
+const IMAGE_PATH = '/virada-estaiada-2027.jpg'
+const IMAGE_URL = `https://www.directnw.com.br${IMAGE_PATH}`
 
 export const metadata = {
   title: TITLE,
   description: DESCRIPTION,
-  openGraph: { title: TITLE, description: DESCRIPTION, type: 'website', siteName: 'Direct Network' },
+  openGraph: {
+    title: TITLE,
+    description: DESCRIPTION,
+    type: 'website',
+    siteName: 'Direct Network',
+    images: [{ url: IMAGE_PATH, width: 1200, height: 630, alt: 'Virada Estaiada' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: TITLE,
+    description: DESCRIPTION,
+    images: [IMAGE_PATH],
+  },
 }
 
 // Vendas abrem em 10/09. Quando o cupom/link de afiliado estiverem confirmados,
@@ -25,7 +39,7 @@ const schema = {
   endDate: '2027-01-01T03:00:00-03:00',
   eventStatus: 'https://schema.org/EventScheduled',
   eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
-  // image: pendência — adicionar quando a foto de capa (edição anterior) estiver definida
+  image: [IMAGE_URL],
   location: {
     '@type': 'Place',
     name: 'Varanda Estaiada',
@@ -105,6 +119,9 @@ export default function ViradaEstaiada2027Page() {
           <h1 style={{fontFamily:'var(--font-display)',fontSize:'clamp(28px,5vw,44px)',fontWeight:700,lineHeight:1.15,letterSpacing:'-0.02em',marginBottom:'20px'}}>
             Virada Estaiada 2027: réveillon no Varanda Estaiada, em São Paulo
           </h1>
+          <div style={{width:'100%',borderRadius:'12px',overflow:'hidden',border:'1px solid var(--border)',marginBottom:'24px'}}>
+            <img src={IMAGE_PATH} alt="Virada Estaiada — réveillon no Varanda Estaiada, em São Paulo" style={{width:'100%',height:'auto',display:'block'}} />
+          </div>
           <p style={{fontSize:'16px',color:'var(--text-muted)',lineHeight:1.75,marginBottom:'16px'}}>
             A Virada Estaiada volta em 31 de dezembro de 2026 para receber 2027 do melhor ângulo da cidade, com a Ponte Estaiada de moldura. Open bar premium, open food premium e atração musical ao vivo, das 20h às 3h.
           </p>
