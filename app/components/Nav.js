@@ -10,7 +10,7 @@ export default function Nav() {
   return (
     <>
       <div style={{background:'var(--pink)',padding:'9px 20px',textAlign:'center',fontSize:'12px',fontWeight:500,letterSpacing:'0.06em',textTransform:'uppercase',color:'#fff'}}>
-        Desconto já aplicado no link — sem código necessário
+        Desconto já aplicado no link — CUPOM: DIRECT
       </div>
 
       <nav style={{background:'var(--bg)',borderBottom:'1px solid var(--border)',padding:'0 20px',height:'56px',display:'flex',alignItems:'center',justifyContent:'space-between',position:'sticky',top:0,zIndex:200}}>
