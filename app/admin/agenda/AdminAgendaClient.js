@@ -1,8 +1,6 @@
 'use client'
 import { useState } from 'react'
 
-const SPACE_ID = 'jlayhg56ixnc'
-const ACCESS_TOKEN = 'LlltVYQHPrduF1DBWcyJRRuGws0YpaenPH9ljMSm7F0'
 const SENHA = '121576'
 const SITE = 'https://www.directnw.com.br'
 
@@ -41,19 +39,13 @@ function getSemanaAtual() {
 }
 
 async function fetchListas() {
-  const hoje = new Date().toISOString()
-  const res = await fetch(`https://cdn.contentful.com/spaces/${SPACE_ID}/entries?content_type=lista&fields.data[gte]=${hoje}&order=fields.data&limit=100`, {
-    headers: { Authorization: `Bearer ${ACCESS_TOKEN}` }
-  })
+  const res = await fetch('/api/admin/agenda?tipo=listas')
   const data = await res.json()
   return data.items || []
 }
 
 async function fetchEventos() {
-  const hoje = new Date().toISOString()
-  const res = await fetch(`https://cdn.contentful.com/spaces/${SPACE_ID}/entries?content_type=evento&fields.data[gte]=${hoje}&order=fields.data&limit=100`, {
-    headers: { Authorization: `Bearer ${ACCESS_TOKEN}` }
-  })
+  const res = await fetch('/api/admin/agenda?tipo=eventos')
   const data = await res.json()
   return data.items || []
 }

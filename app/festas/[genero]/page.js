@@ -1,4 +1,4 @@
-import { getTodosEventos, getTodasListas } from '../../../lib/contentful'
+import { getTodosEventos, getTodasListas, eventoPassou } from '../../../lib/contentful'
 import Nav from '../../components/Nav'
 import Footer from '../../components/Footer'
 import Link from 'next/link'
@@ -33,10 +33,10 @@ async function getDadosGenero(generoSlug) {
 
   const agora = new Date()
   const proximos = itens
-    .filter(i => new Date(i.fields.data) >= agora)
+    .filter(i => !eventoPassou(i.fields.data, agora))
     .sort((a, b) => new Date(a.fields.data) - new Date(b.fields.data))
   const passados = itens
-    .filter(i => new Date(i.fields.data) < agora)
+    .filter(i => eventoPassou(i.fields.data, agora))
     .sort((a, b) => new Date(b.fields.data) - new Date(a.fields.data))
     .slice(0, 12)
 
@@ -75,7 +75,7 @@ function Card({ item }) {
   const f = item.fields
   const flyerUrl = f.flyer?.fields?.file?.url
   const href = item.tipo === 'lista' ? `/listas/${f.slug}` : `/eventos/${f.slug}`
-  const passou = new Date(f.data) < new Date()
+  const passou = eventoPassou(f.data)
   const ehLista = item.tipo === 'lista'
 
   return (

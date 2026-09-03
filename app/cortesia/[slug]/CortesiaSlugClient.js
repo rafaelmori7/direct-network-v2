@@ -2,44 +2,12 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 
-const SPACE_ID = 'jlayhg56ixnc'
-const ACCESS_TOKEN = 'LlltVYQHPrduF1DBWcyJRRuGws0YpaenPH9ljMSm7F0'
 const LINK_GRUPO = 'https://chat.whatsapp.com/DYcOSP7iF8U3OYgBHpU0tG'
 
 async function getCortesia(slug) {
-  const url = `https://cdn.contentful.com/spaces/${SPACE_ID}/entries?content_type=cortesia&fields.slug=${slug}&include=1`
-  const res = await fetch(url, {
-    headers: { Authorization: `Bearer ${ACCESS_TOKEN}` },
-  })
-  const data = await res.json()
-  if (!data.items || data.items.length === 0) return null
-
-  const item = data.items[0].fields
-  const assets = data.includes?.Asset || []
-
-  let imagemUrl = null
-  if (item.imagem) {
-    const assetId = item.imagem.sys.id
-    const asset = assets.find(a => a.sys.id === assetId)
-    if (asset) imagemUrl = 'https:' + asset.fields.file.url
-  }
-
-  return {
-    nome: item.nome || '',
-    data: item.data || '',
-    horario: item.horrio || '',
-    local: item.local || '',
-    endereco: item.endereo || '',
-    imagemUrl,
-    linkCortesia: item.linkCortesia || '',
-    appsScriptUrl: item.appsScriptUrl || '',
-    linkCortesiaMasc: item.linkCortesiaMasc || '',
-    appsScriptUrlMasc: item.appsScriptUrlMasc || '',
-    ativo: item.ativo !== false,
-    mensagemEncerrada: item.mensagemEncerrada || 'As cortesias para este evento foram encerradas.',
-    linkWhatsApp: item.linkWhatsApp || '',
-    descricao: item.descricao || '',
-  }
+  const res = await fetch(`/api/cortesia/${slug}`)
+  if (!res.ok) return null
+  return res.json()
 }
 
 export default function CortesiaSlugClient() {
