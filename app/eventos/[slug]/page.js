@@ -1,4 +1,4 @@
-import { getEvento, getTodosEventos } from '../../../lib/contentful'
+import { getEvento, getTodosEventos, eventoPassou } from '../../../lib/contentful'
 import Nav from '../../components/Nav'
 import Footer from '../../components/Footer'
 import Link from 'next/link'
@@ -26,7 +26,7 @@ export async function generateMetadata({ params }) {
     const f = evento.fields
     const flyerUrl = f.flyer?.fields?.file?.url
     const dataFormatada = formatarData(f.data, {day:'2-digit',month:'long',year:'numeric'})
-    const passou = new Date(f.data) < new Date()
+    const passou = eventoPassou(f.data)
     const title = passou
       ? `${f.nome} — Evento Encerrado`
       : `${f.nome} | Ingressos com Desconto`
@@ -65,7 +65,7 @@ export default async function EventoPage({ params }) {
   const flyerUrl = f.flyer?.fields?.file?.url
   const dataFormatada = formatarData(f.data, {weekday:'long',day:'2-digit',month:'long',year:'numeric'})
   const horario = formatarHorario(f.data)
-  const passou = new Date(f.data) < new Date()
+  const passou = eventoPassou(f.data)
 
   const schema = {
     '@context': 'https://schema.org',

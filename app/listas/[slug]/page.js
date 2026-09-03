@@ -1,4 +1,4 @@
-import { getLista, getTodasListas } from '../../../lib/contentful'
+import { getLista, getTodasListas, eventoPassou } from '../../../lib/contentful'
 import Nav from '../../components/Nav'
 import Footer from '../../components/Footer'
 import Link from 'next/link'
@@ -21,7 +21,7 @@ export async function generateMetadata({ params }) {
     if (!lista) return {}
     const f = lista.fields
     const flyerUrl = f.flyer?.fields?.file?.url
-    const passou = new Date(f.data) < new Date()
+    const passou = eventoPassou(f.data)
     const dataCurta = formatarData(f.data, {day:'2-digit',month:'long',year:'numeric'})
     const title = `${f.nome} — Lista VIP, ${f.benefcio} | Direct Network`
     const description = passou
@@ -58,7 +58,7 @@ export default async function ListaPage({ params }) {
   const f = lista.fields
   const flyerUrl = f.flyer?.fields?.file?.url
   const dataFormatada = formatarData(f.data, {weekday:'long',day:'2-digit',month:'long',year:'numeric'})
-  const passou = new Date(f.data) < new Date()
+  const passou = eventoPassou(f.data)
 
   const schema = {
     '@context': 'https://schema.org',
