@@ -1,17 +1,4 @@
-import { getTodosEventos, getTodasListas } from '../lib/contentful'
-
-// /cortesia/[slug] busca direto na Content Delivery API (mesmas credenciais
-// já expostas no bundle do cliente em app/cortesia/[slug]/CortesiaSlugClient.js),
-// em vez do client server-side de lib/contentful.js — mantemos o mesmo acesso aqui.
-const CORTESIA_SPACE_ID = 'jlayhg56ixnc'
-const CORTESIA_ACCESS_TOKEN = 'LlltVYQHPrduF1DBWcyJRRuGws0YpaenPH9ljMSm7F0'
-
-async function getTodasCortesias() {
-  const url = `https://cdn.contentful.com/spaces/${CORTESIA_SPACE_ID}/entries?content_type=cortesia&select=fields.slug,sys.updatedAt&limit=1000`
-  const res = await fetch(url, { headers: { Authorization: `Bearer ${CORTESIA_ACCESS_TOKEN}` } })
-  const data = await res.json()
-  return data.items || []
-}
+import { getTodosEventos, getTodasListas, getTodasCortesias } from '../lib/contentful'
 
 export default async function sitemap() {
   const baseUrl = 'https://www.directnw.com.br'
