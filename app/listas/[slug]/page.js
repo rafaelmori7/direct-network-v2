@@ -8,6 +8,21 @@ function formatarData(dateStr, opts) {
   return new Date(dateStr).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo', ...opts })
 }
 
+function normalizar(str) {
+  return String(str || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+}
+
+function casaJaMencionada(nome, local) {
+  const nomeNorm = normalizar(nome)
+  return normalizar(local)
+    .split(/\s+/)
+    .filter(palavra => palavra.length > 3)
+    .some(palavra => nomeNorm.includes(palavra))
+}
+
 export async function generateStaticParams() {
   try {
     const listas = await getTodasListas()
@@ -96,7 +111,7 @@ export default async function ListaPage({ params }) {
           <div>
             <div style={{display:'flex',flexWrap:'wrap',gap:'8px',marginBottom:'10px'}}>
               <div style={{display:'inline-flex',alignItems:'center',gap:'7px',fontSize:'11px',fontWeight:600,letterSpacing:'0.1em',textTransform:'uppercase',color:'#C8963C',background:'rgba(200,150,60,0.1)',border:'1px solid rgba(200,150,60,0.25)',padding:'5px 14px',borderRadius:'20px'}}>
-                Lista VIP — {f.gnero}
+                {f.gnero}
               </div>
               {passou && (
                 <div style={{display:'inline-flex',alignItems:'center',fontSize:'11px',fontWeight:600,letterSpacing:'0.1em',textTransform:'uppercase',color:'var(--text-muted)',background:'var(--bg3)',border:'1px solid var(--border)',padding:'5px 14px',borderRadius:'20px'}}>
@@ -104,8 +119,10 @@ export default async function ListaPage({ params }) {
                 </div>
               )}
             </div>
-            <h1 style={{fontFamily:'var(--font-display)',fontSize:'clamp(22px,5vw,32px)',fontWeight:700,lineHeight:1.1,letterSpacing:'-0.02em',marginBottom:'6px'}}>{f.nome}</h1>
-            <div style={{fontSize:'15px',color:'var(--text-muted)'}}>{f.local}</div>
+            <h1 style={{fontFamily:'var(--font-display)',fontSize:'clamp(22px,5vw,32px)',fontWeight:700,lineHeight:1.1,letterSpacing:'-0.02em',marginBottom:'6px'}}>
+              Lista VIP {f.nome}
+              {!casaJaMencionada(f.nome, f.local) && ` — ${f.local}`}
+            </h1>
           </div>
 
           <div style={{display:'flex',flexWrap:'wrap',gap:'10px'}}>
