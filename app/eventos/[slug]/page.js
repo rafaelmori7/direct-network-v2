@@ -28,11 +28,11 @@ export async function generateMetadata({ params }) {
     const dataFormatada = formatarData(f.data, {day:'2-digit',month:'long',year:'numeric'})
     const passou = new Date(f.data) < new Date()
     const title = passou
-      ? `${f.nome} — ${dataFormatada} | Direct Network`
-      : `${f.nome} — ${dataFormatada} | Direct Network`
+      ? `${f.nome} — Evento Encerrado`
+      : `${f.nome} | Ingressos com Desconto`
     const description = passou
       ? `${f.nome} aconteceu em ${dataFormatada} no ${f.local}, ${f.cidade}. Veja os próximos eventos com desconto exclusivo Direct Network.`
-      : `${f.nome} em ${f.local}, ${f.cidade}. Garanta seu ingresso com desconto exclusivo Direct Network.`
+      : `${f.nome} em ${f.local}, ${f.cidade}. Use o cupom DIRECT e garanta seu ingresso com desconto exclusivo Direct Network.`
     const url = `https://www.directnw.com.br/eventos/${params.slug}`
     return {
       title,
@@ -73,7 +73,6 @@ export default async function EventoPage({ params }) {
     name: f.nome,
     description: f.descrio || `${f.nome} em ${f.local}, ${f.cidade}.`,
     startDate: f.data,
-    endDate: new Date(new Date(f.data).getTime() + 6 * 60 * 60 * 1000).toISOString(),
     ...(flyerUrl && { image: [`https:${flyerUrl}?w=1200&fm=jpg&q=80`] }),
     eventStatus: 'https://schema.org/EventScheduled',
     eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
@@ -174,6 +173,12 @@ export default async function EventoPage({ params }) {
                       </a>
                     )}
                   </div>
+
+                  {f.plataforma && (
+                    <p style={{fontSize:'13px',color:'var(--text-muted)',lineHeight:1.6}}>
+                      Os ingressos do {f.nome} são vendidos pela {f.plataforma}. Comprando pelo link da Direct, o cupom DIRECT já vem aplicado.
+                    </p>
+                  )}
                 </>
               )}
 
