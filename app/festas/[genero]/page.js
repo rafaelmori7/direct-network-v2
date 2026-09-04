@@ -4,6 +4,8 @@ import Footer from '../../components/Footer'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
+export const revalidate = 3600
+
 function slugify(str) {
   return String(str || '')
     .normalize('NFD')
