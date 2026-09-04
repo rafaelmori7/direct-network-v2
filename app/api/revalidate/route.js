@@ -23,7 +23,9 @@ export async function POST(request) {
   try { body = await request.json() } catch {}
 
   const contentType = body?.sys?.contentType?.sys?.id
-  const rotas = ROTAS_POR_TIPO[contentType] || TODAS_AS_ROTAS
+  // /sitemap.xml agrega evento + lista + cortesia, entao revalida sempre,
+  // independente do content_type que disparou o webhook
+  const rotas = [...(ROTAS_POR_TIPO[contentType] || TODAS_AS_ROTAS), ['/sitemap.xml', undefined]]
 
   rotas.forEach(([path, type]) => revalidatePath(path, type))
 
