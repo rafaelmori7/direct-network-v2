@@ -119,7 +119,7 @@ export default function CortesiaClient() {
               fontFamily: 'var(--font-display, sans-serif)',
               fontSize: 26,
               fontWeight: 800,
-              color: '#f0f0f0',
+              color: 'var(--text)',
               lineHeight: 1.2,
               marginBottom: 14,
             }}>
@@ -139,11 +139,11 @@ export default function CortesiaClient() {
           {!resgatado ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div>
-                <p style={{ fontSize: 14, color: '#aaa', lineHeight: 1.55, marginBottom: 16 }}>
+                <p style={{ fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.55, marginBottom: 16 }}>
                   Informe seu e-mail para liberar o link do ingresso gratuito.
                 </p>
 
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: '#ccc', marginBottom: 8 }}>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-muted)', marginBottom: 8 }}>
                   Seu e-mail
                 </label>
                 <input
@@ -157,7 +157,7 @@ export default function CortesiaClient() {
                     background: '#0a0a0a',
                     border: `1px solid ${erro ? '#ff6b6b' : '#242424'}`,
                     borderRadius: 12,
-                    color: '#f0f0f0',
+                    color: 'var(--text)',
                     fontSize: 15,
                     padding: '13px 16px',
                     outline: 'none',
@@ -189,7 +189,7 @@ export default function CortesiaClient() {
                 {loading ? 'Aguarde...' : 'Liberar meu ingresso'}
               </button>
 
-              <p style={{ fontSize: 11, color: '#444', textAlign: 'center' }}>
+              <p style={{ fontSize: 11, color: 'var(--text-faint)', textAlign: 'center' }}>
                 Seus dados são usados apenas para controle de acesso.
               </p>
             </div>
@@ -207,10 +207,10 @@ export default function CortesiaClient() {
               </div>
 
               <div>
-                <h2 style={{ fontSize: 20, fontWeight: 800, color: '#f0f0f0', marginBottom: 6 }}>
+                <h2 style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)', marginBottom: 6 }}>
                   Ingresso liberado!
                 </h2>
-                <p style={{ fontSize: 14, color: '#888', lineHeight: 1.55 }}>
+                <p style={{ fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.55 }}>
                   Acesse o link abaixo para retirar sua cortesia em {EVENTO.local}.
                 </p>
               </div>
@@ -254,7 +254,7 @@ export default function CortesiaClient() {
                   background: 'transparent',
                   border: '1px solid #242424',
                   borderRadius: 12,
-                  color: '#f0f0f0',
+                  color: 'var(--text)',
                   cursor: 'pointer',
                   fontSize: 14,
                   fontWeight: 500,
@@ -267,7 +267,7 @@ export default function CortesiaClient() {
                 {copiado ? '✓ Copiado!' : 'Copiar link'}
               </button>
 
-              <p style={{ fontSize: 11, color: '#444' }}>
+              <p style={{ fontSize: 11, color: 'var(--text-faint)' }}>
                 Guarde o link — ele é seu ingresso para {EVENTO.nome}.
               </p>
             </div>
@@ -282,7 +282,7 @@ function InfoRow({ icon, texto }) {
   return (
     <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
       <span style={{ fontSize: 13 }}>{icon}</span>
-      <span style={{ fontSize: 13, color: '#888', lineHeight: 1.5 }}>{texto}</span>
+      <span style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.5 }}>{texto}</span>
     </div>
   );
 }

@@ -73,14 +73,14 @@ export default function CortesiaSlugClient() {
   }
 
   if (status === 'loading') {
-    return <main style={styles.main}><p style={{ color: '#888', fontSize: 14 }}>Carregando...</p></main>
+    return <main style={styles.main}><p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Carregando...</p></main>
   }
 
   if (status === 'not-found') {
     return (
       <main style={styles.main}>
         <div style={styles.card}>
-          <p style={{ color: '#888', fontSize: 15, textAlign: 'center', padding: 32 }}>Cortesia não encontrada.</p>
+          <p style={{ color: 'var(--text-muted)', fontSize: 15, textAlign: 'center', padding: 32 }}>Cortesia não encontrada.</p>
         </div>
       </main>
     )
@@ -102,8 +102,8 @@ export default function CortesiaSlugClient() {
           <div style={{ padding: '24px 28px 32px', display: 'flex', flexDirection: 'column', gap: 20, textAlign: 'center' }}>
             <div style={{ fontSize: 32 }}>😔</div>
             <div>
-              <h2 style={{ fontSize: 20, fontWeight: 800, color: '#f0f0f0', marginBottom: 8 }}>Cortesias encerradas</h2>
-              <p style={{ fontSize: 14, color: '#888', lineHeight: 1.6 }}>{evento.mensagemEncerrada}</p>
+              <h2 style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)', marginBottom: 8 }}>Cortesias encerradas</h2>
+              <p style={{ fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.6 }}>{evento.mensagemEncerrada}</p>
             </div>
             {evento.linkWhatsApp && (
               <a href={evento.linkWhatsApp} target="_blank" rel="noopener noreferrer" style={styles.btnPrimary}>
@@ -146,10 +146,10 @@ export default function CortesiaSlugClient() {
           {evento.descricao && (
             <div style={{ marginBottom: 28 }}>
               <div style={{ height: 1, background: '#242424', marginBottom: 20 }} />
-              <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#666', marginBottom: 10 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 10 }}>
                 Sobre o evento
               </div>
-              <div style={{ fontSize: 14, color: '#999', lineHeight: 1.7, whiteSpace: 'pre-line' }}>
+              <div style={{ fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.7, whiteSpace: 'pre-line' }}>
                 {evento.descricao}
               </div>
             </div>
@@ -160,7 +160,7 @@ export default function CortesiaSlugClient() {
           {/* SELEÇÃO DE GÊNERO */}
           {temGenero && !genero && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <p style={{ fontSize: 15, fontWeight: 600, color: '#ddd', lineHeight: 1.55, textAlign: 'center' }}>
+              <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', lineHeight: 1.55, textAlign: 'center' }}>
                 Qual cortesia você gostaria de gerar?
               </p>
               <button onClick={() => setGenero('masc')} style={styles.btnGenero}>👨 Masculino</button>
@@ -174,16 +174,16 @@ export default function CortesiaSlugClient() {
               {temGenero && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <button onClick={() => setGenero(null)} style={styles.btnVoltar}>← Voltar</button>
-                  <span style={{ fontSize: 13, color: '#888' }}>
+                  <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
                     Lista {genero === 'masc' ? 'Masculino' : 'Feminino'}
                   </span>
                 </div>
               )}
-              <p style={{ fontSize: 15, fontWeight: 600, color: '#ddd', lineHeight: 1.55 }}>
+              <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', lineHeight: 1.55 }}>
                 1. Informe seu e-mail para receber o link para gerar a cortesia.
               </p>
               <div>
-                <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#ccc', marginBottom: 8 }}>
+                <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8 }}>
                   Seu e-mail
                 </label>
                 <input
@@ -196,7 +196,7 @@ export default function CortesiaSlugClient() {
                 />
                 {erro && <p style={{ fontSize: 12, color: '#ff6b6b', marginTop: 6 }}>{erro}</p>}
               </div>
-              <p style={{ fontSize: 12, color: '#777', lineHeight: 1.5 }}>
+              <p style={{ fontSize: 12, color: 'var(--text-faint)', lineHeight: 1.5 }}>
                 Ao enviar, você concorda em receber por e-mail novidades e eventos da Direct Network. Pode cancelar quando quiser.
               </p>
               <button onClick={handleSubmit} disabled={loading} style={{ ...styles.btnPrimary, opacity: loading ? 0.6 : 1, cursor: loading ? 'not-allowed' : 'pointer' }}>
@@ -210,10 +210,10 @@ export default function CortesiaSlugClient() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16, textAlign: 'center' }}>
               <div style={styles.checkIcon}>🎟️</div>
               <div>
-                <h2 style={{ fontSize: 22, fontWeight: 800, color: '#f0f0f0', marginBottom: 12 }}>
+                <h2 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', marginBottom: 12 }}>
                   Cortesia liberada! 🎉
                 </h2>
-                <p style={{ fontSize: 15, fontWeight: 600, color: '#ddd', lineHeight: 1.7, textAlign: 'left' }}>
+                <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', lineHeight: 1.7, textAlign: 'left' }}>
                   A página para gerar sua cortesia foi aberta automaticamente.<br /><br />
                   Caso não tenha aberto, clique no botão abaixo.
                 </p>
@@ -228,7 +228,7 @@ export default function CortesiaSlugClient() {
               <div style={{ height: 1, background: '#242424', margin: '4px 0' }} />
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <p style={{ fontSize: 13, color: '#555', textAlign: 'center' }}>
+                <p style={{ fontSize: 13, color: 'var(--text-faint)', textAlign: 'center' }}>
                   Quer receber mais eventos e benefícios exclusivos?
                 </p>
                 <a href={LINK_GRUPO} target="_blank" rel="noopener noreferrer"
@@ -237,7 +237,7 @@ export default function CortesiaSlugClient() {
                 </a>
               </div>
 
-              <p style={{ fontSize: 11, color: '#444' }}>
+              <p style={{ fontSize: 11, color: 'var(--text-faint)' }}>
                 Guarde o link — ele é sua cortesia para {evento.nome}.
               </p>
             </div>
@@ -252,7 +252,7 @@ function InfoRow({ icon, texto }) {
   return (
     <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
       <span style={{ fontSize: 14 }}>{icon}</span>
-      <span style={{ fontSize: 14, fontWeight: 500, color: '#aaa', lineHeight: 1.5 }}>{texto}</span>
+      <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-muted)', lineHeight: 1.5 }}>{texto}</span>
     </div>
   )
 }
@@ -307,7 +307,7 @@ const styles = {
   h1: {
     fontSize: 28,
     fontWeight: 800,
-    color: '#f0f0f0',
+    color: 'var(--text)',
     lineHeight: 1.2,
   },
   input: {
@@ -315,7 +315,7 @@ const styles = {
     background: '#0a0a0a',
     border: '1px solid #242424',
     borderRadius: 12,
-    color: '#f0f0f0',
+    color: 'var(--text)',
     fontSize: 15,
     padding: '13px 16px',
     outline: 'none',
@@ -341,7 +341,7 @@ const styles = {
     background: 'transparent',
     border: '1px solid #242424',
     borderRadius: 12,
-    color: '#f0f0f0',
+    color: 'var(--text)',
     cursor: 'pointer',
     fontSize: 14,
     fontWeight: 500,
@@ -353,7 +353,7 @@ const styles = {
     background: '#1a1a1a',
     border: '1px solid #333',
     borderRadius: 12,
-    color: '#f0f0f0',
+    color: 'var(--text)',
     cursor: 'pointer',
     fontSize: 16,
     fontWeight: 700,
@@ -364,7 +364,7 @@ const styles = {
   btnVoltar: {
     background: 'transparent',
     border: 'none',
-    color: '#888',
+    color: 'var(--text-muted)',
     cursor: 'pointer',
     fontSize: 13,
     fontFamily: 'inherit',
@@ -376,7 +376,7 @@ const styles = {
     borderRadius: 12,
     padding: '14px 16px',
     fontSize: 13,
-    color: '#ffffff',
+    color: 'var(--text)',
     wordBreak: 'break-all',
     textAlign: 'left',
     lineHeight: 1.5,
