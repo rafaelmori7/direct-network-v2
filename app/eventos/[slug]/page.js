@@ -12,6 +12,14 @@ function formatarHorario(dateStr) {
   return new Date(dateStr).toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' })
 }
 
+function formatarPreco(valor) {
+  return Number(valor).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+function parseLineup(str) {
+  return String(str || '').split(',').map(nome => nome.trim()).filter(Boolean)
+}
+
 export async function generateStaticParams() {
   try {
     const eventos = await getTodosEventos()
@@ -66,6 +74,7 @@ export default async function EventoPage({ params }) {
   const dataFormatada = formatarData(f.data, {weekday:'long',day:'2-digit',month:'long',year:'numeric'})
   const horario = formatarHorario(f.data)
   const passou = eventoPassou(f.data)
+  const lineup = parseLineup(f.lineup)
 
   const schema = {
     '@context': 'https://schema.org',
@@ -78,7 +87,12 @@ export default async function EventoPage({ params }) {
     eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
     location: { '@type': 'Place', name: f.local, address: { '@type': 'PostalAddress', addressLocality: f.cidade, addressRegion: 'SP', addressCountry: 'BR' } },
     organizer: { '@type': 'Organization', name: 'Direct Network', url: 'https://www.directnw.com.br' },
-    ...(!passou && { offers: { '@type': 'Offer', url: f.linkAfiliado, availability: 'https://schema.org/InStock' } }),
+    ...(!passou && {
+      offers: f.precoDe
+        ? { '@type': 'AggregateOffer', lowPrice: f.precoDe, priceCurrency: 'BRL', url: f.linkAfiliado, availability: 'https://schema.org/InStock' }
+        : { '@type': 'Offer', url: f.linkAfiliado, availability: 'https://schema.org/InStock' },
+    }),
+    ...(lineup.length > 0 && { performer: lineup.map(nome => ({ '@type': 'MusicGroup', name: nome })) }),
   }
 
   return (
@@ -162,6 +176,12 @@ export default async function EventoPage({ params }) {
                     </div>
                   </div>
 
+                  {f.precoDe && (
+                    <p style={{fontSize:'14px',fontWeight:600,color:'var(--text)'}}>
+                      Ingressos a partir de R$ {formatarPreco(f.precoDe)}
+                    </p>
+                  )}
+
                   {/* BOTÕES DE COMPRA */}
                   <div style={{display:'flex',flexDirection:'column',gap:'10px'}}>
                     <a href={f.linkAfiliado} target="_blank" style={{display:'flex',alignItems:'center',justifyContent:'center',width:'100%',background:'var(--pink)',color:'#fff',fontFamily:'var(--font-display)',fontSize:'15px',fontWeight:600,padding:'16px',borderRadius:'8px'}}>
@@ -188,6 +208,20 @@ export default async function EventoPage({ params }) {
                   <div>
                     <div style={{fontSize:'11px',fontWeight:500,letterSpacing:'0.1em',textTransform:'uppercase',color:'var(--text-faint)',marginBottom:'12px'}}>Sobre o evento</div>
                     <div style={{fontSize:'15px',color:'var(--text-muted)',lineHeight:1.75,whiteSpace:'pre-line'}}>{f.descrio}</div>
+                  </div>
+                </>
+              )}
+
+              {lineup.length > 0 && (
+                <>
+                  <hr style={{border:'none',borderTop:'1px solid var(--border)'}} />
+                  <div>
+                    <h2 style={{fontSize:'11px',fontWeight:500,letterSpacing:'0.1em',textTransform:'uppercase',color:'var(--text-faint)',marginBottom:'12px'}}>Line-up</h2>
+                    <div style={{display:'flex',flexWrap:'wrap',gap:'8px'}}>
+                      {lineup.map(nome => (
+                        <span key={nome} style={{fontSize:'13px',color:'var(--text-muted)',background:'var(--bg2)',border:'1px solid var(--border)',padding:'6px 12px',borderRadius:'6px'}}>{nome}</span>
+                      ))}
+                    </div>
                   </div>
                 </>
               )}
