@@ -4,7 +4,7 @@ import EventsGrid from './components/EventsGrid'
 import Link from 'next/link'
 import { getEventos, getTodosEventos, getTodasListas } from '../lib/contentful'
 
-export const revalidate = 1800
+export const revalidate = 3600
 
 function slugify(str) {
   return String(str || '')

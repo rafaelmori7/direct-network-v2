@@ -1,6 +1,6 @@
 import CortesiaClient from './CortesiaClient'
 
-export const revalidate = 7200
+export const revalidate = 86400
 
 export const metadata = {
   alternates: { canonical: '/cortesia' },

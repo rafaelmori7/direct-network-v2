@@ -1,6 +1,6 @@
 import CortesiaSlugClient from './CortesiaSlugClient'
 
-export const revalidate = 7200
+export const revalidate = 86400
 
 export async function generateMetadata({ params }) {
   return {
