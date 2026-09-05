@@ -3,7 +3,7 @@ import Nav from '../components/Nav'
 import Footer from '../components/Footer'
 import { getListas } from '../../lib/contentful'
 
-export const revalidate = 300
+export const revalidate = 1800
 
 export const metadata = {
   title: 'Listas VIP | Direct Network',

@@ -1,6 +1,14 @@
 import { NextResponse } from 'next/server'
 import { getCortesia } from '../../../../lib/contentful'
 
+// Antes desta linha, cada visita à página de cortesia batia direto no
+// Contentful sem cache nenhum — o ponto mais exposto do site em termos de
+// consumo de API (escala 1:1 com pageviews, sem nenhuma rede de segurança).
+// Alinhado com a janela das outras rotas de detalhe (7200s) — o
+// unstable_cache em lib/contentful.js (TTL de 300s) já cobre o grosso do
+// deduplicamento; isso aqui é só o teto de regeneração da própria rota.
+export const revalidate = 7200
+
 export async function GET(request, { params }) {
   const cortesia = await getCortesia(params.slug)
   if (!cortesia) return NextResponse.json(null, { status: 404 })

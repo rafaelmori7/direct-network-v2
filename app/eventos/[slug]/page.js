@@ -4,6 +4,8 @@ import Footer from '../../components/Footer'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
+export const revalidate = 7200
+
 function formatarData(dateStr, opts) {
   return new Date(dateStr).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo', ...opts })
 }

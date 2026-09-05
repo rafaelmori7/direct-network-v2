@@ -1,5 +1,7 @@
 import { getTodosEventos, getTodasListas, getTodasCortesias } from '../lib/contentful'
 
+export const revalidate = 7200
+
 export default async function sitemap() {
   const baseUrl = 'https://www.directnw.com.br'
   const agora = new Date()
