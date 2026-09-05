@@ -7,7 +7,7 @@ import { getCortesia } from '../../../../lib/contentful'
 // Alinhado com a janela das outras rotas de detalhe (7200s) — o
 // unstable_cache em lib/contentful.js (TTL de 300s) já cobre o grosso do
 // deduplicamento; isso aqui é só o teto de regeneração da própria rota.
-export const revalidate = 7200
+export const revalidate = 86400
 
 export async function GET(request, { params }) {
   const cortesia = await getCortesia(params.slug)
