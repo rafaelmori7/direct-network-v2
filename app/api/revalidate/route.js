@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache'
 
 // Rotas que dependem de cada content_type do Contentful. '/eventos/[slug]'
 // (e afins) usados literalmente + type:'page' revalidam todas as páginas
@@ -12,6 +12,7 @@ const ROTAS_POR_TIPO = {
 }
 
 const TODAS_AS_ROTAS = Object.values(ROTAS_POR_TIPO).flat()
+const TODAS_AS_TAGS = Object.keys(ROTAS_POR_TIPO)
 
 export async function POST(request) {
   const secret = request.headers.get('x-revalidate-secret')
@@ -26,8 +27,13 @@ export async function POST(request) {
   // /sitemap.xml agrega evento + lista + cortesia, entao revalida sempre,
   // independente do content_type que disparou o webhook
   const rotas = [...(ROTAS_POR_TIPO[contentType] || TODAS_AS_ROTAS), ['/sitemap.xml', undefined]]
+  const tags = TODAS_AS_TAGS.includes(contentType) ? [contentType] : TODAS_AS_TAGS
 
   rotas.forEach(([path, type]) => revalidatePath(path, type))
+  // revalidateTag limpa o cache de dados de lib/contentful.js (unstable_cache)
+  // -- sem isso, o revalidatePath acima regeneraria a pagina mas ainda leria
+  // dado velho do cache de dados ate o TTL dele vencer sozinho
+  tags.forEach(tag => revalidateTag(tag))
 
-  return NextResponse.json({ revalidated: true, contentType: contentType || null, rotas: rotas.map(r => r[0]) })
+  return NextResponse.json({ revalidated: true, contentType: contentType || null, rotas: rotas.map(r => r[0]), tags })
 }
