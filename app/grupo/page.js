@@ -1,10 +1,28 @@
 import Nav from '../components/Nav'
 import Footer from '../components/Footer'
 
+const TITLE = 'Entrar no Grupo — Direct Network'
+const DESCRIPTION = 'Escolha entre o grupo gratuito ou o acesso VIP da Direct Network.'
+const PAGE_URL = 'https://www.directnw.com.br/grupo'
+
 export const metadata = {
-  title: 'Entrar no Grupo — Direct Network',
-  description: 'Escolha entre o grupo gratuito ou o acesso VIP da Direct Network.',
+  title: TITLE,
+  description: DESCRIPTION,
   alternates: { canonical: '/grupo' },
+  openGraph: {
+    title: TITLE,
+    description: DESCRIPTION,
+    type: 'website',
+    siteName: 'Direct Network',
+    url: PAGE_URL,
+    images: [{ url: '/logo.png', alt: 'Direct Network' }],
+  },
+  twitter: {
+    card: 'summary',
+    title: TITLE,
+    description: DESCRIPTION,
+    images: ['/logo.png'],
+  },
 }
 
 export default function GrupoPage() {

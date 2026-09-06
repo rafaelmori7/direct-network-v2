@@ -5,10 +5,37 @@ import { getTodasCortesias } from '../../lib/contentful'
 
 export const revalidate = 86400
 
-export const metadata = {
-  title: 'Cortesias | Direct Network',
-  description: 'Ingressos cortesia dos eventos parceiros da Direct Network em São Paulo. Escolha um evento e informe seu e-mail para liberar o link.',
-  alternates: { canonical: '/cortesia' },
+const TITLE = 'Cortesias | Direct Network'
+const DESCRIPTION = 'Ingressos cortesia dos eventos parceiros da Direct Network em São Paulo. Escolha um evento e informe seu e-mail para liberar o link.'
+
+export async function generateMetadata() {
+  let cortesias = []
+  try { cortesias = await getTodasCortesias() } catch {}
+  const comImagem = cortesias.find(c => c.fields?.ativo !== false && c.fields?.imagem?.fields?.file?.url)
+    || cortesias.find(c => c.fields?.imagem?.fields?.file?.url)
+  const imagemUrl = comImagem?.fields?.imagem?.fields?.file?.url
+  const images = imagemUrl
+    ? [{ url: `https:${imagemUrl}?w=1200&fm=jpg&q=80`, width: 1200, height: 630, alt: 'Cortesias Direct Network' }]
+    : [{ url: '/logo.png', alt: 'Direct Network' }]
+  return {
+    title: TITLE,
+    description: DESCRIPTION,
+    alternates: { canonical: '/cortesia' },
+    openGraph: {
+      title: TITLE,
+      description: DESCRIPTION,
+      type: 'website',
+      siteName: 'Direct Network',
+      url: 'https://www.directnw.com.br/cortesia',
+      images,
+    },
+    twitter: {
+      card: imagemUrl ? 'summary_large_image' : 'summary',
+      title: TITLE,
+      description: DESCRIPTION,
+      images: images.map(i => i.url),
+    },
+  }
 }
 
 function Card({ cortesia }) {

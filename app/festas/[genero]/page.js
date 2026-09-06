@@ -60,16 +60,20 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }) {
   const dados = await getDadosGenero(params.genero)
   if (!dados) return {}
-  const { nomeGenero, proximos } = dados
+  const { nomeGenero, proximos, passados } = dados
   const title = `Festas de ${nomeGenero} em São Paulo | Direct Network`
   const description = proximos.length
     ? `${proximos.length} ${proximos.length === 1 ? 'evento' : 'eventos'} de ${nomeGenero} em São Paulo com ingresso com desconto e lista VIP. Agenda atualizada pela Direct Network.`
     : `Agenda de festas de ${nomeGenero} em São Paulo. Ingressos com desconto e listas VIP pela Direct Network.`
+  const url = `https://www.directnw.com.br/festas/${params.genero}`
+  const flyerUrl = (proximos[0] || passados[0])?.fields?.flyer?.fields?.file?.url
+  const images = flyerUrl ? [{ url: `https:${flyerUrl}?w=1200&fm=jpg&q=80`, width: 1200, height: 630, alt: nomeGenero }] : []
   return {
     title,
     description,
     alternates: { canonical: `/festas/${params.genero}` },
-    openGraph: { title, description, type: 'website', siteName: 'Direct Network', url: `https://www.directnw.com.br/festas/${params.genero}` },
+    openGraph: { title, description, type: 'website', siteName: 'Direct Network', url, images },
+    twitter: { card: 'summary_large_image', title, description, images: images.map(i => i.url) },
   }
 }
 
