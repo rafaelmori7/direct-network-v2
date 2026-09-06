@@ -6,6 +6,8 @@ import { getTodasCortesias } from '../../lib/contentful'
 export const revalidate = 86400
 
 export const metadata = {
+  title: 'Cortesias | Direct Network',
+  description: 'Ingressos cortesia dos eventos parceiros da Direct Network em São Paulo. Escolha um evento e informe seu e-mail para liberar o link.',
   alternates: { canonical: '/cortesia' },
 }
 
