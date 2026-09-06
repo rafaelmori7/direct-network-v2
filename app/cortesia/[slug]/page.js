@@ -5,8 +5,24 @@ import CortesiaSlugClient from './CortesiaSlugClient'
 export const revalidate = 86400
 
 export async function generateMetadata({ params }) {
-  return {
-    alternates: { canonical: `/cortesia/${params.slug}` },
+  try {
+    const cortesia = await getCortesia(params.slug)
+    if (!cortesia) return {}
+    const f = cortesia.fields
+    const ativo = f.ativo !== false
+    const title = ativo
+      ? `Cortesia — ${f.nome} | Direct Network`
+      : `${f.nome} — Cortesia Encerrada | Direct Network`
+    const description = ativo
+      ? `Garanta sua cortesia para ${f.nome}${f.local ? ` em ${f.local}` : ''}. Informe seu e-mail e libere o link exclusivo Direct Network.`
+      : `As cortesias para ${f.nome} foram encerradas. Veja outras cortesias disponíveis na Direct Network.`
+    return {
+      title,
+      description,
+      alternates: { canonical: `/cortesia/${params.slug}` },
+    }
+  } catch {
+    return { alternates: { canonical: `/cortesia/${params.slug}` } }
   }
 }
 

@@ -2,6 +2,16 @@ import { getTodosEventos, getTodasListas, getTodasCortesias } from '../lib/conte
 
 export const revalidate = 86400
 
+function slugify(str) {
+  return String(str || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
 export default async function sitemap() {
   const baseUrl = 'https://www.directnw.com.br'
   const agora = new Date()
@@ -12,6 +22,15 @@ export default async function sitemap() {
   try { eventos = await getTodosEventos() } catch {}
   try { listas = await getTodasListas() } catch {}
   try { cortesias = await getTodasCortesias() } catch {}
+
+  const generoUrls = Array.from(
+    new Set([...eventos, ...listas].map(i => slugify(i.fields.gnero)).filter(Boolean))
+  ).map(genero => ({
+    url: `${baseUrl}/festas/${genero}`,
+    lastModified: agora,
+    changeFrequency: 'daily',
+    priority: 0.6,
+  }))
 
   const eventoUrls = eventos.map(e => {
     const passou = new Date(e.fields.data) < agora
@@ -73,6 +92,13 @@ export default async function sitemap() {
       changeFrequency: 'monthly',
       priority: 0.4,
     },
+    {
+      url: `${baseUrl}/grupo`,
+      lastModified: agora,
+      changeFrequency: 'monthly',
+      priority: 0.4,
+    },
+    ...generoUrls,
     ...eventoUrls,
     ...listaUrls,
     ...cortesiaUrls,
