@@ -1,10 +1,28 @@
 import Nav from '../components/Nav'
 import Footer from '../components/Footer'
 
+const TITLE = 'Quem Somos | Direct Network'
+const DESCRIPTION = 'A Direct Network conecta você às melhores festas do Brasil com desconto exclusivo, lista VIP e cortesias. Curadoria ativa, parcerias diretas com produtores e venues.'
+const PAGE_URL = 'https://www.directnw.com.br/quem-somos'
+
 export const metadata = {
-  title: 'Quem Somos | Direct Network',
-  description: 'A Direct Network conecta você às melhores festas do Brasil com desconto exclusivo, lista VIP e cortesias. Curadoria ativa, parcerias diretas com produtores e venues.',
+  title: TITLE,
+  description: DESCRIPTION,
   alternates: { canonical: '/quem-somos' },
+  openGraph: {
+    title: TITLE,
+    description: DESCRIPTION,
+    type: 'website',
+    siteName: 'Direct Network',
+    url: PAGE_URL,
+    images: [{ url: '/logo.png', alt: 'Direct Network' }],
+  },
+  twitter: {
+    card: 'summary',
+    title: TITLE,
+    description: DESCRIPTION,
+    images: ['/logo.png'],
+  },
 }
 
 export default function QuemSomosPage() {

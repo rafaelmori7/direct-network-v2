@@ -16,10 +16,17 @@ export async function generateMetadata({ params }) {
     const description = ativo
       ? `Garanta sua cortesia para ${f.nome}${f.local ? ` em ${f.local}` : ''}. Informe seu e-mail e libere o link exclusivo Direct Network.`
       : `As cortesias para ${f.nome} foram encerradas. Veja outras cortesias disponíveis na Direct Network.`
+    const url = `https://www.directnw.com.br/cortesia/${params.slug}`
+    const imagemUrl = f.imagem?.fields?.file?.url
+    const images = imagemUrl
+      ? [{ url: `https:${imagemUrl}?w=1200&fm=jpg&q=80`, width: 1200, height: 630, alt: f.nome }]
+      : [{ url: '/logo.png', alt: 'Direct Network' }]
     return {
       title,
       description,
       alternates: { canonical: `/cortesia/${params.slug}` },
+      openGraph: { title, description, type: 'website', siteName: 'Direct Network', url, images },
+      twitter: { card: imagemUrl ? 'summary_large_image' : 'summary', title, description, images: images.map(i => i.url) },
     }
   } catch {
     return { alternates: { canonical: `/cortesia/${params.slug}` } }
