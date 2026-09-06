@@ -3,7 +3,7 @@ import { useState } from 'react'
 
 const LINK_GRUPO = 'https://chat.whatsapp.com/DYcOSP7iF8U3OYgBHpU0tG'
 
-export default function CortesiaSlugClient({ cortesia: evento }) {
+export default function CortesiaSlugClient({ cortesia: evento, descricaoNode }) {
   const [genero, setGenero] = useState(null)
   const [email, setEmail] = useState('')
   const [erro, setErro] = useState('')
@@ -109,15 +109,13 @@ export default function CortesiaSlugClient({ cortesia: evento }) {
             </div>
           </div>
 
-          {evento.descricao && (
+          {descricaoNode && (
             <div style={{ marginBottom: 28 }}>
               <div style={{ height: 1, background: '#242424', marginBottom: 20 }} />
               <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 10 }}>
                 Sobre o evento
               </div>
-              <div style={{ fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.7, whiteSpace: 'pre-line' }}>
-                {evento.descricao}
-              </div>
+              {descricaoNode}
             </div>
           )}
 

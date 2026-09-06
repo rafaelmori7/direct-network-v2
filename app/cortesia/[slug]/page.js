@@ -1,6 +1,7 @@
 import { getCortesia } from '../../../lib/contentful'
 import { notFound } from 'next/navigation'
 import CortesiaSlugClient from './CortesiaSlugClient'
+import MarkdownContent from '../../components/MarkdownContent'
 
 export const revalidate = 86400
 
@@ -55,8 +56,11 @@ export default async function CortesiaSlugPage({ params }) {
     ativo: f.ativo !== false,
     mensagemEncerrada: f.mensagemEncerrada || 'As cortesias para este evento foram encerradas.',
     linkWhatsApp: f.linkWhatsApp || '',
-    descricao: f.descricao || '',
   }
 
-  return <CortesiaSlugClient cortesia={dados} />
+  const descricaoNode = f.descricao
+    ? <MarkdownContent fontSize={14} lineHeight={1.7}>{f.descricao}</MarkdownContent>
+    : null
+
+  return <CortesiaSlugClient cortesia={dados} descricaoNode={descricaoNode} />
 }

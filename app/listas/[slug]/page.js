@@ -1,6 +1,7 @@
 import { getLista, getTodasListas, eventoPassou } from '../../../lib/contentful'
 import Nav from '../../components/Nav'
 import Footer from '../../components/Footer'
+import MarkdownContent from '../../components/MarkdownContent'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
@@ -191,7 +192,7 @@ export default async function ListaPage({ params }) {
               <hr style={{border:'none',borderTop:'1px solid var(--border)'}} />
               <div>
                 <div style={{fontSize:'11px',fontWeight:500,letterSpacing:'0.1em',textTransform:'uppercase',color:'var(--text-faint)',marginBottom:'12px'}}>Sobre o evento</div>
-                <div style={{fontSize:'15px',color:'var(--text-muted)',lineHeight:1.75,whiteSpace:'pre-line'}}>{f.descricao}</div>
+                <MarkdownContent>{f.descricao}</MarkdownContent>
               </div>
             </>
           )}
