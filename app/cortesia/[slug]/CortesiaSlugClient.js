@@ -1,21 +1,9 @@
 'use client'
-import { useEffect, useState } from 'react'
-import { useParams } from 'next/navigation'
+import { useState } from 'react'
 
 const LINK_GRUPO = 'https://chat.whatsapp.com/DYcOSP7iF8U3OYgBHpU0tG'
 
-async function getCortesia(slug) {
-  const res = await fetch(`/api/cortesia/${slug}`)
-  if (!res.ok) return null
-  return res.json()
-}
-
-export default function CortesiaSlugClient() {
-  const params = useParams()
-  const slug = params?.slug
-
-  const [evento, setEvento] = useState(null)
-  const [status, setStatus] = useState('loading')
+export default function CortesiaSlugClient({ cortesia: evento }) {
   const [genero, setGenero] = useState(null)
   const [email, setEmail] = useState('')
   const [erro, setErro] = useState('')
@@ -23,15 +11,7 @@ export default function CortesiaSlugClient() {
   const [resgatado, setResgatado] = useState(false)
   const [copiado, setCopiado] = useState(false)
 
-  useEffect(() => {
-    if (!slug) return
-    getCortesia(slug).then(data => {
-      if (!data) setStatus('not-found')
-      else { setEvento(data); setStatus('ready') }
-    })
-  }, [slug])
-
-  const temGenero = evento && evento.appsScriptUrlMasc && evento.linkCortesiaMasc
+  const temGenero = evento.appsScriptUrlMasc && evento.linkCortesiaMasc
   const scriptUrl = genero === 'masc' ? evento?.appsScriptUrlMasc : evento?.appsScriptUrl
   const linkCortesia = genero === 'masc' ? evento?.linkCortesiaMasc : evento?.linkCortesia
 
@@ -70,20 +50,6 @@ export default function CortesiaSlugClient() {
       setCopiado(true)
       setTimeout(() => setCopiado(false), 2000)
     })
-  }
-
-  if (status === 'loading') {
-    return <main style={styles.main}><p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Carregando...</p></main>
-  }
-
-  if (status === 'not-found') {
-    return (
-      <main style={styles.main}>
-        <div style={styles.card}>
-          <p style={{ color: 'var(--text-muted)', fontSize: 15, textAlign: 'center', padding: 32 }}>Cortesia não encontrada.</p>
-        </div>
-      </main>
-    )
   }
 
   if (!evento.ativo) {
