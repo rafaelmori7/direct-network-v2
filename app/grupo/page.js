@@ -25,9 +25,19 @@ export const metadata = {
   },
 }
 
+const SCHEMA = {
+  '@context': 'https://schema.org',
+  '@type': 'WebPage',
+  name: TITLE,
+  description: DESCRIPTION,
+  url: PAGE_URL,
+  isPartOf: { '@type': 'WebSite', name: 'Direct Network', url: 'https://www.directnw.com.br' },
+}
+
 export default function GrupoPage() {
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(SCHEMA) }} />
       <Nav />
       <main style={{minHeight:'80vh',display:'flex',alignItems:'center',justifyContent:'center',padding:'40px var(--px)'}}>
         <div style={{width:'100%',maxWidth:'480px',textAlign:'center'}}>

@@ -25,9 +25,19 @@ export const metadata = {
   },
 }
 
+const SCHEMA = {
+  '@context': 'https://schema.org',
+  '@type': 'WebPage',
+  name: TITLE,
+  description: DESCRIPTION,
+  url: PAGE_URL,
+  isPartOf: { '@type': 'WebSite', name: 'Direct Network', url: 'https://www.directnw.com.br' },
+}
+
 export default function QuemSomosPage() {
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(SCHEMA) }} />
       <Nav />
       <main>
 
