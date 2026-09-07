@@ -1,5 +1,20 @@
 import './globals.css'
 import { GoogleAnalytics } from '@next/third-parties/google'
+import { Syne, DM_Sans } from 'next/font/google'
+
+const syne = Syne({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-syne',
+  display: 'swap',
+})
+
+const dmSans = DM_Sans({
+  subsets: ['latin'],
+  weight: ['300', '400', '500'],
+  variable: '--font-dm-sans',
+  display: 'swap',
+})
 
 // Estático, sem dependência do Contentful — zero custo de API. Base para
 // presença de marca no SERP (knowledge panel, sitelinks searchbox) em
@@ -44,7 +59,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" className={`${syne.variable} ${dmSans.variable}`}>
       <body>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ORGANIZATION_SCHEMA) }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(WEBSITE_SCHEMA) }} />
