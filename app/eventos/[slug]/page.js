@@ -74,6 +74,8 @@ export default async function EventoPage({ params }) {
 
   const f = evento.fields
   const flyerUrl = f.flyer?.fields?.file?.url
+  const flyerDimensoes = f.flyer?.fields?.file?.details?.image
+  const flyerAspectRatio = flyerDimensoes ? `${flyerDimensoes.width} / ${flyerDimensoes.height}` : '4 / 5'
   const dataFormatada = formatarData(f.data, {weekday:'long',day:'2-digit',month:'long',year:'numeric'})
   const horario = formatarHorario(f.data)
   const passou = eventoPassou(f.data)
@@ -119,9 +121,16 @@ export default async function EventoPage({ params }) {
             <div className="detail-flyer" style={{position:'sticky',top:'88px'}}>
               <div style={{width:'100%',borderRadius:'12px',overflow:'hidden',background:'#534AB715',border:'1px solid rgba(83,74,183,0.2)',opacity: passou ? 0.65 : 1}}>
                 {flyerUrl ? (
-                  <img src={`https:${flyerUrl}`} alt={`Flyer do evento ${f.nome} em ${f.cidade}`} style={{width:'100%',height:'auto',display:'block'}} />
+                  <img
+                    src={`https:${flyerUrl}?w=640&fm=jpg&q=80`}
+                    alt={`Flyer do evento ${f.nome} em ${f.cidade}`}
+                    width={flyerDimensoes?.width || 640}
+                    height={flyerDimensoes?.height || 800}
+                    fetchpriority="high"
+                    style={{width:'100%',height:'auto',aspectRatio: flyerAspectRatio,objectFit:'cover',display:'block'}}
+                  />
                 ) : (
-                  <div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:'8px'}}>
+                  <div style={{width:'100%',aspectRatio:'4 / 5',display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:'8px'}}>
                     <svg width="48" height="48" viewBox="0 0 48 48" fill="none"><rect x="5" y="7" width="38" height="34" rx="6" stroke="#534AB7" strokeWidth="1.5"/><path d="M16 7V4M32 7V4" stroke="#534AB7" strokeWidth="1.5" strokeLinecap="round"/><path d="M5 17h38" stroke="#534AB7" strokeWidth="1"/></svg>
                     <span style={{fontSize:'11px',color:'var(--text-faint)'}}>Flyer do evento</span>
                   </div>

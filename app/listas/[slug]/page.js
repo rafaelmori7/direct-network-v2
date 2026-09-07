@@ -75,6 +75,8 @@ export default async function ListaPage({ params }) {
 
   const f = lista.fields
   const flyerUrl = f.flyer?.fields?.file?.url
+  const flyerDimensoes = f.flyer?.fields?.file?.details?.image
+  const flyerAspectRatio = flyerDimensoes ? `${flyerDimensoes.width} / ${flyerDimensoes.height}` : '4 / 5'
   const dataFormatada = formatarData(f.data, {weekday:'long',day:'2-digit',month:'long',year:'numeric'})
   const passou = eventoPassou(f.data)
 
@@ -200,7 +202,14 @@ export default async function ListaPage({ params }) {
           {/* FLYER — só aparece se tiver */}
           {flyerUrl && (
             <div style={{borderRadius:'12px',overflow:'hidden',border:'1px solid var(--border)',opacity: passou ? 0.65 : 1}}>
-              <img src={`https:${flyerUrl}`} alt={`Flyer da lista VIP ${f.nome} em ${f.local}`} style={{width:'100%',height:'auto',display:'block'}} />
+              <img
+                src={`https:${flyerUrl}?w=960&fm=jpg&q=80`}
+                alt={`Flyer da lista VIP ${f.nome} em ${f.local}`}
+                width={flyerDimensoes?.width || 960}
+                height={flyerDimensoes?.height || 1200}
+                loading="lazy"
+                style={{width:'100%',height:'auto',aspectRatio: flyerAspectRatio,objectFit:'cover',display:'block'}}
+              />
             </div>
           )}
 
