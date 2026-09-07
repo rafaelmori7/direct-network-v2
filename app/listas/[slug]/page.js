@@ -2,6 +2,7 @@ import { getLista, getTodasListas, eventoPassou } from '../../../lib/contentful'
 import Nav from '../../components/Nav'
 import Footer from '../../components/Footer'
 import MarkdownContent from '../../components/MarkdownContent'
+import Breadcrumbs from '../../components/Breadcrumbs'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
@@ -100,15 +101,7 @@ export default async function ListaPage({ params }) {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
       <Nav />
       <main>
-        <div style={{padding:'16px var(--px) 0'}}>
-          <div style={{fontSize:'12px',color:'var(--text-faint)',display:'flex',gap:'6px',alignItems:'center',marginBottom:'20px',flexWrap:'wrap'}}>
-            <Link href="/">Início</Link>
-            <span>›</span>
-            <Link href="/listas" style={{color:'var(--text-faint)'}}>Listas VIP</Link>
-            <span>›</span>
-            <span style={{color:'var(--text-muted)'}}>{f.nome}</span>
-          </div>
-        </div>
+        <Breadcrumbs items={[{ label: 'Início', href: '/' }, { label: 'Listas VIP', href: '/listas' }, { label: f.nome }]} />
 
         <div style={{maxWidth:'560px',margin:'0 auto',padding:'0 var(--px) 64px',display:'flex',flexDirection:'column',gap:'20px'}}>
 
