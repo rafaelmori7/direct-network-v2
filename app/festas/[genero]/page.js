@@ -1,6 +1,7 @@
 import { getTodosEventos, getTodasListas, eventoPassou } from '../../../lib/contentful'
 import Nav from '../../components/Nav'
 import Footer from '../../components/Footer'
+import Breadcrumbs from '../../components/Breadcrumbs'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
@@ -127,13 +128,7 @@ export default async function GeneroPage({ params }) {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
       <Nav />
       <main>
-        <div style={{padding:'16px var(--px) 0'}}>
-          <div style={{fontSize:'12px',color:'var(--text-faint)',display:'flex',gap:'6px',alignItems:'center',marginBottom:'20px',flexWrap:'wrap'}}>
-            <Link href="/">Festas</Link>
-            <span>›</span>
-            <span style={{color:'var(--text-muted)'}}>{nomeGenero}</span>
-          </div>
-        </div>
+        <Breadcrumbs items={[{ label: 'Festas', href: '/' }, { label: nomeGenero }]} />
 
         <div style={{maxWidth:'720px',margin:'0 auto',padding:'0 var(--px) 64px',display:'flex',flexDirection:'column',gap:'24px'}}>
 

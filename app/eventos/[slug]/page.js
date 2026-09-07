@@ -2,10 +2,21 @@ import { getEvento, getTodosEventos, eventoPassou } from '../../../lib/contentfu
 import Nav from '../../components/Nav'
 import Footer from '../../components/Footer'
 import MarkdownContent from '../../components/MarkdownContent'
+import Breadcrumbs from '../../components/Breadcrumbs'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
 export const revalidate = 86400
+
+function slugify(str) {
+  return String(str || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
 
 function formatarData(dateStr, opts) {
   return new Date(dateStr).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo', ...opts })
@@ -105,15 +116,7 @@ export default async function EventoPage({ params }) {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
       <Nav />
       <main>
-        <div style={{padding:'16px var(--px) 0'}}>
-          <div style={{fontSize:'12px',color:'var(--text-faint)',display:'flex',gap:'6px',alignItems:'center',marginBottom:'20px',flexWrap:'wrap'}}>
-            <Link href="/">Festas</Link>
-            <span>›</span>
-            <span style={{color:'var(--text-muted)'}}>{f.gnero}</span>
-            <span>›</span>
-            <span style={{color:'var(--text-muted)'}}>{f.nome}</span>
-          </div>
-        </div>
+        <Breadcrumbs items={[{ label: 'Festas', href: '/' }, { label: f.gnero, href: `/festas/${slugify(f.gnero)}` }, { label: f.nome }]} />
 
         <div style={{maxWidth:'960px',margin:'0 auto',padding:'0 var(--px) 64px'}}>
           <div className="detail-grid">
