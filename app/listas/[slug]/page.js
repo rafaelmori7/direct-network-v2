@@ -1,4 +1,4 @@
-import { getLista, getTodasListas, eventoPassou } from '../../../lib/contentful'
+import { getLista, getListas, eventoPassou } from '../../../lib/contentful'
 import Nav from '../../components/Nav'
 import Footer from '../../components/Footer'
 import MarkdownContent from '../../components/MarkdownContent'
@@ -27,9 +27,11 @@ function casaJaMencionada(nome, local) {
     .some(palavra => nomeNorm.includes(palavra))
 }
 
+// Mesma lógica de eventos/[slug]: só pré-renderiza listas futuras/atuais no
+// build. Listas encerradas caem no fallback on-demand do Next.
 export async function generateStaticParams() {
   try {
-    const listas = await getTodasListas()
+    const listas = await getListas()
     return listas.map(l => ({ slug: l.fields.slug }))
   } catch { return [] }
 }

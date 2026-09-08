@@ -1,4 +1,4 @@
-import { getEvento, getTodosEventos, eventoPassou } from '../../../lib/contentful'
+import { getEvento, getEventos, eventoPassou } from '../../../lib/contentful'
 import Nav from '../../components/Nav'
 import Footer from '../../components/Footer'
 import MarkdownContent from '../../components/MarkdownContent'
@@ -34,9 +34,14 @@ function parseLineup(str) {
   return String(str || '').split(',').map(nome => nome.trim()).filter(Boolean)
 }
 
+// Só pré-renderiza eventos futuros/atuais no build — eventos já encerrados
+// caem no fallback on-demand do Next (dynamicParams=true por padrão) e são
+// gerados na primeira visita, não em todo deploy. getTodosEventos() (sem
+// filtro de data, catálogo inteiro) custaria uma chamada por evento JÁ
+// ACONTECIDO a cada build, sem necessidade — ninguém visita a maioria deles.
 export async function generateStaticParams() {
   try {
-    const eventos = await getTodosEventos()
+    const eventos = await getEventos()
     return eventos.map(e => ({ slug: e.fields.slug }))
   } catch { return [] }
 }
