@@ -12,6 +12,8 @@ import { NextResponse } from 'next/server'
 // do site que fica em espera.
 
 const LINKTREE_URL = 'https://linktr.ee/direct.festas'
+// Mesmo link de grupo usado em Nav.js, Footer.js e app/grupo/page.js.
+const WHATSAPP_URL = 'https://chat.whatsapp.com/DYcOSP7iF8U3OYgBHpU0tG'
 
 // HTTP-date real (fim do ciclo de cobrança do Contentful), não uma estimativa
 // em segundos — dá pro Google um motivo concreto pra não tirar o site do
@@ -93,27 +95,43 @@ function paginaManutencao() {
     text-transform: uppercase;
     margin: 0 0 24px;
   }
-  .btn {
-    display: inline-block;
-    background: #E91E8C;
+  .convite {
+    font-size: 13px;
+    font-weight: 600;
     color: #fff;
+    margin: 0 0 16px;
+  }
+  .botoes {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .btn {
+    display: block;
     font-weight: 600;
     font-size: 14px;
-    padding: 15px 32px;
+    padding: 15px 24px;
     border-radius: 10px;
     text-decoration: none;
     transition: background 0.15s ease, transform 0.15s ease;
   }
-  .btn:hover { background: #C4176F; transform: translateY(-1px); }
+  .btn-linktree { background: #E91E8C; color: #fff; }
+  .btn-linktree:hover { background: #C4176F; transform: translateY(-1px); }
+  .btn-whatsapp { background: #25D366; color: #fff; }
+  .btn-whatsapp:hover { background: #1fa855; transform: translateY(-1px); }
 </style>
 </head>
 <body>
   <div class="card">
     <img class="logo" src="/icon.png" alt="Direct Network" />
     <h1>Voltamos em breve</h1>
-    <p>Estamos em manutenção programada. Enquanto isso, veja os próximos eventos e listas VIP no nosso Linktree.</p>
+    <p>Estamos em manutenção programada.</p>
     <div class="previsao">Previsão de retorno: ${PREVISAO_RETORNO}</div>
-    <a class="btn" href="${LINKTREE_URL}" target="_blank" rel="noopener noreferrer">Ver eventos no Linktree</a>
+    <p class="convite">Enquanto isso, confira nossos eventos aqui:</p>
+    <div class="botoes">
+      <a class="btn btn-linktree" href="${LINKTREE_URL}" target="_blank" rel="noopener noreferrer">Confira nosso calendário</a>
+      <a class="btn btn-whatsapp" href="${WHATSAPP_URL}" target="_blank" rel="noopener noreferrer">Entrar no grupo do WhatsApp</a>
+    </div>
   </div>
 </body>
 </html>`
