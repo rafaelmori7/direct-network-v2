@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { PlatformTag, PosterArt } from "@/components/chrome";
 import { saleState } from "@/lib/data/event-status";
-import { CATEGORIES, listEvents, listingsForEvent, type EventRecord } from "@/lib/data/store";
+import { CATEGORIES, listEvents, listingSummary, type EventRecord } from "@/lib/data/repo";
 import { formatDateLong, formatDateShort, formatRemaining } from "@/lib/format";
 import { formatBRL } from "@/lib/money/fees";
 
@@ -9,7 +9,8 @@ export const dynamic = "force-dynamic";
 
 export default async function Home({ searchParams }: { searchParams: Promise<{ q?: string; cat?: string }> }) {
   const { q = "", cat = "" } = await searchParams;
-  const events = listEvents({ q, category: cat || undefined });
+  const events = await listEvents({ q, category: cat || undefined });
+  const summary = await listingSummary(events.map((e) => e.id));
 
   return (
     <main className="container">
@@ -47,7 +48,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ q
       ) : (
         <div className="grid">
           {events.map((event) => (
-            <EventCard key={event.id} event={event} />
+            <EventCard key={event.id} event={event} {...(summary.get(event.id) ?? { available: 0, cheapest: null })} />
           ))}
         </div>
       )}
@@ -55,12 +56,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ q
   );
 }
 
-function EventCard({ event }: { event: EventRecord }) {
-  const listings = listingsForEvent(event.id);
-  const available = listings.reduce((sum, l) => sum + l.quantityAvailable, 0);
-  const cheapest = listings[0]?.priceCents;
-  const badge = cardBadge(event, available);
-
+function EventCard({ event, available, cheapest }: { event: EventRecord; available: number; cheapest: number | null }) {
   return (
     <Link href={`/evento/${event.slug}`} className="event-card">
       <div className="poster">
@@ -70,7 +66,7 @@ function EventCard({ event }: { event: EventRecord }) {
           <span />
         </PosterArt>
         <div className="poster-bar">
-          <strong>{badge}</strong>
+          <strong>{cardBadge(event, available)}</strong>
           <span>Ver ingressos de revenda →</span>
         </div>
       </div>
@@ -83,7 +79,7 @@ function EventCard({ event }: { event: EventRecord }) {
       <div className="tag-row">
         <PlatformTag platform={event.platform} />
       </div>
-      {cheapest !== undefined && (
+      {cheapest !== null && (
         <div className="event-price">
           {available} {available === 1 ? "ingresso" : "ingressos"} a partir de <b>{formatBRL(cheapest)}</b>
         </div>

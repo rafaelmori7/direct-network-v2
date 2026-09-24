@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { BRAND } from "@/lib/brand";
+import { signOut } from "@/app/auth-actions";
+import { getCurrentUser } from "@/lib/auth/session";
 import { PLATFORMS } from "@/lib/platforms/profiles";
 import type { PlatformCode } from "@/lib/rules/types";
 
@@ -12,7 +14,8 @@ export function ShieldIcon({ size = 18 }: { size?: number }) {
   );
 }
 
-export function SiteHeader() {
+export async function SiteHeader() {
+  const user = await getCurrentUser();
   return (
     <header className="site-header">
       <div className="container">
@@ -25,11 +28,27 @@ export function SiteHeader() {
         <span className="header-guarantee">
           <ShieldIcon /> Pagamento protegido até o fim do evento
         </span>
-        <Link href="/anunciar" className="btn btn-primary">
-          <span>
-            Vender<span className="hide-mobile"> meu ingresso</span>
-          </span>
-        </Link>
+        <nav className="header-nav">
+          {user ? (
+            <>
+              <Link href="/conta" className="header-link">
+                {user.name.split(" ")[0]}
+              </Link>
+              <form action={signOut}>
+                <button className="header-link header-link-button">Sair</button>
+              </form>
+            </>
+          ) : (
+            <Link href="/entrar" className="header-link">
+              Entrar
+            </Link>
+          )}
+          <Link href="/anunciar" className="btn btn-primary">
+            <span>
+              Vender<span className="hide-mobile"> meu ingresso</span>
+            </span>
+          </Link>
+        </nav>
       </div>
     </header>
   );

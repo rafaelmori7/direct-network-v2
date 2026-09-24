@@ -1,5 +1,5 @@
 import { saleWindow } from "@/lib/rules/engine";
-import { eventRuleInput, rulesFor, type EventRecord } from "./store";
+import { eventRuleInput, rulesFor, type EventRecord } from "./repo";
 
 export type SaleState =
   | { kind: "ABERTA"; closesAt: Date }

@@ -193,3 +193,9 @@ button, input, select { font: inherit; color: inherit; }
   .offer-side { flex-direction: row; justify-content: space-between; align-items: center; text-align: left; }
 }
 @media (max-width: 560px) { .hide-mobile { display: none; } }
+
+.header-nav { display: flex; align-items: center; gap: 14px; }
+.header-link { font-weight: 700; font-size: 0.92rem; }
+.header-link:hover { color: var(--brand); }
+.header-link-button { background: none; border: 0; padding: 0; cursor: pointer; color: var(--muted); }
+@media (max-width: 560px) { .header-guarantee { display: none; } .header-nav { gap: 10px; } }

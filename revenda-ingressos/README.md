@@ -47,34 +47,50 @@ prisma/schema.prisma  banco de dados (usuários, eventos, anúncios, pedidos, hi
 tests/                testes do motor de regras, dos estados e do pagamento
 ```
 
-## Rodando
+## Telas
+
+- **Início (`/`):** busca, categorias e cards de evento com selos ("Últimas horas", "Últimos ingressos", "Revenda em análise").
+- **Evento (`/evento/[slug]`):** ofertas (VENDO), pedidos (COMPRO), setores e valores originais, prazo de vendas e garantia.
+- **Cadastro e login (`/cadastro`, `/entrar`):**
+  - o cadastro pede nome, CPF (com checagem dos dígitos), nascimento (18+), e-mail, celular e senha;
+  - a senha é guardada com scrypt;
+  - a sessão fica num cookie httpOnly, e só o hash do token vai para o banco.
+- **Anunciar (`/anunciar`):** exige conta **verificada**; o motor de regras valida o anúncio.
+- **COMPRO (`/evento/[slug]/compro`):** pedido de compra.
+- **Checkout (`/comprar/[id]`):**
+  - cria o pedido e **reserva o ingresso por 30 min** (reserva atômica no banco) enquanto o Pix não é pago;
+  - gera o Pix e leva à página do pedido.
+- **Pedido (`/pedidos/[id]`):**
+  - para o comprador: Pix e, depois, o checklist "recebi";
+  - para o vendedor: dados do comprador, instruções de transferência e o botão "já transferi";
+  - para os dois: disputa e histórico.
+  - Em modo teste há o botão "simular pagamento".
+- **Minha conta (`/conta`):** compras, vendas (com data de liberação) e anúncios.
+- **Rotina `/api/cron/expirar-pix`:** cancela Pix vencidos e devolve a reserva ao anúncio. Protegida por `CRON_SECRET`.
+
+**Níveis de conta:**
+- **Comprar:** basta o CPF válido.
+- **Vender:** a conta precisa ser verificada. Por enquanto a verificação é manual: `npm run admin:verificar -- email`.
+
+O nome da marca é provisório e fica em `src/lib/brand.ts`.
+
+## Rodando localmente
 
 ```bash
-cp .env.example .env      # ajuste o DATABASE_URL
+cp .env.example .env         # ajuste o DATABASE_URL (Postgres)
 npm install
-npm test                  # testes das regras
-npm run db:migrate        # cria as tabelas
-npm run db:seed           # cadastra as ticketeiras
+npx prisma migrate deploy    # cria as tabelas
+npm run db:seed:demo         # ticketeiras + eventos e usuários de exemplo (senha: demo1234)
 npm run dev
+npm test                     # testes de regras (sem banco)
+npm run test:db              # testes com banco (usa TEST_DATABASE_URL ou o banco local revenda_test)
 ```
-
-## Telas (modo demonstração)
-
-- **`/`:** busca, categorias e cards de evento com selos ("Últimas horas", "Últimos ingressos", "Revenda em análise").
-- **`/evento/[slug]`:** ofertas (VENDO), pedidos (COMPRO), setores e valores originais, prazo de vendas e garantia.
-- **`/anunciar`:** anúncio validado pelo motor de regras, com instruções de transferência da ticketeira.
-- **`/evento/[slug]/compro`:** pedido de compra.
-- **`/comprar/[id]`:** checkout pedindo os dados de transferência exigidos por cada ticketeira, e Pix (mock).
-
-Os dados ficam em memória (`src/lib/data/store.ts`), com eventos de exemplo, até o banco e o login entrarem. O nome da marca é provisório e fica em `src/lib/brand.ts`.
 
 ## Próximos passos
 
-1. Cadastro e verificação de identidade (CPF + selfie), com criação da subconta Asaas do vendedor.
-2. Trocar o armazenamento em memória pelo Prisma e criar o pedido/reserva no checkout.
-3. Checkout Pix e webhook do Asaas, que confere se o CPF do pagador é o do comprador.
-4. Telas "transferi" (vendedor) e "recebi" com checklist (comprador).
-5. Rotinas agendadas: reembolso por prazo esgotado, encerramento de anúncios e liberação automática.
-6. Chat em tempo real (polling no início) com aviso por e-mail/WhatsApp de nova mensagem.
-7. Painel admin: eventos, sobreposições de regras e disputas.
-8. Validar no sandbox do Asaas: finish/refund com escrow e dados do pagador Pix.
+1. Verificação de identidade do vendedor (documento + selfie) e criação da subconta Asaas com Conta Escrow.
+2. Webhook do Asaas: confirmar pagamento, conferir se o CPF do pagador é o do comprador e reembolsar Pix pago depois de vencido.
+3. Rotinas agendadas restantes: reembolso por prazo de transferência esgotado, encerramento de anúncios e liberação automática.
+4. Chat em tempo real (polling no início) com aviso por e-mail/WhatsApp de nova mensagem.
+5. Painel admin: eventos, sobreposições de regras e disputas.
+6. Validar no sandbox do Asaas: finish/refund com escrow e dados do pagador Pix.

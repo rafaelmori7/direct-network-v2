@@ -12,8 +12,12 @@ model User {
   name              String
   email             String    @unique
   cpf               String    @unique
-  phone             String?
-  /** Identidade verificada (CPF + selfie). Obrigatório para vender e comprar. */
+  phone             String
+  birthDate         DateTime
+  passwordHash      String
+  /** CPF com dígitos válidos e único: suficiente para comprar. */
+  cpfCheckedAt      DateTime?
+  /** Identidade conferida (documento/selfie ou aprovação da subconta). Obrigatório para vender. */
   verifiedAt        DateTime?
   /** Subconta do vendedor no gateway, com Conta Escrow ligada. */
   gatewayAccountId  String?
@@ -25,6 +29,18 @@ model User {
   orders      Order[]      @relation("BuyerOrders")
   wantedPosts WantedPost[]
   messages    Message[]
+  sessions    Session[]
+}
+
+model Session {
+  /** Hash SHA-256 do token do cookie; o token em si nunca é salvo. */
+  id        String   @id
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }
 
 enum PlatformCode {
@@ -52,7 +68,14 @@ model Event {
   id                   String          @id @default(cuid())
   platformId           String
   platform             Platform        @relation(fields: [platformId], references: [id])
+  slug                 String          @unique
   name                 String
+  category             String
+  /** Cor do cartaz provisório (0–360) enquanto não há imagem. */
+  hue                  Int             @default(260)
+  imageUrl             String?
+  /** Setores e valores originais: [{ name, faceValueCents }]. */
+  sectors              Json            @default("[]")
   venue                String
   city                 String
   startsAt             DateTime
@@ -140,6 +163,7 @@ model Order {
   /** Dados que o vendedor usa para transferir (e-mail, CPF, nome, Quentro ID). */
   buyerIdentifiers   Json
   chargeId           String?     @unique
+  pixCopyPaste       String?
   paymentExpiresAt   DateTime
   paidAt             DateTime?
   transferDeadlineAt DateTime?
@@ -154,6 +178,7 @@ model Order {
 
   @@index([status, releaseAt])
   @@index([status, transferDeadlineAt])
+  @@index([status, paymentExpiresAt])
 }
 
 /** Histórico imutável de cada mudança de status (prova em disputas e no MED). */

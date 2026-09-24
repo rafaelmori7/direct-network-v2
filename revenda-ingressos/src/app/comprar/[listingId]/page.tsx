@@ -2,10 +2,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ShieldIcon } from "@/components/chrome";
 import { saleState } from "@/lib/data/event-status";
-import { getEvent, getListing, rulesFor } from "@/lib/data/store";
+import { requireUser } from "@/lib/auth/session";
+import { formatCpf } from "@/lib/auth/cpf";
+import { getEvent, getListing, rulesFor } from "@/lib/data/repo";
 import { TICKET_TYPE_LABEL, formatDateLong } from "@/lib/format";
 import { formatBRL } from "@/lib/money/fees";
-import { PLATFORMS } from "@/lib/platforms/profiles";
 import type { BuyerIdentifier } from "@/lib/rules/types";
 import { CheckoutForm } from "./checkout-form";
 
@@ -13,12 +14,13 @@ export const dynamic = "force-dynamic";
 
 export default async function CheckoutPage({ params }: { params: Promise<{ listingId: string }> }) {
   const { listingId } = await params;
-  const listing = getListing(listingId);
-  const event = listing && getEvent(listing.eventId);
+  const user = await requireUser(`/comprar/${listingId}`);
+  const listing = await getListing(listingId);
+  const event = listing && (await getEvent(listing.eventId));
   if (!listing || !event) notFound();
 
   const rules = rulesFor(event);
-  const platformName = PLATFORMS[event.platform].name;
+  const platformName = event.platformName;
   const state = saleState(event);
   const labels: Record<BuyerIdentifier, { label: string; hint: string }> = {
     EMAIL: { label: `E-mail da sua conta ${platformName}`, hint: "O ingresso é enviado para esta conta." },
@@ -77,6 +79,7 @@ export default async function CheckoutPage({ params }: { params: Promise<{ listi
       ) : (
         <CheckoutForm
           listingId={listing.id}
+          defaults={{ EMAIL: user.email, CPF: formatCpf(user.cpf), NOME_COMPLETO: user.name }}
           unitPriceCents={listing.priceCents}
           maxQuantity={listing.quantityAvailable}
           identifiers={rules.buyerIdentifiers.map((id) => ({ id, ...labels[id], required: id !== "QUENTRO_ID" }))}

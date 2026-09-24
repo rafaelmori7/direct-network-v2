@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getEventBySlug } from "@/lib/data/store";
+import { requireUser } from "@/lib/auth/session";
+import { getEventBySlug } from "@/lib/data/repo";
 import { formatDateLong } from "@/lib/format";
 import { WantedForm } from "./wanted-form";
 
 export default async function WantedPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const event = getEventBySlug(slug);
+  await requireUser(`/evento/${slug}/compro`);
+  const event = await getEventBySlug(slug);
   if (!event) notFound();
   return (
     <main className="form-page">

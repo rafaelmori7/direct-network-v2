@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { saleState } from "@/lib/data/event-status";
-import { getEventBySlug, listEvents, rulesFor } from "@/lib/data/store";
+import { requireUser } from "@/lib/auth/session";
+import { getEventBySlug, listEvents, rulesFor } from "@/lib/data/repo";
 import { formatDateLong } from "@/lib/format";
 import { formatBRL } from "@/lib/money/fees";
-import { PLATFORMS } from "@/lib/platforms/profiles";
 import { maxPriceCents } from "@/lib/rules/engine";
 import { ListingForm } from "./listing-form";
 
@@ -12,9 +12,10 @@ export const dynamic = "force-dynamic";
 
 export default async function SellPage({ searchParams }: { searchParams: Promise<{ evento?: string }> }) {
   const { evento } = await searchParams;
+  const user = await requireUser(evento ? `/anunciar?evento=${evento}` : "/anunciar");
 
   if (!evento) {
-    const events = listEvents().filter((e) => {
+    const events = (await listEvents()).filter((e) => {
       const kind = saleState(e).kind;
       return kind === "ABERTA" || kind === "EM_BREVE";
     });
@@ -31,7 +32,7 @@ export default async function SellPage({ searchParams }: { searchParams: Promise
                   {formatDateLong(e.startsAt)} · {e.venue}
                 </div>
               </div>
-              <span className="platform-tag">{PLATFORMS[e.platform].name}</span>
+              <span className="platform-tag">{e.platformName}</span>
             </Link>
           ))}
         </div>
@@ -39,7 +40,7 @@ export default async function SellPage({ searchParams }: { searchParams: Promise
     );
   }
 
-  const event = getEventBySlug(evento);
+  const event = await getEventBySlug(evento);
   if (!event) notFound();
   const rules = rulesFor(event);
   const state = saleState(event);
@@ -63,7 +64,15 @@ export default async function SellPage({ searchParams }: { searchParams: Promise
         {formatDateLong(event.startsAt)} · {event.venue}, {event.city}
       </p>
 
-      {state.kind === "ENCERRADA" || state.kind === "BLOQUEADA" ? (
+      {!user.canSell ? (
+        <div className="notice notice-warn">
+          <div>
+            <b>Verificação pendente</b>
+            Para anunciar, sua identidade precisa estar verificada. Isso protege os compradores e é feito uma única vez.
+            Acompanhe em <Link href="/conta">Minha conta</Link>.
+          </div>
+        </div>
+      ) : state.kind === "ENCERRADA" || state.kind === "BLOQUEADA" ? (
         <div className="notice notice-warn">
           <div>
             <b>Não é possível anunciar</b>
@@ -74,7 +83,7 @@ export default async function SellPage({ searchParams }: { searchParams: Promise
         <>
           <div className="notice notice-safe" style={{ marginBottom: 20 }}>
             <div>
-              <b>Como transferir na {PLATFORMS[event.platform].name}</b>
+              <b>Como transferir na {event.platformName}</b>
               {rules.transferInstructions}
             </div>
           </div>
@@ -85,7 +94,7 @@ export default async function SellPage({ searchParams }: { searchParams: Promise
             priceCapNote={priceCapNote}
             maxTickets={rules.maxTicketsPerSellerPerEvent}
             transferDeadlineHours={rules.sellerTransferDeadlineHours}
-            platformName={PLATFORMS[event.platform].name}
+            platformName={event.platformName}
           />
         </>
       )}

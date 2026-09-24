@@ -6,6 +6,7 @@ import type { BuyerIdentifier } from "@/lib/rules/types";
 import { startCheckout, type CheckoutState } from "./actions";
 
 interface Props {
+  defaults: Partial<Record<BuyerIdentifier, string>>;
   listingId: string;
   unitPriceCents: number;
   maxQuantity: number;
@@ -15,31 +16,8 @@ interface Props {
 }
 
 export function CheckoutForm(props: Props) {
-  const [state, action, pending] = useActionState<CheckoutState, FormData>(startCheckout, { status: "form", errors: [] });
+  const [state, action, pending] = useActionState<CheckoutState, FormData>(startCheckout, { errors: [] });
   const [quantity, setQuantity] = useState(1);
-
-  if (state.status === "pix") {
-    return (
-      <div className="form">
-        <div className="notice notice-safe">
-          <div>
-            <b>Pix gerado: {formatBRL(state.totalCents)}</b>
-            Pague pelo app do seu banco, com uma conta no <b>seu CPF</b>. Pix de outra pessoa é devolvido.
-          </div>
-        </div>
-        <div className="field">
-          <span className="label">Pix copia e cola</span>
-          <div className="pix-code">{state.pixCopyPaste}</div>
-        </div>
-        <button className="btn btn-outline btn-block" type="button" onClick={() => navigator.clipboard?.writeText(state.pixCopyPaste)}>
-          Copiar código
-        </button>
-        <p className="hint" style={{ margin: 0 }}>
-          Modo demonstração: nenhuma cobrança real foi criada.
-        </p>
-      </div>
-    );
-  }
 
   return (
     <form action={action} className="form">
@@ -77,7 +55,7 @@ export function CheckoutForm(props: Props) {
       {props.identifiers.map((f) => (
         <div className="field" key={f.id}>
           <label htmlFor={f.id}>{f.label}</label>
-          <input id={f.id} name={f.id} className="input" required={f.required} />
+          <input id={f.id} name={f.id} className="input" required={f.required} defaultValue={props.defaults[f.id]} />
           <span className="hint">{f.hint}</span>
         </div>
       ))}

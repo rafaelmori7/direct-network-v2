@@ -2,22 +2,20 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PlatformTag, PosterArt, ShieldIcon, posterGradient } from "@/components/chrome";
 import { saleState, type SaleState } from "@/lib/data/event-status";
-import { getEventBySlug, listingsForEvent, rulesFor, wantedForEvent } from "@/lib/data/store";
+import { getEventBySlug, listingsForEvent, rulesFor, wantedForEvent } from "@/lib/data/repo";
 import { TICKET_TYPE_LABEL, formatDateTime, formatRemaining, formatWeekdayTime } from "@/lib/format";
 import { formatBRL } from "@/lib/money/fees";
-import { PLATFORMS } from "@/lib/platforms/profiles";
 
 export const dynamic = "force-dynamic";
 
 export default async function EventPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const event = getEventBySlug(slug);
+  const event = await getEventBySlug(slug);
   if (!event) notFound();
 
   const rules = rulesFor(event);
   const state = saleState(event);
-  const listings = listingsForEvent(event.id);
-  const wanted = wantedForEvent(event.id);
+  const [listings, wanted] = await Promise.all([listingsForEvent(event.id), wantedForEvent(event.id)]);
   const canBuy = state.kind === "ABERTA";
 
   return (
@@ -38,7 +36,7 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
               <span className="pill pill-safe">
                 <ShieldIcon size={16} /> Compra garantida
               </span>
-              <span className="pill pill-light">Transferência pelo app {PLATFORMS[event.platform].name}</span>
+              <span className="pill pill-light">Transferência pelo app {event.platformName}</span>
             </div>
           </div>
           <div className="hero-poster">
@@ -129,7 +127,7 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
               <ol className="steps">
                 <li>Você paga por Pix e o valor fica retido. O vendedor ainda não recebe.</li>
                 <li>
-                  O vendedor transfere pelo app {PLATFORMS[event.platform].name} em até{" "}
+                  O vendedor transfere pelo app {event.platformName} em até{" "}
                   {rules.sellerTransferDeadlineHours}h.
                 </li>
                 <li>Você confere o ingresso na sua carteira do app oficial.</li>
