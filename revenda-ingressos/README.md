@@ -104,11 +104,33 @@ npm run test:db              # testes com banco (usa TEST_DATABASE_URL ou o banc
   - devolve o Pix se ele foi pago depois de vencido;
   - é idempotente: avisos repetidos não fazem nada.
 - **Pix vencido:** a cobrança é cancelada no gateway.
+- **Teste no navegador:**
+  - `npm run asaas:call -- GET /customers` faz chamadas avulsas ao Asaas, com as chaves ocultas;
+  - no sandbox, o botão "Simular pagamento" da página do pedido usa `POST /sandbox/payment/{id}/confirm`.
+
+### O que o sandbox mostrou (24/09/2026)
+
+- **Subcontas só para CNPJ:**
+  - uma conta de CPF recebe 403 ao criar subconta;
+  - sem subconta não existe split nem Conta Escrow;
+  - **a conta de produção precisa ser de CNPJ**;
+  - no sandbox de CPF, a cobrança sai sem split, e em produção a venda exige a subconta do vendedor (`requiresSellerWallet`).
+- **CPF do pagador:**
+  - `GET /payments/{id}` traz `pixTransaction`, e `GET /pix/transactions/{id}` traz `externalAccount.cpfCnpj` **mascarado** (`***.444.777-**`);
+  - comparamos os 6 dígitos visíveis (`payerMatchesBuyer`).
+- **Reembolso:**
+  - o Asaas desconta a taxa do Pix (R$ 0,99 no sandbox) ao receber;
+  - devolver o valor cheio exige **saldo na conta da plataforma** para cobrir essa taxa (erro "Saldo insuficiente").
+- **Autorização de reembolso:**
+  - reembolsos pela API ficam em `AWAITING_CRITICAL_ACTION_AUTHORIZATION`;
+  - o Asaas exige autorizar "ações críticas" (token);
+  - para reembolso automático, configurar em Integrações > Segurança (ex.: IPs permitidos ou regra para a chave da API).
+- **Validade do QR Code:** o Pix vale até um ano. Por isso o site cancela a cobrança quando a reserva vence, e devolve se ela for paga mesmo assim.
 
 ## Próximos passos
 
 1. Verificação de identidade do vendedor (documento + selfie) e criação da subconta Asaas com Conta Escrow.
-2. Validar no sandbox: cobrança Pix com split, reembolso, Conta Escrow e de onde vem o CPF do pagador (`getPayerCpf`).
+2. Com uma conta de CNPJ no sandbox: validar subconta, split, Conta Escrow e `POST /escrow/{id}/finish`.
 3. Rotinas agendadas restantes: reembolso por prazo de transferência esgotado, encerramento de anúncios e liberação automática.
 4. Chat em tempo real (polling no início) com aviso por e-mail/WhatsApp de nova mensagem.
 5. Painel admin: eventos, sobreposições de regras e disputas.

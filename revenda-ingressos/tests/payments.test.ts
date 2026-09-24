@@ -22,6 +22,13 @@ describe("pagador", () => {
     expect(payerMatchesBuyer("98765432100", "12345678900")).toBe(false);
     expect(payerMatchesBuyer(null, "12345678900")).toBe(false);
   });
+
+  it("compara o CPF mascarado que o Asaas devolve", () => {
+    expect(payerMatchesBuyer("***.444.777-**", "111.444.777-35")).toBe(true);
+    expect(payerMatchesBuyer("***.444.778-**", "11144477735")).toBe(false);
+    expect(payerMatchesBuyer("***.***.***-**", "11144477735")).toBe(false);
+    expect(payerMatchesBuyer("12.345.678/0001-90", "11144477735")).toBe(false);
+  });
 });
 
 describe("gateway mock", () => {

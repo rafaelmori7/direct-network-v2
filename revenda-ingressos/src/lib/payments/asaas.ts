@@ -37,7 +37,7 @@ export class AsaasPaymentProvider implements PaymentProvider {
       dueDate: req.expiresAt.toISOString().slice(0, 10),
       description: req.description,
       externalReference: req.orderId,
-      split: [{ walletId: req.sellerWalletId, fixedValue: req.sellerNetCents / 100 }],
+      ...(req.sellerWalletId && { split: [{ walletId: req.sellerWalletId, fixedValue: req.sellerNetCents / 100 }] }),
     });
 
     const qr = await this.request<{ encodedImage: string; payload: string; expirationDate: string }>(
@@ -66,11 +66,30 @@ export class AsaasPaymentProvider implements PaymentProvider {
     await this.request("DELETE", `/payments/${chargeId}`);
   }
 
-  // TODO(sandbox): confirmar qual endpoint do Asaas devolve o CPF do pagador do
-  // Pix. Enquanto não confirmado, retorna null e o pedido segue com um aviso no
-  // histórico para revisão manual.
-  async getPayerCpf(_chargeId: string): Promise<string | null> {
-    return null;
+  // Testado no sandbox: a cobrança paga traz "pixTransaction", e a transação traz
+  // externalAccount.cpfCnpj mascarado ("***.444.777-**").
+  async getPayerCpf(chargeId: string): Promise<string | null> {
+    const payment = await this.request<{ pixTransaction?: string | null }>("GET", `/payments/${chargeId}`);
+    if (!payment.pixTransaction) return null;
+    const tx = await this.request<{ externalAccount?: { cpfCnpj?: string | null } }>(
+      "GET",
+      `/pix/transactions/${payment.pixTransaction}`,
+    );
+    return tx.externalAccount?.cpfCnpj ?? null;
+  }
+
+  // No sandbox de conta CPF não há subcontas; lá aceitamos cobrança sem split.
+  get requiresSellerWallet(): boolean {
+    return !this.isSandbox;
+  }
+
+  get isSandbox(): boolean {
+    return this.apiUrl.includes("sandbox");
+  }
+
+  async simulatePayment(chargeId: string): Promise<void> {
+    if (!this.isSandbox) throw new Error("Simulação de pagamento só existe no sandbox");
+    await this.request("POST", `/sandbox/payment/${chargeId}/confirm`);
   }
 
   private async request<T = unknown>(method: "GET" | "POST" | "DELETE", path: string, body?: unknown): Promise<T> {

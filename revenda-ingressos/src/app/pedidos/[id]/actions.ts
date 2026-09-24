@@ -6,7 +6,6 @@ import { prisma } from "@/lib/db";
 import { applyAction, handlePaymentReceived } from "@/lib/orders/service";
 import type { Actor, OrderAction } from "@/lib/orders/state-machine";
 import { getPaymentProvider } from "@/lib/payments";
-import { MockPaymentProvider } from "@/lib/payments/mock";
 
 export type OrderFormState = { error: string | null };
 
@@ -39,18 +38,18 @@ export async function openDispute(orderId: string, _prev: OrderFormState, form: 
   return act(orderId, role, { type: "ABRIR_DISPUTA", reason: String(form.get("motivo") ?? "") });
 }
 
-/** Só em desenvolvimento: faz o papel do webhook "pagamento recebido". */
+/** Só em testes (mock ou sandbox do Asaas): paga o Pix e processa o aviso como o webhook faria. */
 export async function simulatePayment(orderId: string, _prev: OrderFormState, _form: FormData): Promise<OrderFormState> {
   const provider = getPaymentProvider();
-  if (!(provider instanceof MockPaymentProvider)) return { error: "Disponível só no modo de teste." };
+  if (!provider.simulatePayment || (provider.kind === "asaas" && !(provider as { isSandbox?: boolean }).isSandbox)) {
+    return { error: "Disponível só no modo de teste." };
+  }
   const user = await getCurrentUser();
   const order = await prisma.order.findUnique({ where: { id: orderId } });
   if (!user || !order || order.buyerId !== user.id) return { error: "Pedido não encontrado." };
   if (!order.chargeId) return { error: "Pedido sem cobrança Pix." };
-  // Mesmo caminho do webhook real: marca pago no gateway falso e processa o aviso.
-  provider.markPaid(order.chargeId);
+  await provider.simulatePayment(order.chargeId);
   const outcome = await handlePaymentReceived(order.chargeId, provider);
-  const result = outcome === "CONFIRMADO" ? { ok: true as const } : { ok: false as const, error: "Pagamento não pôde ser confirmado." };
   revalidatePath(`/pedidos/${orderId}`);
-  return { error: result.ok ? null : result.error };
+  return { error: outcome === "CONFIRMADO" ? null : "Pagamento não pôde ser confirmado." };
 }

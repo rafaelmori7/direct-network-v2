@@ -1,3 +1,5 @@
+export {};
+
 // Marca um usuário como verificado (pode vender). Uso: npm run admin:verificar -- email@exemplo.com
 // Provisório até a verificação de documento/selfie ou a aprovação da subconta no gateway.
 import { PrismaClient } from "@prisma/client";

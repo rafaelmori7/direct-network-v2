@@ -6,6 +6,7 @@ type MockChargeState = "PENDENTE" | "RETIDO" | "LIBERADO" | "REEMBOLSADO" | "CAN
 /** Gateway falso para desenvolvimento e testes. Guarda tudo em memória. */
 export class MockPaymentProvider implements PaymentProvider {
   readonly kind = "mock" as const;
+  readonly requiresSellerWallet = false;
   readonly charges = new Map<string, { request: PixChargeRequest | null; state: MockChargeState; payerCpf?: string }>();
 
   async createPixCharge(request: PixChargeRequest): Promise<PixCharge> {
@@ -31,6 +32,10 @@ export class MockPaymentProvider implements PaymentProvider {
     if (charge.state !== "CANCELADA") this.require(chargeId, "PENDENTE");
     charge.state = "RETIDO";
     charge.payerCpf = payerCpf ?? charge.request?.buyer.cpf;
+  }
+
+  async simulatePayment(chargeId: string): Promise<void> {
+    this.markPaid(chargeId);
   }
 
   async cancelCharge(chargeId: string): Promise<void> {

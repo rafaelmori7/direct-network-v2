@@ -49,8 +49,10 @@ export async function createOrder(input: CreateOrderInput, provider: PaymentProv
   );
   if (violations.length > 0) return { ok: false, errors: violations.map((v) => v.message) };
 
-  const sellerWalletId = listing.seller.gatewayWalletId ?? (provider.kind === "mock" ? "mock-wallet" : null);
-  if (!sellerWalletId) return { ok: false, errors: ["O vendedor ainda não concluiu o cadastro de recebimento."] };
+  const sellerWalletId = listing.seller.gatewayWalletId;
+  if (!sellerWalletId && provider.requiresSellerWallet) {
+    return { ok: false, errors: ["O vendedor ainda não concluiu o cadastro de recebimento."] };
+  }
 
   const { totalCents, platformFeeCents, sellerNetCents } = splitAmount(listing.priceCents * input.quantity, input.feeBps);
   const paymentExpiresAt = addMinutes(now, PIX_EXPIRATION_MINUTES);

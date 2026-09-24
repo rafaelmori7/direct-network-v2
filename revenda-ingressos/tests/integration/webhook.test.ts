@@ -47,7 +47,7 @@ async function newOrder() {
 describe("aviso de pagamento", () => {
   it("Pix do próprio comprador confirma o pedido; aviso repetido é ignorado", async () => {
     const order = await newOrder();
-    provider.markPaid(order.chargeId!, BUYER_CPF);
+    provider.markPaid(order.chargeId!, "***.444.777-**");
     expect(await handlePaymentReceived(order.chargeId!, provider, now)).toBe("CONFIRMADO");
     expect(await handlePaymentReceived(order.chargeId!, provider, now)).toBe("IGNORADO");
     expect((await prisma.order.findUniqueOrThrow({ where: { id: order.id } })).status).toBe("PAGO");
@@ -55,7 +55,7 @@ describe("aviso de pagamento", () => {
 
   it("Pix de outro CPF é devolvido e o ingresso volta para a venda", async () => {
     const order = await newOrder();
-    provider.markPaid(order.chargeId!, "39053344705");
+    provider.markPaid(order.chargeId!, "***.533.447-**");
     expect(await handlePaymentReceived(order.chargeId!, provider, now)).toBe("PAGADOR_DIFERENTE");
     expect((await prisma.order.findUniqueOrThrow({ where: { id: order.id } })).status).toBe("CANCELADO");
     expect(provider.charges.get(order.chargeId!)?.state).toBe("REEMBOLSADO");

@@ -1,3 +1,5 @@
+export {};
+
 // Confere a conexão com o Asaas sem nunca mostrar a chave. Uso: npm run asaas:check
 const apiUrl = process.env.ASAAS_API_URL ?? "https://api-sandbox.asaas.com/v3";
 const key = process.env.ASAAS_API_KEY;

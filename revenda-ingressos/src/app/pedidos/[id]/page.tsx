@@ -48,7 +48,8 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
   if (!event) notFound();
   const rules = rulesFor(event);
   const identifiers = order.buyerIdentifiers as Partial<Record<BuyerIdentifier, string>>;
-  const isMock = getPaymentProvider().kind === "mock";
+  const provider = getPaymentProvider();
+  const isMock = provider.kind === "mock" || (provider as { isSandbox?: boolean }).isSandbox === true;
   const canDispute = ["PAGO", "TRANSFERIDO", "RECEBIDO"].includes(order.status) && new Date() <= order.disputeDeadlineAt;
 
   return (
