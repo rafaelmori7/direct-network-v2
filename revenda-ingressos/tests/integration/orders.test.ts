@@ -119,3 +119,43 @@ describe("ciclo do pedido", () => {
     expect(await prisma.orderLog.count()).toBe(1);
   });
 });
+
+describe("rotinas", () => {
+  it("reembolsa quem não transferiu, libera após o evento e encerra anúncios", async () => {
+    const { runRoutines } = await import("@/lib/orders/service");
+    // Pedido pago e não transferido.
+    const r = await orderFor(buyers[0]);
+    const id = r.ok ? r.orderId : "";
+    const order = await prisma.order.findUniqueOrThrow({ where: { id } });
+    provider.markPaid(order.chargeId!);
+    await applyAction(id, { type: "PAGAMENTO_CONFIRMADO" }, "SISTEMA", null, provider, { now });
+
+    const report1 = await runRoutines(provider, addDays(now, 2));
+    expect(report1.prazosDeTransferenciaEsgotados).toBe(1);
+    expect(await prisma.order.findUniqueOrThrow({ where: { id } })).toMatchObject({ status: "REEMBOLSADO", refundStatus: "CONCLUIDO" });
+
+    // Segundo pedido (outro anúncio): transferido e recebido, liberado depois do evento.
+    await prisma.listing.update({ where: { id: listingId }, data: { status: "ATIVO", quantityAvailable: 1 } });
+    const r2 = await orderFor(buyers[1]);
+    const id2 = r2.ok ? r2.orderId : "";
+    const o2 = await prisma.order.findUniqueOrThrow({ where: { id: id2 } });
+    provider.markPaid(o2.chargeId!);
+    await applyAction(id2, { type: "PAGAMENTO_CONFIRMADO" }, "SISTEMA", null, provider, { now });
+    await applyAction(id2, { type: "VENDEDOR_TRANSFERIU" }, "VENDEDOR", null, provider, { now });
+
+    expect((await runRoutines(provider, addDays(now, 5))).pagamentosLiberados).toBe(0);
+    const report2 = await runRoutines(provider, addDays(o2.releaseAt, 0.01));
+    expect(report2.pagamentosLiberados).toBe(1);
+    expect(await prisma.order.findUniqueOrThrow({ where: { id: id2 } })).toMatchObject({ status: "LIBERADO", payoutStatus: "CONCLUIDO" });
+    expect(provider.charges.get(o2.chargeId!)?.state).toBe("LIBERADO");
+
+    // Rodar de novo não faz nada.
+    expect(await runRoutines(provider, addDays(o2.releaseAt, 0.02))).toMatchObject({ pagamentosLiberados: 0, prazosDeTransferenciaEsgotados: 0 });
+  });
+
+  it("anúncio sai do ar quando a venda do evento fecha", async () => {
+    const { runRoutines } = await import("@/lib/orders/service");
+    expect((await runRoutines(provider, addDays(now, 9))).anunciosEncerrados).toBe(1);
+    expect((await prisma.listing.findUniqueOrThrow({ where: { id: listingId } })).status).toBe("ENCERRADO");
+  });
+});

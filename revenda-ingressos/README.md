@@ -66,7 +66,17 @@ tests/                testes do motor de regras, dos estados e do pagamento
   - para os dois: disputa e histórico.
   - Em modo teste há o botão "simular pagamento".
 - **Minha conta (`/conta`):** compras, vendas (com data de liberação) e anúncios.
-- **Rotina `/api/cron/expirar-pix`:** cancela Pix vencidos e devolve a reserva ao anúncio. Protegida por `CRON_SECRET`.
+- **Rotinas (`/api/cron/rotinas`):** chamar a cada ~5 min com `Authorization: Bearer $CRON_SECRET`. A cada chamada:
+  - cancela Pix vencidos e devolve a reserva;
+  - reembolsa quando o vendedor perde o prazo;
+  - libera o pagamento após o evento (com `payoutStatus`, como no reembolso);
+  - tira do ar anúncios de eventos com venda encerrada.
+
+  No plano gratuito da Vercel o cron é só diário; use um agendador externo (ex.: cron-job.org).
+- **Chat do pedido:**
+  - abre após o pagamento e se atualiza a cada 8 s;
+  - tem respostas rápidas e mensagens automáticas a cada etapa;
+  - mensagens com contato são bloqueadas e ficam visíveis só para o admin.
 
 **Níveis de conta:**
 - **Comprar:** basta o CPF válido.
@@ -136,6 +146,5 @@ npm run test:db              # testes com banco (usa TEST_DATABASE_URL ou o banc
 
 1. Verificação de identidade do vendedor (documento + selfie) e criação da subconta Asaas com Conta Escrow.
 2. Com uma conta de CNPJ no sandbox: validar subconta, split, Conta Escrow e `POST /escrow/{id}/finish`.
-3. Rotinas agendadas restantes: reembolso por prazo de transferência esgotado, encerramento de anúncios e liberação automática.
-4. Chat em tempo real (polling no início) com aviso por e-mail/WhatsApp de nova mensagem.
-5. Painel admin: eventos, sobreposições de regras e disputas.
+3. Avisos por e-mail/WhatsApp: nova mensagem, pagamento confirmado, prazo acabando.
+4. Painel admin: eventos, sobreposições de regras e disputas.

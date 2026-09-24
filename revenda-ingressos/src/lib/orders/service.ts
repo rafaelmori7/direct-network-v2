@@ -1,9 +1,10 @@
 import type { Prisma } from "@prisma/client";
+import { SYSTEM_MESSAGES } from "@/lib/chat/policy";
 import { prisma } from "@/lib/db";
 import { eventRuleInput, getEvent, rulesFor } from "@/lib/data/repo";
 import { splitAmount } from "@/lib/money/fees";
 import { payerMatchesBuyer, type PaymentProvider } from "@/lib/payments/provider";
-import { checkPurchase, disputeDeadline, releaseAt, transferDeadline, type Violation } from "@/lib/rules/engine";
+import { checkPurchase, disputeDeadline, isSaleClosed, releaseAt, transferDeadline, type Violation } from "@/lib/rules/engine";
 import type { BuyerIdentifier, TicketType } from "@/lib/rules/types";
 import { addMinutes } from "@/lib/time";
 import { transition, type Actor, type Effect, type OrderAction, type OrderStatus } from "./state-machine";
@@ -154,6 +155,10 @@ export async function applyAction(
       // Vendedor não entregou: tira o anúncio do ar até o admin revisar.
       await tx.listing.update({ where: { id: order.listingId }, data: { status: "PAUSADO" } });
     }
+    const systemMessage = SYSTEM_MESSAGES[result.next];
+    if (systemMessage) {
+      await tx.message.create({ data: { orderId: order.id, role: "SISTEMA", kind: "SISTEMA", body: systemMessage } });
+    }
     await tx.orderLog.create({
       data: {
         orderId: order.id,
@@ -173,8 +178,8 @@ export async function applyAction(
   return { ok: true, status: result.next };
 }
 
-// Reembolsos que falham ficam como FALHOU e aparecem em /admin/reembolsos para
-// nova tentativa. TODO: a liberação da custódia ainda não tem essa proteção.
+// Reembolsos e liberações que falham ficam como FALHOU no pedido, com o erro,
+// para o admin refazer; o status do pedido já mudou.
 async function runEffects(
   effects: Effect[],
   orderId: string,
@@ -191,7 +196,7 @@ async function runEffects(
     }
     if (!chargeId) throw new Error(`Pedido sem cobrança para executar ${effect.type}`);
     if (effect.type === "REEMBOLSAR_COMPRADOR") await requestRefund(orderId, "NENHUM", provider, now);
-    if (effect.type === "LIBERAR_CUSTODIA") await provider.releaseEscrow(chargeId);
+    if (effect.type === "LIBERAR_CUSTODIA") await requestPayout(orderId, "NENHUM", provider, now);
   }
 }
 
@@ -264,6 +269,31 @@ export async function requestRefund(
   return true;
 }
 
+/** Libera a custódia ao vendedor. Mesma proteção do reembolso: uma única vez. */
+export async function requestPayout(
+  orderId: string,
+  from: "NENHUM" | "FALHOU",
+  provider: PaymentProvider,
+  now = new Date(),
+): Promise<boolean> {
+  const claimed = await prisma.order.updateMany({
+    where: { id: orderId, payoutStatus: from, chargeId: { not: null } },
+    data: { payoutStatus: "SOLICITADO", payoutError: null, payoutUpdatedAt: now },
+  });
+  if (claimed.count === 0) return false;
+  const { chargeId } = await prisma.order.findUniqueOrThrow({ where: { id: orderId }, select: { chargeId: true } });
+  try {
+    await provider.releaseEscrow(chargeId!);
+    await prisma.order.update({ where: { id: orderId }, data: { payoutStatus: "CONCLUIDO", payoutUpdatedAt: new Date() } });
+  } catch (error) {
+    await prisma.order.update({
+      where: { id: orderId },
+      data: { payoutStatus: "FALHOU", payoutError: error instanceof Error ? error.message.slice(0, 500) : String(error), payoutUpdatedAt: new Date() },
+    });
+  }
+  return true;
+}
+
 /** Aviso do gateway de que a devolução foi concluída (depois da aprovação manual). */
 export async function handleRefundCompleted(chargeId: string): Promise<boolean> {
   const updated = await prisma.order.updateMany({
@@ -285,4 +315,53 @@ export async function expireUnpaidOrders(provider: PaymentProvider, now = new Da
     if (r.ok) count++;
   }
   return count;
+}
+
+export interface RoutineReport {
+  pixVencidos: number;
+  prazosDeTransferenciaEsgotados: number;
+  pagamentosLiberados: number;
+  anunciosEncerrados: number;
+}
+
+/**
+ * Rotinas periódicas (chamar a cada ~5 min). Cada etapa é segura para rodar de
+ * novo: pedidos já tratados não passam pela máquina de estados outra vez.
+ */
+export async function runRoutines(provider: PaymentProvider, now = new Date()): Promise<RoutineReport> {
+  const pixVencidos = await expireUnpaidOrders(provider, now);
+
+  let prazosDeTransferenciaEsgotados = 0;
+  const late = await prisma.order.findMany({ where: { status: "PAGO", transferDeadlineAt: { lt: now } }, select: { id: true } });
+  for (const { id } of late) {
+    const r = await applyAction(id, { type: "PRAZO_TRANSFERENCIA_ESGOTADO" }, "SISTEMA", null, provider, { now });
+    if (r.ok) prazosDeTransferenciaEsgotados++;
+  }
+
+  let pagamentosLiberados = 0;
+  const due = await prisma.order.findMany({
+    where: { status: { in: ["TRANSFERIDO", "RECEBIDO"] }, releaseAt: { lte: now } },
+    select: { id: true },
+  });
+  for (const { id } of due) {
+    const r = await applyAction(id, { type: "LIBERACAO_AUTOMATICA" }, "SISTEMA", null, provider, { now });
+    if (r.ok) pagamentosLiberados++;
+  }
+
+  const anunciosEncerrados = await closeFinishedListings(now);
+  return { pixVencidos, prazosDeTransferenciaEsgotados, pagamentosLiberados, anunciosEncerrados };
+}
+
+/** Anúncios de eventos cuja venda fechou (prazo de transferência) saem do ar. */
+async function closeFinishedListings(now: Date): Promise<number> {
+  const active = await prisma.listing.findMany({ where: { status: "ATIVO" }, select: { id: true, eventId: true } });
+  const eventIds = [...new Set(active.map((l) => l.eventId))];
+  const closedEvents: string[] = [];
+  for (const id of eventIds) {
+    const event = await getEvent(id);
+    if (event && isSaleClosed(rulesFor(event), eventRuleInput(event), now)) closedEvents.push(id);
+  }
+  if (closedEvents.length === 0) return 0;
+  const r = await prisma.listing.updateMany({ where: { status: "ATIVO", eventId: { in: closedEvents } }, data: { status: "ENCERRADO" } });
+  return r.count;
 }

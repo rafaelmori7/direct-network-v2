@@ -138,6 +138,13 @@ model Listing {
   @@index([eventId, status])
 }
 
+enum PayoutStatus {
+  NENHUM
+  SOLICITADO
+  CONCLUIDO
+  FALHOU
+}
+
 enum RefundStatus {
   NENHUM
   /** Pedido enviado ao gateway, sem retorno ainda. */
@@ -179,6 +186,10 @@ model Order {
   refundStatus       RefundStatus @default(NENHUM)
   refundError        String?
   refundUpdatedAt    DateTime?
+  /** Liberação da custódia ao vendedor (POST /escrow/{id}/finish no Asaas). */
+  payoutStatus       PayoutStatus @default(NENHUM)
+  payoutError        String?
+  payoutUpdatedAt    DateTime?
   paymentExpiresAt   DateTime
   paidAt             DateTime?
   transferDeadlineAt DateTime?
@@ -195,6 +206,7 @@ model Order {
   @@index([status, transferDeadlineAt])
   @@index([status, paymentExpiresAt])
   @@index([refundStatus])
+  @@index([payoutStatus])
 }
 
 /** Histórico imutável de cada mudança de status (prova em disputas e no MED). */

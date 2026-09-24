@@ -11,6 +11,9 @@ import type { OrderStatus } from "@/lib/orders/state-machine";
 import type { BuyerIdentifier } from "@/lib/rules/types";
 import { confirmReceipt, markTransferred, openDispute, simulatePayment } from "./actions";
 import { DisputeForm, ReceiptChecklist, SimpleActionButton } from "./order-actions";
+import { OrderChat } from "./chat";
+import { sendMessage } from "./chat-actions";
+import { QUICK_REPLIES, canReadChat, canSendMessage } from "@/lib/chat/policy";
 
 export const dynamic = "force-dynamic";
 
@@ -50,6 +53,11 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
   const identifiers = order.buyerIdentifiers as Partial<Record<BuyerIdentifier, string>>;
   const provider = getPaymentProvider();
   const isMock = provider.kind === "mock" || (provider as { isSandbox?: boolean }).isSandbox === true;
+  const messages = await prisma.message.findMany({
+    where: { orderId: order.id, ...(user.isAdmin ? {} : { kind: { not: "BLOQUEADA" } }) },
+    orderBy: { createdAt: "asc" },
+  });
+  const chatRole = isBuyer ? "COMPRADOR" : isSeller ? "VENDEDOR" : "ADMIN";
   const canDispute = ["PAGO", "TRANSFERIDO", "RECEBIDO"].includes(order.status) && new Date() <= order.disputeDeadlineAt;
 
   return (
@@ -208,7 +216,23 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
           </div>
         )}
 
-        {canDispute && <DisputeForm action={openDispute.bind(null, order.id)} />}
+        {canDispute && (isBuyer || isSeller) && <DisputeForm action={openDispute.bind(null, order.id)} />}
+
+        {canReadChat(order.status) && (
+          <OrderChat
+            messages={messages.map((m) => ({
+              id: m.id,
+              role: m.role,
+              kind: m.kind,
+              body: m.body,
+              mine: m.senderId === user.id,
+              time: formatDateTime(m.createdAt),
+            }))}
+            canSend={canSendMessage(order.status, chatRole)}
+            quickReplies={chatRole === "ADMIN" ? [] : QUICK_REPLIES[chatRole]}
+            action={sendMessage.bind(null, order.id)}
+          />
+        )}
 
         <div className="aside-card">
           <div className="aside-head">Histórico</div>
