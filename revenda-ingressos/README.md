@@ -47,6 +47,10 @@ src/lib/orders/       máquina de estados do pedido (funções puras)
 src/lib/payments/     gateway: interface, mock (dev/testes) e Asaas (Pix + split + escrow)
 src/lib/platforms/    perfis iniciais das ticketeiras
 src/lib/chat/         regras do chat do pedido (quando abre, filtro de contato)
+src/lib/partners/     parceiros: slug, indicação e opções do widget
+src/app/(site)/       páginas do site (com cabeçalho e rodapé)
+src/app/embed/        vitrine do widget, sem cabeçalho (vai em iframe no site da agência)
+public/widget.js      script que a agência cola no site
 prisma/schema.prisma  banco de dados (usuários, eventos, anúncios, pedidos, histórico, disputas, chat, "COMPRO")
 tests/                testes do motor de regras, dos estados e do pagamento
 ```
@@ -137,7 +141,18 @@ npm run test:db              # testes com banco (usa TEST_DATABASE_URL ou o banc
   - o admin dá acesso pelo e-mail de quem já tem conta;
   - a agência vê os links e o cupom, as vendas indicadas e a comissão (a liberar e liberada);
   - cadastra e edita **os próprios eventos**, que entram na página dela com o selo de revenda oficial;
-  - ajusta a cor e o logo.
+  - ajusta a cor e o logo;
+  - copia o código do **widget** e vê a prévia.
+- **Widget para o site da agência:** uma linha de código mostra a vitrine de revenda dentro do site dela:
+
+  ```html
+  <script async src="https://SEU-SITE/widget.js" data-parceiro="timelapse"></script>
+  ```
+
+  - opções: `data-eventos="proprios"` (só os eventos da agência), `data-tema="claro"|"escuro"`, `data-limite="8"` (1 a 24), `data-alvo="#id"` (onde colocar);
+  - `public/widget.js` cria um iframe de `/embed/<slug>`, que ajusta a altura sozinho (`postMessage`, conferindo a origem);
+  - os cards abrem o evento **no nosso site, em outra aba**, com `?ref=<slug>`: o cookie de indicação é gravado lá (primeiro acesso) e não dentro do iframe, onde navegadores bloqueiam cookies de terceiros. Compra, login e Pix nunca acontecem dentro do site da agência;
+  - só `/embed/*` pode ser aberto em iframe; o resto do site manda `X-Frame-Options: SAMEORIGIN` (proteção contra clickjacking).
 
   Na demonstração, `isabela@demo.local` é da Timelapse.
 
@@ -206,4 +221,4 @@ npm run test:db              # testes com banco (usa TEST_DATABASE_URL ou o banc
 1. Com a conta CNPJ: validar no sandbox a criação da subconta, o link de documentos, o webhook de aprovação e se a subconta em análise já recebe split com escrow.
 2. Com uma conta de CNPJ no sandbox: validar subconta, split, Conta Escrow e `POST /escrow/{id}/finish`.
 3. Configurar o Resend com domínio próprio (SPF/DKIM) para os e-mails não caírem no spam. WhatsApp como segundo canal.
-4. Parceiros, próximas fases: widget para o site da agência e domínio próprio (nível 3).
+4. Parceiros, próxima fase: domínio próprio da agência (nível 3).

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { EventForm } from "@/app/admin/eventos/event-form";
+import { EventForm } from "@/app/(site)/admin/eventos/event-form";
 import { requirePartnerPage } from "@/lib/auth/admin";
 import { CATEGORIES, getEvent } from "@/lib/data/repo";
 import { toBrtInput } from "@/lib/datetime-input";

@@ -1,4 +1,4 @@
-import { SignUpForm } from "../auth-forms";
+import { SignUpForm } from "@/app/auth-forms";
 
 export default async function SignUpPage({ searchParams }: { searchParams: Promise<{ voltar?: string }> }) {
   const { voltar = "/" } = await searchParams;

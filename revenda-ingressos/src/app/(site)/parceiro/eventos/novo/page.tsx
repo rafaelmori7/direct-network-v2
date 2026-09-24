@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { EventForm } from "@/app/admin/eventos/event-form";
+import { EventForm } from "@/app/(site)/admin/eventos/event-form";
 import { requirePartnerPage } from "@/lib/auth/admin";
 import { CATEGORIES } from "@/lib/data/repo";
 import { savePartnerEvent } from "../../actions";

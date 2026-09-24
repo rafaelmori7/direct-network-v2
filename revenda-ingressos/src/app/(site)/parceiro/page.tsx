@@ -3,7 +3,9 @@ import { requirePartnerPage } from "@/lib/auth/admin";
 import { prisma } from "@/lib/db";
 import { formatDateTime } from "@/lib/format";
 import { formatBRL } from "@/lib/money/fees";
+import { widgetSnippet } from "@/lib/partners/widget";
 import { updateBranding } from "./actions";
+import { CopyCode } from "./copy-code";
 
 export const dynamic = "force-dynamic";
 
@@ -90,6 +92,22 @@ export default async function PartnerDashboard() {
             Vale para qualquer evento do site. Nos seus próprios eventos você ganha mesmo quando o comprador não usa seu link.
           </p>
         </div>
+      </div>
+
+      <h2 className="section-title" style={{ marginTop: 32 }}>
+        Widget para o seu site
+      </h2>
+      <p className="page-sub" style={{ marginBottom: 12 }}>
+        Cole este código no site da agência, onde a revenda deve aparecer. Os ingressos abrem no nosso site, em outra aba, já com a sua
+        indicação, então a comissão é sua.
+      </p>
+      <div className="form" style={{ maxWidth: "none" }}>
+        <CopyCode code={widgetSnippet(site, partner.slug)} />
+        <p className="hint" style={{ margin: 0 }}>
+          Opções: <b>data-eventos=&quot;proprios&quot;</b> mostra só os seus eventos; <b>data-tema=&quot;claro&quot;</b> ou <b>&quot;escuro&quot;</b> fixa as cores;{" "}
+          <b>data-limite=&quot;8&quot;</b> define quantos eventos aparecem.
+        </p>
+        <iframe src={`/embed/${partner.slug}?limite=4`} className="widget-preview" title="Prévia do widget" />
       </div>
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 32 }}>

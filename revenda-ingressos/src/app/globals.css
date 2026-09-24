@@ -1,4 +1,5 @@
-:root {
+:root,
+[data-theme="light"] {
   --bg: #ffffff;
   --surface: #f5f5f7;
   --card: #ffffff;
@@ -41,6 +42,28 @@
     --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 24px rgb(0 0 0 / 0.35);
     color-scheme: dark;
   }
+}
+
+/* Tema forçado no widget (data-tema="claro" | "escuro"). */
+[data-theme="dark"] {
+  --bg: #0e0e12;
+  --surface: #17171d;
+  --card: #1b1b22;
+  --fg: #f0f0f4;
+  --muted: #a3a3ad;
+  --line: #2c2c35;
+  --brand: #8b6cff;
+  --brand-strong: #a48bff;
+  --brand-soft: #251d45;
+  --on-brand: #0e0e12;
+  --safe: #34d399;
+  --safe-soft: #0f2e24;
+  --warn: #fbbf24;
+  --warn-soft: #33260c;
+  --danger: #f87171;
+  --danger-soft: #3a1515;
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 24px rgb(0 0 0 / 0.35);
+  color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
@@ -97,7 +120,9 @@ button, input, select { font: inherit; color: inherit; }
 .poster-art { position: absolute; inset: 0; padding: 18px; display: flex; flex-direction: column; justify-content: space-between; }
 .poster-name { font-weight: 900; font-size: 1.6rem; line-height: 1.05; text-transform: uppercase; letter-spacing: -0.02em; text-shadow: 0 2px 12px rgb(0 0 0 / 0.3); }
 .poster-date { font-weight: 800; font-size: 0.95rem; text-transform: uppercase; opacity: 0.95; }
-.poster-bar { position: absolute; left: 8px; right: 8px; bottom: 8px; border-radius: 10px; padding: 10px 12px; background: rgb(0 0 0 / 0.55); backdrop-filter: blur(6px); text-align: right; }
+/* Na barra do card: fica no fluxo, logo abaixo do nome, sem cobri-lo em cards estreitos. */
+.poster .poster-name { margin-top: auto; }
+.poster-bar { margin: 12px -10px -10px; border-radius: 10px; padding: 10px 12px; background: rgb(0 0 0 / 0.55); backdrop-filter: blur(6px); text-align: right; }
 .poster-bar strong { display: block; font-size: 0.95rem; }
 .poster-bar span { font-size: 0.85rem; opacity: 0.9; }
 .event-name { font-weight: 900; font-size: 1.25rem; letter-spacing: -0.02em; line-height: 1.15; margin: 0; }
@@ -217,3 +242,13 @@ button, input, select { font: inherit; color: inherit; }
 .partner-hero p { margin: 0 0 16px; max-width: 640px; opacity: 0.9; }
 .partner-logo { height: 56px; max-width: 220px; object-fit: contain; }
 .partner-logo-text { display: inline-flex; align-items: center; padding: 0 16px; border-radius: 12px; background: rgb(255 255 255 / 0.15); font-weight: 900; font-size: 1.3rem; }
+
+/* Widget no site da agência (/embed) */
+.embed { background: var(--bg); color: var(--fg); padding: 16px; }
+.embed-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+.embed-title { font-weight: 900; font-size: 1.25rem; letter-spacing: -0.01em; }
+.embed-sub { display: flex; align-items: center; gap: 6px; color: var(--safe); font-size: 0.85rem; font-weight: 600; }
+.embed .grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); padding: 8px 0 16px; }
+.embed-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.widget-code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85rem; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px; word-break: break-all; }
+.widget-preview { width: 100%; height: 520px; border: 1px solid var(--line); border-radius: var(--radius); }

@@ -10,25 +10,34 @@ export function EventCard({
   available,
   cheapest,
   officialBadge,
+  href,
+  newTab,
 }: {
   event: EventRecord;
   available: number;
   cheapest: number | null;
   /** Selo "revenda oficial" na página do parceiro dono do evento. */
   officialBadge?: string;
+  /** Destino do card (o widget acrescenta ?ref= do parceiro). */
+  href?: string;
+  /** No widget o evento abre em outra aba, fora do site da agência. */
+  newTab?: boolean;
 }) {
   return (
-    <Link href={`/evento/${event.slug}`} className="event-card">
+    <Link
+      href={href ?? `/evento/${event.slug}`}
+      className="event-card"
+      {...(newTab && { target: "_blank", rel: "noopener" })}
+    >
       <div className="poster">
         <PosterArt hue={event.hue}>
           <span className="poster-date">{formatDateShort(event.startsAt)}</span>
           <span className="poster-name">{event.name}</span>
-          <span />
+          <div className="poster-bar">
+            <strong>{cardBadge(event, available)}</strong>
+            <span>Ver ingressos de revenda →</span>
+          </div>
         </PosterArt>
-        <div className="poster-bar">
-          <strong>{cardBadge(event, available)}</strong>
-          <span>Ver ingressos de revenda →</span>
-        </div>
       </div>
       <h2 className="event-name">{event.name}</h2>
       <div className="event-meta">

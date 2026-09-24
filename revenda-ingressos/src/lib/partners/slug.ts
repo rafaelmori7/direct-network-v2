@@ -8,7 +8,7 @@ export const REF_COOKIE_DAYS = 30;
  * (/timelapse é parceiro; /conta não).
  */
 export const RESERVED_SLUGS = new Set([
-  "admin", "anunciar", "api", "cadastro", "comprar", "conta", "entrar", "evento", "pedidos", "parceiro", "parceiros",
+  "admin", "anunciar", "embed", "widget", "api", "cadastro", "comprar", "conta", "entrar", "evento", "pedidos", "parceiro", "parceiros",
   "sobre", "ajuda", "termos", "privacidade", "_next", "favicon.ico", "robots.txt", "sitemap.xml",
 ]);
 
