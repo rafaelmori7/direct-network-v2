@@ -1,10 +1,11 @@
 import { timingSafeEqual } from "node:crypto";
-import { handlePaymentReceived } from "@/lib/orders/service";
+import { handlePaymentReceived, handleRefundCompleted } from "@/lib/orders/service";
 import { getPaymentProvider } from "@/lib/payments";
 
 // Configurado no painel do Asaas (Integrações > Webhooks) apontando para
 // https://<site>/api/webhooks/asaas, com o "Token de autenticação" igual a ASAAS_WEBHOOK_TOKEN.
 // O Asaas envia esse token no header "asaas-access-token".
+// Eventos usados: PAYMENT_RECEIVED, PAYMENT_CONFIRMED e PAYMENT_REFUNDED.
 
 const PAYMENT_EVENTS = new Set(["PAYMENT_RECEIVED", "PAYMENT_CONFIRMED"]);
 
@@ -23,6 +24,9 @@ export async function POST(request: Request) {
 
   const body = (await request.json().catch(() => null)) as { event?: string; payment?: { id?: string } } | null;
   const chargeId = body?.payment?.id;
+  if (body?.event === "PAYMENT_REFUNDED" && chargeId) {
+    return Response.json({ ok: true, refundCompleted: await handleRefundCompleted(chargeId) });
+  }
   if (!body?.event || !PAYMENT_EVENTS.has(body.event) || !chargeId) {
     return Response.json({ ok: true, ignored: true });
   }

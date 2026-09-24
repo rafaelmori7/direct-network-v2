@@ -138,6 +138,17 @@ model Listing {
   @@index([eventId, status])
 }
 
+enum RefundStatus {
+  NENHUM
+  /** Pedido enviado ao gateway, sem retorno ainda. */
+  SOLICITADO
+  /** Criado no Asaas, esperando a aprovação manual (ação crítica). */
+  AGUARDANDO_APROVACAO
+  CONCLUIDO
+  /** O gateway recusou (ex.: saldo insuficiente para cobrir a taxa). */
+  FALHOU
+}
+
 enum OrderStatus {
   AGUARDANDO_PAGAMENTO
   PAGO
@@ -164,6 +175,10 @@ model Order {
   buyerIdentifiers   Json
   chargeId           String?     @unique
   pixCopyPaste       String?
+  /** Situação da devolução no gateway (reembolsos são aprovados manualmente no Asaas). */
+  refundStatus       RefundStatus @default(NENHUM)
+  refundError        String?
+  refundUpdatedAt    DateTime?
   paymentExpiresAt   DateTime
   paidAt             DateTime?
   transferDeadlineAt DateTime?
@@ -179,6 +194,7 @@ model Order {
   @@index([status, releaseAt])
   @@index([status, transferDeadlineAt])
   @@index([status, paymentExpiresAt])
+  @@index([refundStatus])
 }
 
 /** Histórico imutável de cada mudança de status (prova em disputas e no MED). */

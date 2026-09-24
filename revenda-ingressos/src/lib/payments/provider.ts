@@ -17,6 +17,9 @@ export interface PixCharge {
   expiresAt: Date;
 }
 
+/** CONCLUIDO: devolvido. AGUARDANDO_APROVACAO: precisa ser aprovado no painel do gateway. */
+export type RefundResult = { status: "CONCLUIDO" | "AGUARDANDO_APROVACAO" | "SOLICITADO" };
+
 export interface PaymentProvider {
   /** "mock" aceita vendedor sem subconta no gateway (desenvolvimento e testes). */
   readonly kind: "mock" | "asaas";
@@ -25,8 +28,11 @@ export interface PaymentProvider {
   createPixCharge(req: PixChargeRequest): Promise<PixCharge>;
   /** Libera a parte do vendedor retida na custódia. */
   releaseEscrow(chargeId: string): Promise<void>;
-  /** Devolve o valor integral ao comprador. */
-  refund(chargeId: string): Promise<void>;
+  /**
+   * Devolve o valor integral ao comprador. A taxa do gateway já descontada no
+   * recebimento sai do saldo da plataforma.
+   */
+  refund(chargeId: string): Promise<RefundResult>;
   /** Cancela uma cobrança ainda não paga, para o Pix não poder mais ser pago. */
   cancelCharge(chargeId: string): Promise<void>;
   /** CPF de quem pagou o Pix, possivelmente mascarado ("***.444.777-**"), ou null. */

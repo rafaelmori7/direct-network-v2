@@ -169,13 +169,19 @@ export async function applyAction(
   });
   if (!committed) return { ok: false, error: "O pedido foi alterado ao mesmo tempo. Atualize a página." };
 
-  await runEffects(result.effects, order.chargeId, provider);
+  await runEffects(result.effects, order.id, order.chargeId, provider, now);
   return { ok: true, status: result.next };
 }
 
-// TODO: mover para uma fila com novas tentativas; se o gateway falhar aqui, o
-// status já mudou e o efeito precisa ser reexecutado pelo admin.
-async function runEffects(effects: Effect[], chargeId: string | null, provider: PaymentProvider): Promise<void> {
+// Reembolsos que falham ficam como FALHOU e aparecem em /admin/reembolsos para
+// nova tentativa. TODO: a liberação da custódia ainda não tem essa proteção.
+async function runEffects(
+  effects: Effect[],
+  orderId: string,
+  chargeId: string | null,
+  provider: PaymentProvider,
+  now: Date,
+): Promise<void> {
   for (const effect of effects) {
     if (effect.type === "CANCELAR_COBRANCA") {
       // Sem cobrança (falha ao gerar o Pix) não há o que cancelar. Se a cobrança
@@ -184,7 +190,7 @@ async function runEffects(effects: Effect[], chargeId: string | null, provider: 
       continue;
     }
     if (!chargeId) throw new Error(`Pedido sem cobrança para executar ${effect.type}`);
-    if (effect.type === "REEMBOLSAR_COMPRADOR") await provider.refund(chargeId);
+    if (effect.type === "REEMBOLSAR_COMPRADOR") await requestRefund(orderId, "NENHUM", provider, now);
     if (effect.type === "LIBERAR_CUSTODIA") await provider.releaseEscrow(chargeId);
   }
 }
@@ -217,9 +223,8 @@ export async function handlePaymentReceived(chargeId: string, provider: PaymentP
 
   if (order.status === "CANCELADO") {
     // Pix pago depois de vencer (o ingresso já voltou para a venda): devolve.
-    const already = await prisma.orderLog.findFirst({ where: { orderId: order.id, action: "PIX_PAGO_APOS_VENCER" } });
-    if (already) return "IGNORADO";
-    await provider.refund(chargeId);
+    const claimed = await requestRefund(order.id, "NENHUM", provider, now);
+    if (!claimed) return "IGNORADO";
     await prisma.orderLog.create({
       data: { orderId: order.id, fromStatus: "CANCELADO", toStatus: "CANCELADO", action: "PIX_PAGO_APOS_VENCER", actor: "SISTEMA", note: "Pix pago depois de vencido: devolvido" },
     });
@@ -227,6 +232,45 @@ export async function handlePaymentReceived(chargeId: string, provider: PaymentP
   }
 
   return "IGNORADO";
+}
+
+/**
+ * Pede o reembolso integral ao gateway e registra a situação no pedido.
+ * Só age se o pedido estiver no estado `from` (NENHUM ou FALHOU): a troca para
+ * SOLICITADO é atômica, então avisos repetidos nunca geram dois reembolsos.
+ * Retorna false se outro processo já tinha pedido.
+ */
+export async function requestRefund(
+  orderId: string,
+  from: "NENHUM" | "FALHOU",
+  provider: PaymentProvider,
+  now = new Date(),
+): Promise<boolean> {
+  const claimed = await prisma.order.updateMany({
+    where: { id: orderId, refundStatus: from, chargeId: { not: null } },
+    data: { refundStatus: "SOLICITADO", refundError: null, refundUpdatedAt: now },
+  });
+  if (claimed.count === 0) return false;
+  const { chargeId } = await prisma.order.findUniqueOrThrow({ where: { id: orderId }, select: { chargeId: true } });
+  try {
+    const result = await provider.refund(chargeId!);
+    await prisma.order.update({ where: { id: orderId }, data: { refundStatus: result.status, refundUpdatedAt: new Date() } });
+  } catch (error) {
+    await prisma.order.update({
+      where: { id: orderId },
+      data: { refundStatus: "FALHOU", refundError: error instanceof Error ? error.message.slice(0, 500) : String(error), refundUpdatedAt: new Date() },
+    });
+  }
+  return true;
+}
+
+/** Aviso do gateway de que a devolução foi concluída (depois da aprovação manual). */
+export async function handleRefundCompleted(chargeId: string): Promise<boolean> {
+  const updated = await prisma.order.updateMany({
+    where: { chargeId, refundStatus: { in: ["SOLICITADO", "AGUARDANDO_APROVACAO"] } },
+    data: { refundStatus: "CONCLUIDO", refundError: null, refundUpdatedAt: new Date() },
+  });
+  return updated.count > 0;
 }
 
 /** Rotina agendada: cancela Pix vencidos e devolve a reserva ao anúncio. */

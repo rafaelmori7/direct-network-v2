@@ -197,6 +197,17 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
           </div>
         )}
 
+        {order.refundStatus !== "NENHUM" && (isBuyer || user.isAdmin) && (
+          <div className={`notice ${order.refundStatus === "CONCLUIDO" ? "notice-safe" : "notice-warn"}`}>
+            <div>
+              <b>{order.refundStatus === "CONCLUIDO" ? "Dinheiro devolvido" : "Devolução em andamento"}</b>
+              {order.refundStatus === "CONCLUIDO"
+                ? `Devolvemos ${formatBRL(order.totalCents)} para a conta que fez o Pix.`
+                : `Vamos devolver ${formatBRL(order.totalCents)} para a conta que fez o Pix. Você será avisado quando o valor for devolvido.`}
+            </div>
+          </div>
+        )}
+
         {canDispute && <DisputeForm action={openDispute.bind(null, order.id)} />}
 
         <div className="aside-card">

@@ -97,7 +97,7 @@ npm run test:db              # testes com banco (usa TEST_DATABASE_URL ou o banc
 - **Webhook:**
   - em Integrações > Webhooks, apontar para `https://<site>/api/webhooks/asaas`;
   - usar o token de autenticação igual a `ASAAS_WEBHOOK_TOKEN`;
-  - eventos `PAYMENT_RECEIVED` e `PAYMENT_CONFIRMED`.
+  - eventos `PAYMENT_RECEIVED`, `PAYMENT_CONFIRMED` e `PAYMENT_REFUNDED`.
 - **O que o webhook faz:**
   - confirma o pedido;
   - devolve o Pix se ele foi pago por outro CPF;
@@ -121,10 +121,15 @@ npm run test:db              # testes com banco (usa TEST_DATABASE_URL ou o banc
 - **Reembolso:**
   - o Asaas desconta a taxa do Pix (R$ 0,99 no sandbox) ao receber;
   - devolver o valor cheio exige **saldo na conta da plataforma** para cobrir essa taxa (erro "Saldo insuficiente").
-- **Autorização de reembolso:**
-  - reembolsos pela API ficam em `AWAITING_CRITICAL_ACTION_AUTHORIZATION`;
-  - o Asaas exige autorizar "ações críticas" (token);
-  - para reembolso automático, configurar em Integrações > Segurança (ex.: IPs permitidos ou regra para a chave da API).
+- **Autorização de reembolso:** reembolsos pela API ficam em `AWAITING_CRITICAL_ACTION_AUTHORIZATION` até alguém aprovar a "ação crítica" no painel.
+
+### Política de reembolso (decidida)
+
+- **Valor:** o comprador recebe sempre o **valor integral**, e a taxa do Pix sai do saldo da plataforma. Mantenha saldo de reserva no Asaas.
+- **Aprovação:** os reembolsos são **aprovados manualmente** no painel do Asaas.
+- **Situação no pedido (`refundStatus`):** `SOLICITADO`, `AGUARDANDO_APROVACAO`, `CONCLUIDO` (pelo webhook `PAYMENT_REFUNDED`) ou `FALHOU` (com a mensagem do gateway).
+- **`/admin/reembolsos`:** lista os pendentes e permite "tentar de novo" os que falharam.
+- **Sem reembolso duplicado:** a troca para `SOLICITADO` é atômica, então avisos repetidos não geram dois reembolsos.
 - **Validade do QR Code:** o Pix vale até um ano. Por isso o site cancela a cobrança quando a reserva vence, e devolve se ela for paga mesmo assim.
 
 ## Próximos passos

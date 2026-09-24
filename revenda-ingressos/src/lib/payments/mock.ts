@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { PaymentProvider, PixCharge, PixChargeRequest } from "./provider";
+import type { PaymentProvider, PixCharge, PixChargeRequest, RefundResult } from "./provider";
 
 type MockChargeState = "PENDENTE" | "RETIDO" | "LIBERADO" | "REEMBOLSADO" | "CANCELADA";
 
@@ -50,8 +50,20 @@ export class MockPaymentProvider implements PaymentProvider {
     this.require(chargeId, "RETIDO").state = "LIBERADO";
   }
 
-  async refund(chargeId: string): Promise<void> {
+  /** Resultado do próximo reembolso (para simular a aprovação manual do Asaas). */
+  nextRefundStatus: RefundResult["status"] = "CONCLUIDO";
+
+  /** Faz o próximo reembolso falhar (ex.: saldo insuficiente). */
+  failNextRefund: string | null = null;
+
+  async refund(chargeId: string): Promise<RefundResult> {
+    if (this.failNextRefund) {
+      const message = this.failNextRefund;
+      this.failNextRefund = null;
+      throw new Error(message);
+    }
     this.require(chargeId, "RETIDO").state = "REEMBOLSADO";
+    return { status: this.nextRefundStatus };
   }
 
   private require(chargeId: string, expected: MockChargeState) {

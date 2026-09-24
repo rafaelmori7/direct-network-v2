@@ -113,3 +113,56 @@ describe("rota do webhook", () => {
     expect(await res.json()).toMatchObject({ outcome: "CONFIRMADO" });
   });
 });
+
+describe("reembolso com aprovação manual", () => {
+  async function paidByOther() {
+    const order = await newOrder();
+    provider.markPaid(order.chargeId!, "***.533.447-**");
+    return order;
+  }
+
+  it("fica aguardando aprovação e conclui com o aviso PAYMENT_REFUNDED", async () => {
+    const order = await paidByOther();
+    provider.nextRefundStatus = "AGUARDANDO_APROVACAO";
+    await handlePaymentReceived(order.chargeId!, provider, now);
+    provider.nextRefundStatus = "CONCLUIDO";
+    expect((await prisma.order.findUniqueOrThrow({ where: { id: order.id } })).refundStatus).toBe("AGUARDANDO_APROVACAO");
+
+    process.env.ASAAS_WEBHOOK_TOKEN = "segredo-teste";
+    const { POST } = await import("@/app/api/webhooks/asaas/route");
+    const res = await POST(
+      new Request("http://x", {
+        method: "POST",
+        headers: { "asaas-access-token": "segredo-teste" },
+        body: JSON.stringify({ event: "PAYMENT_REFUNDED", payment: { id: order.chargeId } }),
+      }),
+    );
+    expect(await res.json()).toMatchObject({ refundCompleted: true });
+    expect((await prisma.order.findUniqueOrThrow({ where: { id: order.id } })).refundStatus).toBe("CONCLUIDO");
+  });
+
+  it("falha do gateway fica registrada e pode ser refeita pelo admin", async () => {
+    const { requestRefund } = await import("@/lib/orders/service");
+    const order = await paidByOther();
+    provider.failNextRefund = "Saldo insuficiente.";
+    await handlePaymentReceived(order.chargeId!, provider, now);
+    const failed = await prisma.order.findUniqueOrThrow({ where: { id: order.id } });
+    expect(failed).toMatchObject({ status: "CANCELADO", refundStatus: "FALHOU", refundError: "Saldo insuficiente." });
+
+    expect(await requestRefund(order.id, "FALHOU", provider)).toBe(true);
+    expect((await prisma.order.findUniqueOrThrow({ where: { id: order.id } })).refundStatus).toBe("CONCLUIDO");
+    // Não refaz o que já foi feito.
+    expect(await requestRefund(order.id, "FALHOU", provider)).toBe(false);
+  });
+
+  it("avisos simultâneos de Pix pago após vencer geram um único reembolso", async () => {
+    const order = await newOrder();
+    await expireUnpaidOrders(provider, addMinutes(now, 31));
+    provider.markPaid(order.chargeId!, BUYER_CPF);
+    const spy = vi.spyOn(provider, "refund");
+    const results = await Promise.all([1, 2, 3].map(() => handlePaymentReceived(order.chargeId!, provider, now)));
+    expect(results.filter((r) => r === "REEMBOLSADO_APOS_VENCER")).toHaveLength(1);
+    expect(spy).toHaveBeenCalledTimes(1);
+    spy.mockRestore();
+  });
+});

@@ -1,4 +1,4 @@
-import { onlyDigits, type PaymentProvider, type PixCharge, type PixChargeRequest } from "./provider";
+import { onlyDigits, type PaymentProvider, type PixCharge, type PixChargeRequest, type RefundResult } from "./provider";
 
 /**
  * Integração com o Asaas (Pix + split + Conta Escrow).
@@ -58,8 +58,14 @@ export class AsaasPaymentProvider implements PaymentProvider {
     await this.request("POST", `/escrow/${escrow.id}/finish`);
   }
 
-  async refund(chargeId: string): Promise<void> {
-    await this.request("POST", `/payments/${chargeId}/refund`);
+  // Testado no sandbox: com a autorização de ações críticas ligada, o reembolso
+  // volta como AWAITING_CRITICAL_ACTION_AUTHORIZATION até ser aprovado no painel.
+  async refund(chargeId: string): Promise<RefundResult> {
+    const payment = await this.request<{ refunds?: { status?: string }[] | null }>("POST", `/payments/${chargeId}/refund`);
+    const last = payment.refunds?.at(-1)?.status;
+    if (last === "DONE") return { status: "CONCLUIDO" };
+    if (last === "AWAITING_CRITICAL_ACTION_AUTHORIZATION") return { status: "AGUARDANDO_APROVACAO" };
+    return { status: "SOLICITADO" };
   }
 
   async cancelCharge(chargeId: string): Promise<void> {
