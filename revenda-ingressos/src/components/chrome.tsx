@@ -31,6 +31,11 @@ export async function SiteHeader() {
         <nav className="header-nav">
           {user ? (
             <>
+              {user.isAdmin && (
+                <Link href="/admin" className="header-link">
+                  Painel
+                </Link>
+              )}
               <Link href="/conta" className="header-link">
                 {user.name.split(" ")[0]}
               </Link>

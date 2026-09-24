@@ -78,6 +78,13 @@ describe("proteções", () => {
     expect(buyerWins).toEqual({ ok: true, next: "REEMBOLSADO", effects: [{ type: "REEMBOLSAR_COMPRADOR" }] });
   });
 
+  it("vendedor com razão antes da liberação volta a aguardar a data", () => {
+    const before = transition(order("EM_DISPUTA"), { type: "ADMIN_DECIDIU", winner: "VENDEDOR", note: "Ingresso entregue" }, "ADMIN", at("2026-10-10T00:00:00Z"));
+    expect(before).toEqual({ ok: true, next: "RECEBIDO", effects: [] });
+    const after = transition(order("EM_DISPUTA"), { type: "ADMIN_DECIDIU", winner: "VENDEDOR", note: "Ingresso entregue" }, "ADMIN", at("2026-10-23T00:00:00Z"));
+    expect(after).toEqual({ ok: true, next: "LIBERADO", effects: [{ type: "LIBERAR_CUSTODIA" }] });
+  });
+
   it("ninguém executa ação de outro papel", () => {
     expect(transition(order("PAGO"), { type: "VENDEDOR_TRANSFERIU" }, "COMPRADOR", at("2026-10-05T15:00:00Z")).ok).toBe(false);
     expect(transition(base, { type: "PAGAMENTO_CONFIRMADO" }, "COMPRADOR", at("2026-10-05T12:00:00Z")).ok).toBe(false);

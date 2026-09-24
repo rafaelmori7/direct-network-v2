@@ -117,9 +117,10 @@ export function transition(
     case "ADMIN_DECIDIU":
       if (status !== "EM_DISPUTA") return badState(status, action);
       if (!action.note.trim()) return fail("Registre o motivo da decisão");
-      return action.winner === "COMPRADOR"
-        ? ok("REEMBOLSADO", [{ type: "REEMBOLSAR_COMPRADOR" }])
-        : ok("LIBERADO", [{ type: "LIBERAR_CUSTODIA" }]);
+      if (action.winner === "COMPRADOR") return ok("REEMBOLSADO", [{ type: "REEMBOLSAR_COMPRADOR" }]);
+      // Vendedor com razão antes da data de liberação: volta a esperar essa data,
+      // porque até o evento o ingresso ainda pode ser cancelado na ticketeira.
+      return now < order.releaseAt ? ok("RECEBIDO") : ok("LIBERADO", [{ type: "LIBERAR_CUSTODIA" }]);
   }
 }
 

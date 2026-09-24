@@ -31,20 +31,19 @@ export function disputeDeadline(rules: RuleProfile, event: EventRuleInput): Date
 }
 
 /**
- * Momento em que a ticketeira deixa de aceitar transferências: a regra da
- * ticketeira (X horas antes) ou a data/hora exata cadastrada no evento, o que vier antes.
+ * Momento em que a ticketeira deixa de aceitar transferências. A data/hora
+ * exata cadastrada no evento vale sobre a regra geral da ticketeira (X horas
+ * antes), porque quem cadastra conferiu aquele evento; a regra geral é o
+ * padrão para eventos sem data cadastrada.
  */
 export function transferLockAt(rules: RuleProfile, event: EventRuleInput): Date {
-  const byProfile = addHours(event.startsAt, -rules.transferLockHoursBefore);
-  return event.transferEndsAt ? minDate(byProfile, event.transferEndsAt) : byProfile;
+  return event.transferEndsAt ?? addHours(event.startsAt, -rules.transferLockHoursBefore);
 }
 
-/** Momento em que a transferência abre, ou null se já está aberta desde a compra. */
+/** Momento em que a transferência abre (data do evento ou regra geral), ou null se já está aberta. */
 export function transferOpensAt(rules: RuleProfile, event: EventRuleInput): Date | null {
-  const byProfile =
-    rules.transferOpensDaysBefore === null ? null : addDays(event.startsAt, -rules.transferOpensDaysBefore);
-  if (event.transferOpensAt) return byProfile ? maxDate(byProfile, event.transferOpensAt) : event.transferOpensAt;
-  return byProfile;
+  if (event.transferOpensAt) return event.transferOpensAt;
+  return rules.transferOpensDaysBefore === null ? null : addDays(event.startsAt, -rules.transferOpensDaysBefore);
 }
 
 /**

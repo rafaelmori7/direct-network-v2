@@ -69,3 +69,31 @@ export function DisputeForm({ action }: { action: Action }) {
     </form>
   );
 }
+
+export function DisputeDecisionForm({ action, reason }: { action: Action; reason: string | null }) {
+  const [state, formAction, pending] = useActionState(action, { error: null });
+  return (
+    <form action={formAction} className="aside-card">
+      <div className="aside-head">Decisão da disputa (admin)</div>
+      <div className="aside-body form" style={{ gap: 12 }}>
+        {reason && <p className="offer-sub" style={{ margin: 0 }}>Motivo: “{reason}”</p>}
+        <ErrorNote error={state.error} />
+        <label className="check">
+          <input type="radio" name="vencedor" value="COMPRADOR" required />
+          <span><b>Comprador tem razão</b>: devolver o valor integral (reembolso para aprovar no Asaas).</span>
+        </label>
+        <label className="check">
+          <input type="radio" name="vencedor" value="VENDEDOR" />
+          <span><b>Vendedor tem razão</b>: o pagamento é liberado na data normal (após o evento), ou na hora se ela já passou.</span>
+        </label>
+        <div className="field">
+          <label htmlFor="motivo">Motivo da decisão (fica no histórico)</label>
+          <textarea id="motivo" name="motivo" className="input" style={{ height: 80, paddingTop: 10 }} required />
+        </div>
+        <button className="btn btn-primary btn-block" disabled={pending}>
+          Registrar decisão
+        </button>
+      </div>
+    </form>
+  );
+}

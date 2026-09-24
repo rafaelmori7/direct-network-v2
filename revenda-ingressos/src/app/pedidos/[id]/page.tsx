@@ -9,8 +9,8 @@ import { TICKET_TYPE_LABEL, formatDateLong, formatDateTime } from "@/lib/format"
 import { formatBRL } from "@/lib/money/fees";
 import type { OrderStatus } from "@/lib/orders/state-machine";
 import type { BuyerIdentifier } from "@/lib/rules/types";
-import { confirmReceipt, markTransferred, openDispute, simulatePayment } from "./actions";
-import { DisputeForm, ReceiptChecklist, SimpleActionButton } from "./order-actions";
+import { confirmReceipt, decideDispute, markTransferred, openDispute, simulatePayment } from "./actions";
+import { DisputeDecisionForm, DisputeForm, ReceiptChecklist, SimpleActionButton } from "./order-actions";
 import { OrderChat } from "./chat";
 import { sendMessage } from "./chat-actions";
 import { QUICK_REPLIES, canReadChat, canSendMessage } from "@/lib/chat/policy";
@@ -214,6 +214,13 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                 : `Vamos devolver ${formatBRL(order.totalCents)} para a conta que fez o Pix. Você será avisado quando o valor for devolvido.`}
             </div>
           </div>
+        )}
+
+        {order.status === "EM_DISPUTA" && user.isAdmin && (
+          <DisputeDecisionForm
+            action={decideDispute.bind(null, order.id)}
+            reason={(await prisma.dispute.findFirst({ where: { orderId: order.id, resolvedAt: null } }))?.reason ?? null}
+          />
         )}
 
         {canDispute && (isBuyer || isSeller) && <DisputeForm action={openDispute.bind(null, order.id)} />}

@@ -159,3 +159,21 @@ describe("rotinas", () => {
     expect((await prisma.listing.findUniqueOrThrow({ where: { id: listingId } })).status).toBe("ENCERRADO");
   });
 });
+
+describe("disputa", () => {
+  it("registra a disputa e a decisão do admin", async () => {
+    const r = await orderFor(buyers[0]);
+    const id = r.ok ? r.orderId : "";
+    const o = await prisma.order.findUniqueOrThrow({ where: { id } });
+    provider.markPaid(o.chargeId!);
+    await applyAction(id, { type: "PAGAMENTO_CONFIRMADO" }, "SISTEMA", null, provider, { now });
+    await applyAction(id, { type: "ABRIR_DISPUTA", reason: "Vendedor não responde" }, "COMPRADOR", buyers[0].id, provider, { now });
+    expect(await prisma.dispute.findFirstOrThrow({ where: { orderId: id } })).toMatchObject({ reason: "Vendedor não responde", resolvedAt: null });
+
+    await applyAction(id, { type: "ADMIN_DECIDIU", winner: "COMPRADOR", note: "Sem transferência" }, "ADMIN", null, provider, { now });
+    expect(await prisma.dispute.findFirstOrThrow({ where: { orderId: id } })).toMatchObject({ winner: "COMPRADOR", resolution: "Sem transferência" });
+    expect(await prisma.order.findUniqueOrThrow({ where: { id } })).toMatchObject({ status: "REEMBOLSADO", refundStatus: "CONCLUIDO" });
+    const msgs = await prisma.message.findMany({ where: { orderId: id, kind: "SISTEMA" } });
+    expect(msgs.length).toBeGreaterThanOrEqual(3);
+  });
+});

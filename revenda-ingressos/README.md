@@ -26,7 +26,11 @@ Os perfis ficam em `src/lib/platforms/profiles.ts`. Valores marcados "a confirma
 - **Transferência:** eventos com transferência não confirmada, ou com ingresso nominal e biometria, ficam bloqueados.
 - **Confirmação do comprador:** o "recebi" **não libera dinheiro**. A liberação só acontece depois da janela de disputa.
 - **Prazo do vendedor:** se o vendedor não transferir no prazo, o comprador é reembolsado automaticamente.
-- **Janela de transferência do evento:** a data/hora exatas cadastradas no evento (`transferOpensAt` / `transferEndsAt`) fecham a venda antes do fim da transferência, com o prazo do vendedor de folga. Os anúncios saem do ar sozinhos (`isSaleClosed`).
+- **Janela de transferência do evento:**
+  - a data/hora exatas cadastradas no evento (`transferOpensAt` / `transferEndsAt`) **valem sobre a regra geral da ticketeira**;
+  - a venda fecha antes do fim da transferência, deixando o prazo do vendedor de folga;
+  - sem data cadastrada, vale a regra geral (Ticketmaster: 30 a 7 dias antes; Sympla: até 24h antes);
+  - os anúncios saem do ar sozinhos (`isSaleClosed`).
 
 ## Chat do pedido
 
@@ -65,6 +69,10 @@ tests/                testes do motor de regras, dos estados e do pagamento
   - para o vendedor: dados do comprador, instruções de transferência e o botão "já transferi";
   - para os dois: disputa e histórico.
   - Em modo teste há o botão "simular pagamento".
+- **Painel admin (`/admin`, só para `isAdmin`):**
+  - **eventos:** criar e editar, com ticketeira, transferência permitida, janela exata, prazo do vendedor, setores, esportivo e biometria;
+  - **disputas:** a decisão fica na página do pedido. Se o vendedor tiver razão antes da data de liberação, o pedido volta a aguardar essa data;
+  - **reembolsos pendentes.**
 - **Minha conta (`/conta`):** compras, vendas (com data de liberação) e anúncios.
 - **Rotinas (`/api/cron/rotinas`):** chamar a cada ~5 min com `Authorization: Bearer $CRON_SECRET`. A cada chamada:
   - cancela Pix vencidos e devolve a reserva;
@@ -161,4 +169,4 @@ npm run test:db              # testes com banco (usa TEST_DATABASE_URL ou o banc
 1. Verificação de identidade do vendedor (documento + selfie) e criação da subconta Asaas com Conta Escrow.
 2. Com uma conta de CNPJ no sandbox: validar subconta, split, Conta Escrow e `POST /escrow/{id}/finish`.
 3. Avisos por e-mail/WhatsApp: nova mensagem, pagamento confirmado, prazo acabando.
-4. Painel admin: eventos, sobreposições de regras e disputas.
+4. Admin: usuários (verificar vendedor), anúncios pausados e busca de pedidos.

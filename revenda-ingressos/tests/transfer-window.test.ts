@@ -55,11 +55,14 @@ describe("prazo exato de transferência do evento", () => {
     expect(isSaleClosed(rules, festival, new Date("2026-10-14T20:59:59Z"))).toBe(false);
   });
 
-  it("usa a regra da ticketeira quando ela é mais restritiva que a data do evento", () => {
-    const event = { ...festival, transferEndsAt: new Date("2026-10-17T16:00:00Z") };
-    const sympla = effectiveRules(PLATFORMS.SYMPLA.profile, event);
-    // Sympla bloqueia 24h antes do início (16/10 14h BRT), antes da data cadastrada.
-    expect(saleWindow(sympla, event).closesAt.toISOString()).toBe("2026-10-15T17:00:00.000Z");
+  it("a data cadastrada no evento vale sobre a regra geral da ticketeira", () => {
+    // Ticketmaster: regra geral fecha 7 dias antes; o evento libera até a véspera.
+    const event = { ...festival, transferEndsAt: new Date("2026-10-16T21:00:00Z"), overrides: { sellerTransferDeadlineHours: 6 } };
+    const tm = effectiveRules(PLATFORMS.TICKETMASTER.profile, event);
+    expect(saleWindow(tm, event).closesAt.toISOString()).toBe("2026-10-16T15:00:00.000Z");
+    // Sem data cadastrada, vale a regra geral.
+    const semData = { ...event, transferEndsAt: null };
+    expect(saleWindow(tm, semData).closesAt.toISOString()).toBe("2026-10-10T11:00:00.000Z");
   });
 
   it("não abre a venda antes da data de abertura da transferência", () => {

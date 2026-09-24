@@ -155,6 +155,15 @@ export async function applyAction(
       // Vendedor não entregou: tira o anúncio do ar até o admin revisar.
       await tx.listing.update({ where: { id: order.listingId }, data: { status: "PAUSADO" } });
     }
+    if (action.type === "ABRIR_DISPUTA") {
+      await tx.dispute.create({ data: { orderId: order.id, openedBy: actor, reason: action.reason.trim() } });
+    }
+    if (action.type === "ADMIN_DECIDIU") {
+      await tx.dispute.updateMany({
+        where: { orderId: order.id, resolvedAt: null },
+        data: { resolvedAt: now, winner: action.winner, resolution: action.note.trim() },
+      });
+    }
     const systemMessage = SYSTEM_MESSAGES[result.next];
     if (systemMessage) {
       await tx.message.create({ data: { orderId: order.id, role: "SISTEMA", kind: "SISTEMA", body: systemMessage } });

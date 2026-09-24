@@ -53,3 +53,19 @@ export async function simulatePayment(orderId: string, _prev: OrderFormState, _f
   revalidatePath(`/pedidos/${orderId}`);
   return { error: outcome === "CONFIRMADO" ? null : "Pagamento não pôde ser confirmado." };
 }
+
+export async function decideDispute(orderId: string, _prev: OrderFormState, form: FormData): Promise<OrderFormState> {
+  const user = await getCurrentUser();
+  if (!user?.isAdmin) return { error: "Apenas administradores." };
+  const winner = String(form.get("vencedor") ?? "");
+  if (winner !== "COMPRADOR" && winner !== "VENDEDOR") return { error: "Escolha quem tem razão." };
+  const result = await applyAction(
+    orderId,
+    { type: "ADMIN_DECIDIU", winner, note: String(form.get("motivo") ?? "") },
+    "ADMIN",
+    user.id,
+    getPaymentProvider(),
+  );
+  revalidatePath(`/pedidos/${orderId}`);
+  return { error: result.ok ? null : result.error };
+}
