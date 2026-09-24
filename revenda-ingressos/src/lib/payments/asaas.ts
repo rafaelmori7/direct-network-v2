@@ -1,4 +1,7 @@
-import { onlyDigits, type PaymentProvider, type PixCharge, type PixChargeRequest } from "./provider";
+import { onlyDigits, type ChargeStatus, type PaymentProvider, type PixCharge, type PixChargeRequest } from "./provider";
+
+/** Status do Asaas em que o dinheiro já entrou. */
+const PAID_STATUSES = new Set(["RECEIVED", "CONFIRMED", "RECEIVED_IN_CASH"]);
 
 /**
  * Integração com o Asaas (Pix + split + Conta Escrow).
@@ -10,8 +13,10 @@ import { onlyDigits, type PaymentProvider, type PixCharge, type PixChargeRequest
  *   daysToExpire = 45), então a parte dele fica bloqueada;
  * - liberamos com POST /escrow/{id}/finish depois do evento.
  *
- * Validar no sandbox antes de produção: se o finish/refund exigem a chave da
- * conta principal ou da subconta, e o comportamento do refund com escrow ativo.
+ * Validar no sandbox antes de produção (npm run asaas:sandbox): se o
+ * finish/refund exigem a chave da conta principal ou da subconta, o
+ * comportamento do refund com escrow ativo e em que formato vem o CPF do
+ * pagador na transação Pix.
  * Referência: https://docs.asaas.com/docs/introducao-conta-escrow
  */
 export class AsaasPaymentProvider implements PaymentProvider {
@@ -49,6 +54,17 @@ export class AsaasPaymentProvider implements PaymentProvider {
       qrCodeBase64: qr.encodedImage,
       expiresAt: req.expiresAt,
     };
+  }
+
+  async getChargeStatus(chargeId: string): Promise<ChargeStatus> {
+    const payment = await this.request<{ status: string; pixTransaction?: string | null }>("GET", `/payments/${chargeId}`);
+    const paid = PAID_STATUSES.has(payment.status);
+    if (!paid || !payment.pixTransaction) return { paid, payerCpf: null };
+    const pix = await this.request<{ externalAccount?: { cpfCnpj?: string | null } | null }>(
+      "GET",
+      `/pix/transactions/${payment.pixTransaction}`,
+    );
+    return { paid, payerCpf: pix.externalAccount?.cpfCnpj ?? null };
   }
 
   async releaseEscrow(chargeId: string): Promise<void> {

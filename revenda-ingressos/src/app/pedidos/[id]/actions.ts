@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/db";
-import { applyAction } from "@/lib/orders/service";
+import { applyAction, handlePaymentReceived } from "@/lib/orders/service";
 import type { Actor, OrderAction } from "@/lib/orders/state-machine";
 import { getPaymentProvider } from "@/lib/payments";
 import { MockPaymentProvider } from "@/lib/payments/mock";
@@ -46,8 +46,9 @@ export async function simulatePayment(orderId: string, _prev: OrderFormState, _f
   const user = await getCurrentUser();
   const order = await prisma.order.findUnique({ where: { id: orderId } });
   if (!user || !order || order.buyerId !== user.id) return { error: "Pedido não encontrado." };
-  if (order.chargeId) provider.markPaid(order.chargeId);
-  const result = await applyAction(orderId, { type: "PAGAMENTO_CONFIRMADO" }, "SISTEMA", null, provider, { note: "Pagamento simulado" });
+  if (!order.chargeId) return { error: "Pedido sem cobrança." };
+  provider.markPaid(order.chargeId, user.cpf);
+  const result = await handlePaymentReceived(order.chargeId, provider);
   revalidatePath(`/pedidos/${orderId}`);
-  return { error: result.ok ? null : result.error };
+  return { error: result === "CONFIRMADO" ? null : "O pedido não estava aguardando pagamento." };
 }

@@ -35,6 +35,17 @@ describe("fluxo feliz", () => {
 });
 
 describe("proteções", () => {
+  it("Pix pago por outro CPF: reembolso, e só enquanto aguarda pagamento", () => {
+    const action = { type: "PAGAMENTO_RECUSADO", reason: "CPF diferente" } as const;
+    expect(transition(base, action, "SISTEMA", at("2026-10-05T12:00:00Z"))).toEqual({
+      ok: true,
+      next: "REEMBOLSADO",
+      effects: [{ type: "REEMBOLSAR_COMPRADOR" }],
+    });
+    expect(transition(order("PAGO"), action, "SISTEMA", at("2026-10-05T12:00:00Z")).ok).toBe(false);
+    expect(transition(base, action, "COMPRADOR", at("2026-10-05T12:00:00Z")).ok).toBe(false);
+  });
+
   it("confirmar recebimento nunca libera dinheiro", () => {
     const r = transition(
       order("TRANSFERIDO"),

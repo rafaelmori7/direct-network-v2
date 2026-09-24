@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { prisma } from "@/lib/db";
-import { applyAction, createOrder, expireUnpaidOrders } from "@/lib/orders/service";
+import { applyAction, createOrder, expireUnpaidOrders, handlePaymentReceived } from "@/lib/orders/service";
 import { MockPaymentProvider } from "@/lib/payments/mock";
 import { PLATFORMS } from "@/lib/platforms/profiles";
 import { addDays, addMinutes } from "@/lib/time";
@@ -117,5 +117,57 @@ describe("ciclo do pedido", () => {
     ]);
     expect(results.filter((x) => x.ok)).toHaveLength(1);
     expect(await prisma.orderLog.count()).toBe(1);
+  });
+});
+
+describe("webhook de pagamento", () => {
+  async function pending() {
+    const r = await orderFor(buyers[0]);
+    return prisma.order.findUniqueOrThrow({ where: { id: r.ok ? r.orderId : "" } });
+  }
+
+  it("Pix do próprio comprador confirma o pedido, e o reenvio não repete nada", async () => {
+    const order = await pending();
+    expect(await handlePaymentReceived(order.chargeId!, provider, { now })).toBe("IGNORADO"); // ainda não pago
+    provider.markPaid(order.chargeId!);
+    expect(await handlePaymentReceived(order.chargeId!, provider, { now })).toBe("CONFIRMADO");
+    expect(await handlePaymentReceived(order.chargeId!, provider, { now })).toBe("IGNORADO");
+    expect((await prisma.order.findUniqueOrThrow({ where: { id: order.id } })).status).toBe("PAGO");
+    expect(await prisma.orderLog.count()).toBe(1);
+  });
+
+  it("Pix de outro CPF: reembolso e ingresso de volta ao anúncio", async () => {
+    const order = await pending();
+    provider.markPaid(order.chargeId!, buyers[1].cpf);
+    expect(await handlePaymentReceived(order.chargeId!, provider, { now })).toBe("RECUSADO_PAGADOR");
+    expect((await prisma.order.findUniqueOrThrow({ where: { id: order.id } })).status).toBe("REEMBOLSADO");
+    expect(provider.charges.get(order.chargeId!)?.state).toBe("REEMBOLSADO");
+    expect((await prisma.listing.findUniqueOrThrow({ where: { id: listingId } })).quantityAvailable).toBe(1);
+  });
+
+  it("pagador desconhecido é aceito no sandbox", async () => {
+    const order = await pending();
+    provider.markPaid(order.chargeId!, null);
+    expect(await handlePaymentReceived(order.chargeId!, provider, { now, allowUnknownPayer: true })).toBe("CONFIRMADO");
+  });
+
+  it("pagador desconhecido fora do sandbox: reembolso", async () => {
+    const order = await pending();
+    provider.markPaid(order.chargeId!, null);
+    expect(await handlePaymentReceived(order.chargeId!, provider, { now })).toBe("RECUSADO_PAGADOR");
+  });
+
+  it("Pix pago depois do vencimento: devolve o dinheiro uma única vez", async () => {
+    const order = await pending();
+    await expireUnpaidOrders(provider, addMinutes(now, 31));
+    provider.markPaid(order.chargeId!);
+    expect(await handlePaymentReceived(order.chargeId!, provider, { now })).toBe("REEMBOLSADO_APOS_VENCIMENTO");
+    expect(await handlePaymentReceived(order.chargeId!, provider, { now })).toBe("IGNORADO");
+    expect(provider.charges.get(order.chargeId!)?.state).toBe("REEMBOLSADO");
+    expect((await prisma.order.findUniqueOrThrow({ where: { id: order.id } })).status).toBe("CANCELADO");
+  });
+
+  it("cobrança desconhecida é ignorada", async () => {
+    expect(await handlePaymentReceived("pay_inexistente", provider, { now })).toBe("IGNORADO");
   });
 });

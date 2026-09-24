@@ -5,9 +5,9 @@
  *
  *   AGUARDANDO_PAGAMENTO ─pago─▶ PAGO ─vendedor transferiu─▶ TRANSFERIDO ─comprador recebeu─▶ RECEBIDO
  *          │                      │                            │                                │
- *        expirou          prazo esgotado              não recebi / disputa                   disputa
+ *   expirou / pagador errado  prazo esgotado              não recebi / disputa                   disputa
  *          ▼                      ▼                            ▼                                ▼
- *      CANCELADO             REEMBOLSADO ◀── admin ── EM_DISPUTA ── admin ──▶ LIBERADO ◀── liberação automática
+ *  CANCELADO / REEMBOLSADO    REEMBOLSADO ◀── admin ── EM_DISPUTA ── admin ──▶ LIBERADO ◀── liberação automática
  */
 
 export type OrderStatus =
@@ -25,6 +25,8 @@ export type Actor = "COMPRADOR" | "VENDEDOR" | "SISTEMA" | "ADMIN";
 export type OrderAction =
   | { type: "PAGAMENTO_CONFIRMADO" }
   | { type: "PAGAMENTO_EXPIRADO" }
+  /** Pix pago por um CPF diferente do comprador: devolvemos o dinheiro. */
+  | { type: "PAGAMENTO_RECUSADO"; reason: string }
   | { type: "VENDEDOR_TRANSFERIU" }
   | { type: "PRAZO_TRANSFERENCIA_ESGOTADO" }
   | { type: "COMPRADOR_CONFIRMOU_RECEBIMENTO"; checklistConfirmed: boolean }
@@ -48,6 +50,7 @@ export type TransitionResult =
 const ALLOWED_ACTORS: Record<OrderAction["type"], Actor[]> = {
   PAGAMENTO_CONFIRMADO: ["SISTEMA"],
   PAGAMENTO_EXPIRADO: ["SISTEMA"],
+  PAGAMENTO_RECUSADO: ["SISTEMA"],
   VENDEDOR_TRANSFERIU: ["VENDEDOR"],
   PRAZO_TRANSFERENCIA_ESGOTADO: ["SISTEMA"],
   COMPRADOR_CONFIRMOU_RECEBIMENTO: ["COMPRADOR"],
@@ -73,6 +76,11 @@ export function transition(
 
     case "PAGAMENTO_EXPIRADO":
       return status === "AGUARDANDO_PAGAMENTO" ? ok("CANCELADO") : badState(status, action);
+
+    case "PAGAMENTO_RECUSADO":
+      return status === "AGUARDANDO_PAGAMENTO"
+        ? ok("REEMBOLSADO", [{ type: "REEMBOLSAR_COMPRADOR" }])
+        : badState(status, action);
 
     case "VENDEDOR_TRANSFERIU":
       if (status !== "PAGO") return badState(status, action);

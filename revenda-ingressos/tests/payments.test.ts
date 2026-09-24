@@ -22,6 +22,14 @@ describe("pagador", () => {
     expect(payerMatchesBuyer("98765432100", "12345678900")).toBe(false);
     expect(payerMatchesBuyer(null, "12345678900")).toBe(false);
   });
+
+  it("aceita CPF mascarado só se os dígitos visíveis batem", () => {
+    expect(payerMatchesBuyer("***.456.789-**", "12345678900")).toBe(true);
+    expect(payerMatchesBuyer("***.456.780-**", "12345678900")).toBe(false);
+    // Poucos dígitos visíveis não provam nada.
+    expect(payerMatchesBuyer("***.***.789-**", "12345678900")).toBe(false);
+    expect(payerMatchesBuyer("***.456.789-*", "12345678900")).toBe(false);
+  });
 });
 
 describe("gateway mock", () => {

@@ -2,7 +2,7 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { eventRuleInput, getEvent, rulesFor } from "@/lib/data/repo";
 import { splitAmount } from "@/lib/money/fees";
-import type { PaymentProvider } from "@/lib/payments/provider";
+import { payerMatchesBuyer, type PaymentProvider } from "@/lib/payments/provider";
 import { checkPurchase, disputeDeadline, releaseAt, transferDeadline, type Violation } from "@/lib/rules/engine";
 import type { BuyerIdentifier, TicketType } from "@/lib/rules/types";
 import { addMinutes } from "@/lib/time";
@@ -144,8 +144,8 @@ export async function applyAction(
   const committed = await prisma.$transaction(async (tx) => {
     const updated = await tx.order.updateMany({ where: { id: order.id, status: order.status }, data });
     if (updated.count === 0) return false;
-    if (result.next === "CANCELADO") {
-      // Pix não pago: devolve a quantidade reservada ao anúncio.
+    if (order.status === "AGUARDANDO_PAGAMENTO" && (result.next === "CANCELADO" || result.next === "REEMBOLSADO")) {
+      // Pix não pago (ou recusado): devolve a quantidade reservada ao anúncio.
       await tx.listing.update({ where: { id: order.listingId }, data: { quantityAvailable: { increment: order.quantity } } });
     }
     if (action.type === "PRAZO_TRANSFERENCIA_ESGOTADO") {
@@ -193,4 +193,71 @@ export async function expireUnpaidOrders(provider: PaymentProvider, now = new Da
     if (r.ok) count++;
   }
   return count;
+}
+
+export type PaymentNotificationResult =
+  | "CONFIRMADO"
+  | "RECUSADO_PAGADOR"
+  | "REEMBOLSADO_APOS_VENCIMENTO"
+  | "IGNORADO";
+
+/**
+ * Chamado pelo webhook quando o gateway avisa que um Pix foi pago. Não confia
+ * no corpo do webhook: consulta a cobrança no gateway. Pode ser chamado várias
+ * vezes para a mesma cobrança (o gateway reenvia) sem efeito repetido.
+ *
+ * - Pix pelo CPF do comprador: pedido PAGO.
+ * - Pix por outro CPF: reembolso e reserva devolvida (evita golpe com conta de terceiro e MED).
+ * - Pix pago depois do vencimento (pedido já cancelado): reembolso.
+ *
+ * `allowUnknownPayer` só no sandbox, onde o pagamento simulado não traz o pagador.
+ */
+export async function handlePaymentReceived(
+  chargeId: string,
+  provider: PaymentProvider,
+  opts: { now?: Date; allowUnknownPayer?: boolean } = {},
+  retried = false,
+): Promise<PaymentNotificationResult> {
+  const now = opts.now ?? new Date();
+  const order = await prisma.order.findUnique({ where: { chargeId }, include: { buyer: true } });
+  if (!order) return "IGNORADO";
+
+  const charge = await provider.getChargeStatus(chargeId);
+  if (!charge.paid) return "IGNORADO";
+
+  if (order.status === "CANCELADO") {
+    const alreadyRefunded = await prisma.orderLog.findFirst({ where: { orderId: order.id, action: "PIX_PAGO_APOS_VENCIMENTO" } });
+    if (alreadyRefunded) return "IGNORADO";
+    await prisma.orderLog.create({
+      data: {
+        orderId: order.id,
+        fromStatus: "CANCELADO",
+        toStatus: "CANCELADO",
+        action: "PIX_PAGO_APOS_VENCIMENTO",
+        actor: "SISTEMA",
+        note: "Pix pago depois do vencimento: valor devolvido ao pagador",
+      },
+    });
+    await provider.refund(chargeId);
+    return "REEMBOLSADO_APOS_VENCIMENTO";
+  }
+  if (order.status !== "AGUARDANDO_PAGAMENTO") return "IGNORADO";
+
+  const unknownAllowed = !charge.payerCpf && opts.allowUnknownPayer === true;
+  if (!unknownAllowed && !payerMatchesBuyer(charge.payerCpf, order.buyer.cpf)) {
+    const reason = charge.payerCpf
+      ? "Pix pago por um CPF diferente do comprador"
+      : "O banco não informou o CPF de quem pagou o Pix";
+    const r = await applyAction(order.id, { type: "PAGAMENTO_RECUSADO", reason }, "SISTEMA", null, provider, { now });
+    if (r.ok) return "RECUSADO_PAGADOR";
+  } else {
+    const r = await applyAction(order.id, { type: "PAGAMENTO_CONFIRMADO" }, "SISTEMA", null, provider, {
+      now,
+      note: unknownAllowed ? "Pagador não informado (sandbox)" : undefined,
+    });
+    if (r.ok) return "CONFIRMADO";
+  }
+  // O pedido mudou no meio (ex.: a rotina de expiração cancelou agora): trata
+  // de novo com o status atual para o dinheiro não ficar parado.
+  return retried ? "IGNORADO" : handlePaymentReceived(chargeId, provider, opts, true);
 }

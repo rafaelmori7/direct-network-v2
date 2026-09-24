@@ -67,6 +67,11 @@ tests/                testes do motor de regras, dos estados e do pagamento
   - Em modo teste há o botão "simular pagamento".
 - **Minha conta (`/conta`):** compras, vendas (com data de liberação) e anúncios.
 - **Rotina `/api/cron/expirar-pix`:** cancela Pix vencidos e devolve a reserva ao anúncio. Protegida por `CRON_SECRET`.
+- **Webhook `/api/webhooks/asaas`:** recebe `PAYMENT_RECEIVED`/`PAYMENT_CONFIRMED`. Protegido pelo header `asaas-access-token` (= `ASAAS_WEBHOOK_TOKEN`).
+  - não confia no corpo: consulta a cobrança no Asaas e o CPF do pagador na transação Pix;
+  - Pix do CPF do comprador → pedido **PAGO**; Pix de outro CPF → **reembolso** e ingresso de volta ao anúncio;
+  - Pix pago depois do vencimento (pedido já cancelado) → reembolso;
+  - reenvios do Asaas não repetem nada. No sandbox, pagamento sem pagador informado é aceito.
 
 **Níveis de conta:**
 - **Comprar:** basta o CPF válido.
@@ -84,13 +89,15 @@ npm run db:seed:demo         # ticketeiras + eventos e usuários de exemplo (sen
 npm run dev
 npm test                     # testes de regras (sem banco)
 npm run test:db              # testes com banco (usa TEST_DATABASE_URL ou o banco local revenda_test)
+npm run asaas:sandbox        # teste de ponta a ponta no sandbox do Asaas (precisa de ASAAS_API_KEY do sandbox)
 ```
+
+O `asaas:sandbox` cria cliente e cobrança Pix, gera o QR Code, simula o pagamento, mostra o CPF do pagador como o Asaas devolve, testa o endpoint de custódia e reembolsa. Ele se recusa a rodar fora do sandbox.
 
 ## Próximos passos
 
 1. Verificação de identidade do vendedor (documento + selfie) e criação da subconta Asaas com Conta Escrow.
-2. Webhook do Asaas: confirmar pagamento, conferir se o CPF do pagador é o do comprador e reembolsar Pix pago depois de vencido.
-3. Rotinas agendadas restantes: reembolso por prazo de transferência esgotado, encerramento de anúncios e liberação automática.
-4. Chat em tempo real (polling no início) com aviso por e-mail/WhatsApp de nova mensagem.
-5. Painel admin: eventos, sobreposições de regras e disputas.
-6. Validar no sandbox do Asaas: finish/refund com escrow e dados do pagador Pix.
+2. Rotinas agendadas restantes: reembolso por prazo de transferência esgotado, encerramento de anúncios e liberação automática.
+3. Chat em tempo real (polling no início) com aviso por e-mail/WhatsApp de nova mensagem.
+4. Painel admin: eventos, sobreposições de regras e disputas.
+5. Rodar `npm run asaas:sandbox` com uma chave válida e ajustar o que divergir: formato do CPF do pagador Pix, finish/refund com escrow (chave da conta principal ou da subconta).
