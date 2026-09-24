@@ -120,6 +120,18 @@ npm test                     # testes de regras (sem banco)
 npm run test:db              # testes com banco (usa TEST_DATABASE_URL ou o banco local revenda_test)
 ```
 
+## Parceiros (agências e promoters)
+
+- **Página do parceiro:** `/<slug>` (ex.: `/timelapse`), com a marca dele. Mostra os eventos dele com o selo "Revenda oficial" e **todos os outros eventos** do site.
+- **Link de indicação:** qualquer link com `?ref=<slug>`, ou visitar a página do parceiro, grava a indicação (cookie de 30 dias, vale o último clique).
+- **Cupom:** o comprador pode digitar o cupom do parceiro no checkout. O cupom vale mais que o link.
+- **Quem ganha a venda (um parceiro por pedido):** cupom → link/página → dono do evento. Pelo cupom ou link o comprador ganha o desconto do parceiro; pelo evento, não.
+- **Dinheiro:**
+  - o desconto sai da comissão, nunca do vendedor;
+  - o resto da comissão é dividido pela participação do parceiro (padrão 50%);
+  - com a subconta do parceiro (`gatewayWalletId`), a parte dele entra no split do Asaas; sem ela, fica com a plataforma para repasse manual.
+- **Admin:** `/admin/parceiros` cadastra os parceiros (links, cupom, cor, logo, participação, desconto) e mostra vendas e comissão de cada um. O evento pode ter um parceiro dono.
+
 ## Publicar (Vercel + Postgres)
 
 1. **Banco:** crie um Postgres gratuito (Neon ou Supabase) e copie a URL de conexão.
@@ -185,4 +197,4 @@ npm run test:db              # testes com banco (usa TEST_DATABASE_URL ou o banc
 1. Com a conta CNPJ: validar no sandbox a criação da subconta, o link de documentos, o webhook de aprovação e se a subconta em análise já recebe split com escrow.
 2. Com uma conta de CNPJ no sandbox: validar subconta, split, Conta Escrow e `POST /escrow/{id}/finish`.
 3. Configurar o Resend com domínio próprio (SPF/DKIM) para os e-mails não caírem no spam. WhatsApp como segundo canal.
-4. Verificação de identidade automática (documento + selfie) no lugar da verificação manual.
+4. Parceiros, fase 2: acesso do parceiro ao próprio painel (eventos e vendas), widget para o site dele e domínio próprio (nível 3).

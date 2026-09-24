@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireAdminPage } from "@/lib/auth/admin";
+import { prisma } from "@/lib/db";
 import { CATEGORIES, getEvent } from "@/lib/data/repo";
 import { toBrtInput } from "@/lib/datetime-input";
 import { saveEvent } from "../actions";
@@ -27,6 +28,7 @@ export default async function EditEvent({ params }: { params: Promise<{ id: stri
       <EventForm
         action={saveEvent.bind(null, e.id)}
         categories={CATEGORIES}
+        partners={await prisma.partner.findMany({ where: { active: true }, select: { id: true, name: true }, orderBy: { name: "asc" } })}
         values={{
           nome: e.name,
           local: e.venue,
@@ -44,6 +46,7 @@ export default async function EditEvent({ params }: { params: Promise<{ id: stri
           biometria: e.nominalBiometric,
           revendaOficial: e.officialResaleActive,
           cor: e.hue,
+          parceiro: e.partnerId ?? "",
         }}
       />
     </main>

@@ -24,6 +24,7 @@ export default async function AdminHome() {
     { href: "/admin/anuncios?status=PAUSADO", title: "Anúncios pausados", value: paused, note: "Revisar e reativar ou remover" },
     { href: "/admin/pedidos", title: "Buscar pedidos", value: "→", note: "Por nº, cobrança, e-mail, CPF ou evento" },
     { href: "/admin/emails", title: "E-mails enviados", value: "→", note: "Avisos do sistema" },
+    { href: "/admin/parceiros", title: "Parceiros", value: "→", note: "Agências, links, cupons e comissões" },
   ];
   return (
     <main className="container" style={{ paddingBottom: 64 }}>

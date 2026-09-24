@@ -84,6 +84,7 @@ export async function saveEvent(eventId: string | null, _prev: EventFormState, f
     ruleOverrides: deadline ? { sellerTransferDeadlineHours: deadline } : {},
     sectors,
     hue: Number(form.get("cor") ?? 260) || 260,
+    partnerId: String(form.get("parceiro") ?? "") || null,
   };
 
   if (eventId) {

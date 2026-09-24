@@ -5,6 +5,8 @@ export interface PixChargeRequest {
   sellerNetCents: number;
   /** null só em testes, quando o gateway aceita cobrança sem split. */
   sellerWalletId: string | null;
+  /** Parte do parceiro (agência/promoter), quando ele tem subconta. */
+  partnerSplit?: { walletId: string; cents: number } | null;
   buyer: { name: string; cpf: string; email: string };
   expiresAt: Date;
   description: string;

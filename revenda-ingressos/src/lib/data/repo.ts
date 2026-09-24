@@ -36,6 +36,7 @@ export interface EventRecord {
   hue: number;
   imageUrl: string | null;
   sectors: { name: string; faceValueCents: number }[];
+  partnerId: string | null;
 }
 
 export interface ListingRecord {
@@ -87,6 +88,7 @@ function toEventRecord(e: EventWithPlatform): EventRecord {
     hue: e.hue,
     imageUrl: e.imageUrl,
     sectors: e.sectors as EventRecord["sectors"],
+    partnerId: e.partnerId,
   };
 }
 

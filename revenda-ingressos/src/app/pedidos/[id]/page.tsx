@@ -83,6 +83,18 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
             </span>
             <b>{formatBRL(order.totalCents)}</b>
           </div>
+          {order.discountCents > 0 && (isBuyer || user.isAdmin) && (
+            <div className="summary-row offer-sub">
+              <span>Desconto do cupom (já aplicado)</span>
+              <span>− {formatBRL(order.discountCents)}</span>
+            </div>
+          )}
+          {user.isAdmin && order.partnerId && (
+            <div className="summary-row offer-sub">
+              <span>Parceiro ({order.partnerAttribution?.toLowerCase()})</span>
+              <span>{formatBRL(order.partnerFeeCents)}</span>
+            </div>
+          )}
           {isSeller && (
             <>
               <div className="summary-row offer-sub">

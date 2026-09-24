@@ -3,7 +3,8 @@ import { SYSTEM_MESSAGES } from "@/lib/chat/policy";
 import { notifyStatusChange, sendTransferReminders } from "@/lib/notify/order-emails";
 import { prisma } from "@/lib/db";
 import { eventRuleInput, getEvent, rulesFor } from "@/lib/data/repo";
-import { splitAmount } from "@/lib/money/fees";
+import { orderAmounts } from "@/lib/money/fees";
+import { resolvePartner } from "@/lib/partners/attribution";
 import { payerMatchesBuyer, type PaymentProvider } from "@/lib/payments/provider";
 import { checkPurchase, disputeDeadline, isSaleClosed, releaseAt, transferDeadline, type Violation } from "@/lib/rules/engine";
 import type { BuyerIdentifier, TicketType } from "@/lib/rules/types";
@@ -20,6 +21,9 @@ export interface CreateOrderInput {
   identifiers: Partial<Record<BuyerIdentifier, string>>;
   buyerDeclaresHalfPriceEligible: boolean;
   feeBps: number;
+  /** Cupom digitado no checkout e parceiro do link (cookie). */
+  couponCode?: string | null;
+  refSlug?: string | null;
   now?: Date;
 }
 
@@ -56,7 +60,16 @@ export async function createOrder(input: CreateOrderInput, provider: PaymentProv
     return { ok: false, errors: ["O vendedor ainda não concluiu o cadastro de recebimento."] };
   }
 
-  const { totalCents, platformFeeCents, sellerNetCents } = splitAmount(listing.priceCents * input.quantity, input.feeBps);
+  const resolved = await resolvePartner({ couponCode: input.couponCode, refSlug: input.refSlug, eventPartnerId: event.partnerId });
+  if (input.couponCode?.trim() && resolved?.attribution !== "CUPOM") {
+    return { ok: false, errors: ["Cupom inválido."] };
+  }
+  const { totalCents, platformFeeCents, sellerNetCents, discountCents, partnerFeeCents } = orderAmounts(
+    listing.priceCents * input.quantity,
+    input.feeBps,
+    resolved?.partner ?? null,
+    resolved?.applyDiscount ?? false,
+  );
   const paymentExpiresAt = addMinutes(now, PIX_EXPIRATION_MINUTES);
 
   // Reserva atômica: só decrementa se ainda houver quantidade. Duas compras
@@ -75,6 +88,10 @@ export async function createOrder(input: CreateOrderInput, provider: PaymentProv
         totalCents,
         platformFeeCents,
         sellerNetCents,
+        discountCents,
+        partnerFeeCents,
+        partnerId: resolved?.partner.id ?? null,
+        partnerAttribution: resolved?.attribution ?? null,
         buyerIdentifiers: input.identifiers,
         paymentExpiresAt,
         disputeDeadlineAt: disputeDeadline(rules, eventInput),
@@ -90,6 +107,8 @@ export async function createOrder(input: CreateOrderInput, provider: PaymentProv
       totalCents,
       sellerNetCents,
       sellerWalletId,
+      // Sem subconta do parceiro, a parte dele fica na conta da plataforma para repasse manual.
+      partnerSplit: resolved?.partner.gatewayWalletId && partnerFeeCents > 0 ? { walletId: resolved.partner.gatewayWalletId, cents: partnerFeeCents } : null,
       buyer: { name: input.buyer.name, cpf: input.buyer.cpf, email: input.buyer.email },
       expiresAt: paymentExpiresAt,
       description: `${event.name} - ${listing.sector} (${input.quantity}x)`,

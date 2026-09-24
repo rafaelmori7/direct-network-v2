@@ -8,6 +8,8 @@ import { getEvent, getListing, rulesFor } from "@/lib/data/repo";
 import { TICKET_TYPE_LABEL, formatDateLong } from "@/lib/format";
 import { formatBRL } from "@/lib/money/fees";
 import type { BuyerIdentifier } from "@/lib/rules/types";
+import { cookies } from "next/headers";
+import { REF_COOKIE, resolvePartner } from "@/lib/partners/attribution";
 import { CheckoutForm } from "./checkout-form";
 
 export const dynamic = "force-dynamic";
@@ -20,6 +22,10 @@ export default async function CheckoutPage({ params }: { params: Promise<{ listi
   if (!listing || !event) notFound();
 
   const rules = rulesFor(event);
+  const referral = await resolvePartner({
+    refSlug: (await cookies()).get(REF_COOKIE)?.value ?? null,
+    eventPartnerId: event.partnerId,
+  });
   const platformName = event.platformName;
   const state = saleState(event);
   const labels: Record<BuyerIdentifier, { label: string; hint: string }> = {
@@ -80,6 +86,11 @@ export default async function CheckoutPage({ params }: { params: Promise<{ listi
         <CheckoutForm
           listingId={listing.id}
           defaults={{ EMAIL: user.email, CPF: formatCpf(user.cpf), NOME_COMPLETO: user.name }}
+          referral={
+            referral
+              ? { partnerName: referral.partner.name, discountBps: referral.applyDiscount ? referral.partner.discountBps : 0 }
+              : null
+          }
           unitPriceCents={listing.priceCents}
           maxQuantity={listing.quantityAvailable}
           identifiers={rules.buyerIdentifiers.map((id) => ({ id, ...labels[id], required: id !== "QUENTRO_ID" }))}

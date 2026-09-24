@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { requireAdminPage } from "@/lib/auth/admin";
+import { prisma } from "@/lib/db";
 import { CATEGORIES } from "@/lib/data/repo";
 import { saveEvent } from "../actions";
 import { EventForm } from "../event-form";
@@ -17,10 +18,11 @@ export default async function NewEvent() {
       <EventForm
         action={saveEvent.bind(null, null)}
         categories={CATEGORIES}
+        partners={await prisma.partner.findMany({ where: { active: true }, select: { id: true, name: true }, orderBy: { name: "asc" } })}
         values={{
           nome: "", local: "", cidade: "São Paulo, SP", categoria: CATEGORIES[0], ticketeira: "INGRESSE", transferencia: "DESCONHECIDO",
           inicio: "", fim: "", transferenciaAbre: "", transferenciaFecha: "", prazoVendedor: "", setores: "",
-          esportivo: false, biometria: false, revendaOficial: false, cor: 260,
+          esportivo: false, biometria: false, revendaOficial: false, cor: 260, parceiro: "",
         }}
       />
     </main>

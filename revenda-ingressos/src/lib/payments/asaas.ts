@@ -45,7 +45,12 @@ export class AsaasPaymentProvider implements PaymentProvider {
       dueDate: req.expiresAt.toISOString().slice(0, 10),
       description: req.description,
       externalReference: req.orderId,
-      ...(req.sellerWalletId && { split: [{ walletId: req.sellerWalletId, fixedValue: req.sellerNetCents / 100 }] }),
+      ...((req.sellerWalletId || req.partnerSplit) && {
+        split: [
+          ...(req.sellerWalletId ? [{ walletId: req.sellerWalletId, fixedValue: req.sellerNetCents / 100 }] : []),
+          ...(req.partnerSplit ? [{ walletId: req.partnerSplit.walletId, fixedValue: req.partnerSplit.cents / 100 }] : []),
+        ],
+      }),
     });
 
     const qr = await this.request<{ encodedImage: string; payload: string; expirationDate: string }>(

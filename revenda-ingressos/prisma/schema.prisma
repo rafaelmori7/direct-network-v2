@@ -84,8 +84,38 @@ enum TransferAllowed {
   DESCONHECIDO
 }
 
+/**
+ * Agência/promoter parceiro. Ganha parte da comissão nas vendas que indica
+ * (link, página ou cupom) e nas vendas dos próprios eventos.
+ */
+model Partner {
+  id               String   @id @default(cuid())
+  /** Endereço da página: /timelapse */
+  slug             String   @unique
+  name             String
+  /** Código de desconto/indicação digitado no checkout (ex.: TIMELAPSE). */
+  couponCode       String   @unique
+  logoUrl          String?
+  /** Cor principal da página do parceiro (hex). */
+  color            String   @default("#5b2ee6")
+  /** Parte da comissão da plataforma que vai para o parceiro (5000 = 50%). */
+  commissionShareBps Int    @default(5000)
+  /** Desconto ao comprador quando chega pelo link/cupom, em pontos-base do valor (100 = 1%). Sai da comissão. */
+  discountBps      Int      @default(0)
+  /** Subconta do parceiro no gateway, para receber a parte dele no split. */
+  gatewayWalletId  String?
+  active           Boolean  @default(true)
+  createdAt        DateTime @default(now())
+
+  events Event[]
+  orders Order[]
+}
+
 model Event {
   id                   String          @id @default(cuid())
+  /** Evento de um parceiro: aparece em destaque na página dele, com selo de revenda oficial. */
+  partnerId            String?
+  partner              Partner?        @relation(fields: [partnerId], references: [id])
   platformId           String
   platform             Platform        @relation(fields: [platformId], references: [id])
   slug                 String          @unique
@@ -199,6 +229,14 @@ model Order {
   totalCents         Int
   platformFeeCents   Int
   sellerNetCents     Int
+  /** Desconto do cupom/link do parceiro (sai da comissão). */
+  discountCents      Int         @default(0)
+  /** Parte da comissão que vai para o parceiro. */
+  partnerFeeCents    Int         @default(0)
+  partnerId          String?
+  partner            Partner?    @relation(fields: [partnerId], references: [id])
+  /** Como o parceiro foi atribuído: LINK, CUPOM ou EVENTO. */
+  partnerAttribution String?
   status             OrderStatus @default(AGUARDANDO_PAGAMENTO)
   /** Dados que o vendedor usa para transferir (e-mail, CPF, nome, Quentro ID). */
   buyerIdentifiers   Json

@@ -209,3 +209,11 @@ button, input, select { font: inherit; color: inherit; }
 .chat-blocked { opacity: 0.6; text-decoration: line-through; }
 .chat-author { font-size: 0.72rem; font-weight: 700; opacity: 0.8; }
 .chat-time { font-size: 0.7rem; opacity: 0.7; align-self: flex-end; }
+
+/* Página do parceiro */
+.partner-hero { color: #fff; }
+.partner-hero .container { padding-top: 40px; padding-bottom: 40px; }
+.partner-hero h1 { font-size: clamp(1.8rem, 4vw, 2.6rem); font-weight: 900; margin: 16px 0 8px; letter-spacing: -0.02em; text-transform: uppercase; }
+.partner-hero p { margin: 0 0 16px; max-width: 640px; opacity: 0.9; }
+.partner-logo { height: 56px; max-width: 220px; object-fit: contain; }
+.partner-logo-text { display: inline-flex; align-items: center; padding: 0 16px; border-radius: 12px; background: rgb(255 255 255 / 0.15); font-weight: 900; font-size: 1.3rem; }

@@ -9,6 +9,8 @@ interface Props {
   defaults: Partial<Record<BuyerIdentifier, string>>;
   listingId: string;
   unitPriceCents: number;
+  /** Parceiro que indicou (link/página) ou dono do evento, e o desconto que o link dá. */
+  referral: { partnerName: string; discountBps: number } | null;
   maxQuantity: number;
   identifiers: { id: BuyerIdentifier; label: string; hint: string; required: boolean }[];
   requiresHalfPrice: boolean;
@@ -18,6 +20,8 @@ interface Props {
 export function CheckoutForm(props: Props) {
   const [state, action, pending] = useActionState<CheckoutState, FormData>(startCheckout, { errors: [] });
   const [quantity, setQuantity] = useState(1);
+  // Prévia: o valor final (com o limite do desconto à comissão) é calculado no servidor ao gerar o Pix.
+  const discountCents = props.referral ? Math.round((props.unitPriceCents * quantity * props.referral.discountBps) / 10_000) : 0;
 
   return (
     <form action={action} className="form">
@@ -66,6 +70,12 @@ export function CheckoutForm(props: Props) {
           <span>Tenho direito à meia-entrada e vou apresentar o documento na portaria.</span>
         </label>
       )}
+      <div className="field">
+        <label htmlFor="cupom">Cupom de parceiro (opcional)</label>
+        <input id="cupom" name="cupom" className="input" autoComplete="off" style={{ textTransform: "uppercase" }} placeholder="Ex.: TIMELAPSE" />
+        {props.referral && <span className="hint">Indicação de {props.referral.partnerName} já aplicada.</span>}
+      </div>
+
       <label className="check">
         <input type="checkbox" name="termos" />
         <span>
@@ -75,9 +85,15 @@ export function CheckoutForm(props: Props) {
       </label>
 
       <div className="summary">
+        {discountCents > 0 && (
+          <div className="summary-row">
+            <span>Desconto {props.referral?.partnerName}</span>
+            <span>− {formatBRL(discountCents)}</span>
+          </div>
+        )}
         <div className="summary-row summary-total">
           <span>Total</span>
-          <span>{formatBRL(props.unitPriceCents * quantity)}</span>
+          <span>{formatBRL(props.unitPriceCents * quantity - discountCents)}</span>
         </div>
       </div>
       <button className="btn btn-primary btn-block" disabled={pending}>

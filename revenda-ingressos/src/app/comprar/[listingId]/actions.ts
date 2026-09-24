@@ -1,6 +1,8 @@
 "use server";
 
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { REF_COOKIE } from "@/lib/partners/attribution";
 import { getCurrentUser } from "@/lib/auth/session";
 import { createOrder } from "@/lib/orders/service";
 import { getPaymentProvider } from "@/lib/payments";
@@ -27,6 +29,8 @@ export async function startCheckout(_prev: CheckoutState, form: FormData): Promi
       identifiers,
       buyerDeclaresHalfPriceEligible: form.get("meia") === "on",
       feeBps: Number(process.env.PLATFORM_FEE_BPS ?? 1000),
+      couponCode: String(form.get("cupom") ?? "") || null,
+      refSlug: (await cookies()).get(REF_COOKIE)?.value ?? null,
     },
     getPaymentProvider(),
   );
