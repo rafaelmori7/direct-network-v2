@@ -6,18 +6,24 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminHome() {
   await requireAdminPage("/admin");
-  const [events, unknownTransfer, disputes, refunds, payoutsFailed] = await Promise.all([
+  const [events, unknownTransfer, disputes, refunds, payoutsFailed, pendingSellers, paused] = await Promise.all([
     prisma.event.count({ where: { endsAt: { gt: new Date() } } }),
     prisma.event.count({ where: { endsAt: { gt: new Date() }, transferAllowed: "DESCONHECIDO" } }),
     prisma.order.count({ where: { status: "EM_DISPUTA" } }),
     prisma.order.count({ where: { refundStatus: { in: ["SOLICITADO", "AGUARDANDO_APROVACAO", "FALHOU"] } } }),
     prisma.order.count({ where: { payoutStatus: "FALHOU" } }),
+    prisma.user.count({ where: { verifiedAt: null, blockedAt: null, listings: { none: {} } } }),
+    prisma.listing.count({ where: { status: "PAUSADO" } }),
   ]);
   const cards = [
     { href: "/admin/eventos", title: "Eventos", value: events, note: unknownTransfer ? `${unknownTransfer} com transferência a confirmar` : "Todos confirmados" },
     { href: "/admin/disputas", title: "Disputas abertas", value: disputes, note: "Decida entre comprador e vendedor" },
     { href: "/admin/reembolsos", title: "Reembolsos pendentes", value: refunds, note: "Aprovar no painel do Asaas" },
     { href: "/admin/disputas", title: "Liberações com falha", value: payoutsFailed, note: "Conferir no Asaas" },
+    { href: "/admin/usuarios?filtro=pendentes", title: "Usuários sem verificação", value: pendingSellers, note: "Verificar para poderem vender" },
+    { href: "/admin/anuncios?status=PAUSADO", title: "Anúncios pausados", value: paused, note: "Revisar e reativar ou remover" },
+    { href: "/admin/pedidos", title: "Buscar pedidos", value: "→", note: "Por nº, cobrança, e-mail, CPF ou evento" },
+    { href: "/admin/emails", title: "E-mails enviados", value: "→", note: "Avisos do sistema" },
   ];
   return (
     <main className="container" style={{ paddingBottom: 64 }}>

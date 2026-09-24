@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth/session";
 import { BLOCKED_MESSAGE_WARNING, canSendMessage, screenMessage, type ChatRole } from "@/lib/chat/policy";
 import { prisma } from "@/lib/db";
+import { notifyChatMessage } from "@/lib/notify/order-emails";
 
 export type ChatState = { warning: string | null; sentAt: number };
 
@@ -30,6 +31,7 @@ export async function sendMessage(orderId: string, _prev: ChatState, form: FormD
   }
 
   await prisma.message.create({ data: { orderId, senderId: user.id, role, kind: "USUARIO", body: screened.body } });
+  await notifyChatMessage(orderId, role);
   revalidatePath(`/pedidos/${orderId}`);
   return { warning: null, sentAt: Date.now() };
 }

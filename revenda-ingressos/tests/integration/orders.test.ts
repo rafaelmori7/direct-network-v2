@@ -9,6 +9,7 @@ const provider = new MockPaymentProvider();
 const now = new Date();
 
 async function reset() {
+  await prisma.emailLog.deleteMany();
   await prisma.message.deleteMany();
   await prisma.orderLog.deleteMany();
   await prisma.dispute.deleteMany();
@@ -175,5 +176,37 @@ describe("disputa", () => {
     expect(await prisma.order.findUniqueOrThrow({ where: { id } })).toMatchObject({ status: "REEMBOLSADO", refundStatus: "CONCLUIDO" });
     const msgs = await prisma.message.findMany({ where: { orderId: id, kind: "SISTEMA" } });
     expect(msgs.length).toBeGreaterThanOrEqual(3);
+  });
+});
+
+describe("avisos por e-mail", () => {
+  it("avisa comprador e vendedor no pagamento e lembra o vendedor uma única vez", async () => {
+    const { runRoutines } = await import("@/lib/orders/service");
+    const r = await orderFor(buyers[0]);
+    const id = r.ok ? r.orderId : "";
+    const o = await prisma.order.findUniqueOrThrow({ where: { id } });
+    provider.markPaid(o.chargeId!);
+    await applyAction(id, { type: "PAGAMENTO_CONFIRMADO" }, "SISTEMA", null, provider, { now });
+
+    const paidEmails = await prisma.emailLog.findMany({ where: { orderId: id } });
+    expect(paidEmails.map((e) => e.kind).sort()).toEqual(["PAGO_COMPRADOR", "PAGO_VENDEDOR"]);
+    expect(paidEmails.every((e) => e.status === "REGISTRADO")).toBe(true);
+    expect(paidEmails.find((e) => e.kind === "PAGO_VENDEDOR")?.body).toMatch(/Transfira pelo app oficial/);
+
+    // 20h depois do pagamento faltam 4h para o prazo (24h): lembrete, uma vez só.
+    const later = new Date(now.getTime() + 20 * 3600_000);
+    expect((await runRoutines(provider, later)).lembretesDeTransferencia).toBe(1);
+    expect((await runRoutines(provider, new Date(later.getTime() + 60_000))).lembretesDeTransferencia).toBe(0);
+  });
+
+  it("chat avisa a outra parte no máximo a cada 15 minutos", async () => {
+    const { notifyChatMessage } = await import("@/lib/notify/order-emails");
+    const r = await orderFor(buyers[0]);
+    const id = r.ok ? r.orderId : "";
+    await notifyChatMessage(id, "COMPRADOR");
+    await notifyChatMessage(id, "COMPRADOR");
+    await notifyChatMessage(id, "VENDEDOR");
+    const chat = await prisma.emailLog.findMany({ where: { orderId: id, kind: "CHAT" } });
+    expect(chat).toHaveLength(2); // um para o vendedor, um para o comprador
   });
 });

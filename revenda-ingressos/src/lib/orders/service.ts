@@ -1,5 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import { SYSTEM_MESSAGES } from "@/lib/chat/policy";
+import { notifyStatusChange, sendTransferReminders } from "@/lib/notify/order-emails";
 import { prisma } from "@/lib/db";
 import { eventRuleInput, getEvent, rulesFor } from "@/lib/data/repo";
 import { splitAmount } from "@/lib/money/fees";
@@ -184,6 +185,7 @@ export async function applyAction(
   if (!committed) return { ok: false, error: "O pedido foi alterado ao mesmo tempo. Atualize a página." };
 
   await runEffects(result.effects, order.id, order.chargeId, provider, now);
+  await notifyStatusChange(order.id, result.next, action.type);
   return { ok: true, status: result.next };
 }
 
@@ -328,6 +330,7 @@ export async function expireUnpaidOrders(provider: PaymentProvider, now = new Da
 
 export interface RoutineReport {
   pixVencidos: number;
+  lembretesDeTransferencia: number;
   prazosDeTransferenciaEsgotados: number;
   pagamentosLiberados: number;
   anunciosEncerrados: number;
@@ -339,6 +342,7 @@ export interface RoutineReport {
  */
 export async function runRoutines(provider: PaymentProvider, now = new Date()): Promise<RoutineReport> {
   const pixVencidos = await expireUnpaidOrders(provider, now);
+  const lembretesDeTransferencia = await sendTransferReminders(now);
 
   let prazosDeTransferenciaEsgotados = 0;
   const late = await prisma.order.findMany({ where: { status: "PAGO", transferDeadlineAt: { lt: now } }, select: { id: true } });
@@ -358,7 +362,7 @@ export async function runRoutines(provider: PaymentProvider, now = new Date()): 
   }
 
   const anunciosEncerrados = await closeFinishedListings(now);
-  return { pixVencidos, prazosDeTransferenciaEsgotados, pagamentosLiberados, anunciosEncerrados };
+  return { pixVencidos, lembretesDeTransferencia, prazosDeTransferenciaEsgotados, pagamentosLiberados, anunciosEncerrados };
 }
 
 /** Anúncios de eventos cuja venda fechou (prazo de transferência) saem do ar. */

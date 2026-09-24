@@ -73,6 +73,16 @@ tests/                testes do motor de regras, dos estados e do pagamento
   - **eventos:** criar e editar, com ticketeira, transferência permitida, janela exata, prazo do vendedor, setores, esportivo e biometria;
   - **disputas:** a decisão fica na página do pedido. Se o vendedor tiver razão antes da data de liberação, o pedido volta a aguardar essa data;
   - **reembolsos pendentes.**
+  - **usuários:** busca por nome, e-mail ou CPF; verificar e remover a verificação de vendedor. **Bloquear** encerra as sessões, pausa os anúncios e desativa os COMPRO;
+  - **anúncios:** pausados, ativos, encerrados e removidos; reativar (só se a venda do evento ainda estiver aberta) ou remover;
+  - **pedidos:** busca por nº, cobrança, e-mail, CPF ou evento;
+  - **e-mails:** os avisos enviados ou registrados.
+- **Avisos por e-mail (Resend):**
+  - quando: pagamento confirmado (comprador e vendedor), "transfira até…", transferido, recebido, liberado, reembolso, Pix vencido e disputa (partes e admins);
+  - lembrete ao vendedor 6h antes do fim do prazo de transferência;
+  - nova mensagem no chat, no máximo um e-mail a cada 15 min por pedido;
+  - sem `RESEND_API_KEY` e `EMAIL_FROM`, os e-mails só ficam registrados (`EmailLog`);
+  - falha no envio nunca trava o pedido.
 - **Minha conta (`/conta`):** compras, vendas (com data de liberação) e anúncios.
 - **Rotinas (`/api/cron/rotinas`):** chamar a cada ~5 min com `Authorization: Bearer $CRON_SECRET`. A cada chamada:
   - cancela Pix vencidos e devolve a reserva;
@@ -168,5 +178,5 @@ npm run test:db              # testes com banco (usa TEST_DATABASE_URL ou o banc
 
 1. Verificação de identidade do vendedor (documento + selfie) e criação da subconta Asaas com Conta Escrow.
 2. Com uma conta de CNPJ no sandbox: validar subconta, split, Conta Escrow e `POST /escrow/{id}/finish`.
-3. Avisos por e-mail/WhatsApp: nova mensagem, pagamento confirmado, prazo acabando.
-4. Admin: usuários (verificar vendedor), anúncios pausados e busca de pedidos.
+3. Configurar o Resend com domínio próprio (SPF/DKIM) para os e-mails não caírem no spam. WhatsApp como segundo canal.
+4. Verificação de identidade automática (documento + selfie) no lugar da verificação manual.

@@ -57,6 +57,7 @@ export async function signIn(_prev: AuthState, form: FormData): Promise<AuthStat
   if (!user || !(await verifyPassword(password, user.passwordHash))) {
     return { errors: ["E-mail ou senha incorretos."] };
   }
+  if (user.blockedAt) return { errors: ["Esta conta está bloqueada. Fale com o suporte."] };
   await createSession(user.id);
   redirect(safeReturn(form.get("voltar")));
 }

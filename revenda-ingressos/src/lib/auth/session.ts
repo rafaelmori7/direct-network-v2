@@ -47,7 +47,7 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   const token = (await cookies()).get(COOKIE)?.value;
   if (!token) return null;
   const session = await prisma.session.findUnique({ where: { id: hashToken(token) }, include: { user: true } });
-  if (!session || session.expiresAt < new Date()) return null;
+  if (!session || session.expiresAt < new Date() || session.user.blockedAt) return null;
   const { user } = session;
   return {
     id: user.id,
