@@ -50,38 +50,42 @@ describe("gateway mock", () => {
   });
 });
 
-describe("divisão com parceiro", () => {
+describe("divisão com taxa do comprador e parceiro", () => {
+  const fees = { buyerFeeBps: 1500, sellerFeeBps: 0 };
   const partner = { commissionShareBps: 5000, discountBps: 0 };
 
-  it("sem parceiro, a comissão toda fica com a plataforma", () => {
-    expect(orderAmounts(50_000, 1000, null, false)).toEqual({
-      listCents: 50_000, discountCents: 0, totalCents: 50_000, sellerNetCents: 45_000, platformFeeCents: 5_000, partnerFeeCents: 0,
+  it("comprador paga preço + taxa; vendedor recebe o preço inteiro", () => {
+    expect(orderAmounts(10_000, fees, null, false)).toEqual({
+      listCents: 10_000, buyerFeeCents: 1_500, sellerFeeCents: 0, discountCents: 0, totalCents: 11_500, sellerNetCents: 10_000, platformFeeCents: 1_500, partnerFeeCents: 0,
     });
   });
 
-  it("com parceiro, 50% da comissão para cada lado", () => {
-    expect(orderAmounts(50_000, 1000, partner, true)).toMatchObject({ totalCents: 50_000, sellerNetCents: 45_000, platformFeeCents: 2_500, partnerFeeCents: 2_500 });
+  it("cupom de 10% sobre o total: 100 + 15 = 115 → 103,50", () => {
+    const a = orderAmounts(10_000, fees, { ...partner, discountBps: 1000 }, true);
+    expect(a).toMatchObject({ discountCents: 1_150, totalCents: 10_350, sellerNetCents: 10_000, platformFeeCents: 175, partnerFeeCents: 175 });
   });
 
-  it("desconto do cupom sai da comissão, nunca do vendedor", () => {
-    const withDiscount = { ...partner, discountBps: 400 }; // 4% de desconto
-    const a = orderAmounts(50_000, 1000, withDiscount, true);
-    expect(a).toMatchObject({ discountCents: 2_000, totalCents: 48_000, sellerNetCents: 45_000, platformFeeCents: 1_500, partnerFeeCents: 1_500 });
-    expect(a.sellerNetCents + a.platformFeeCents + a.partnerFeeCents).toBe(a.totalCents);
+  it("sem desconto, a taxa é dividida 50/50 com o parceiro", () => {
+    expect(orderAmounts(10_000, fees, partner, true)).toMatchObject({ totalCents: 11_500, platformFeeCents: 750, partnerFeeCents: 750 });
   });
 
-  it("desconto nunca passa da comissão", () => {
-    const a = orderAmounts(50_000, 1000, { ...partner, discountBps: 5000 }, true);
-    expect(a).toMatchObject({ discountCents: 5_000, totalCents: 45_000, sellerNetCents: 45_000, platformFeeCents: 0, partnerFeeCents: 0 });
+  it("desconto nunca passa da receita do site (não sai do vendedor)", () => {
+    const a = orderAmounts(10_000, fees, { ...partner, discountBps: 5000 }, true);
+    expect(a).toMatchObject({ discountCents: 1_500, totalCents: 10_000, sellerNetCents: 10_000, platformFeeCents: 0, partnerFeeCents: 0 });
+  });
+
+  it("comissão do vendedor, se configurada, também entra na receita", () => {
+    const a = orderAmounts(10_000, { buyerFeeBps: 1000, sellerFeeBps: 500 }, null, false);
+    expect(a).toMatchObject({ totalCents: 11_000, sellerNetCents: 9_500, platformFeeCents: 1_500 });
   });
 
   it("parceiro dono do evento ganha sem dar desconto", () => {
-    expect(orderAmounts(50_000, 1000, { ...partner, discountBps: 400 }, false)).toMatchObject({ discountCents: 0, partnerFeeCents: 2_500 });
+    expect(orderAmounts(10_000, fees, { ...partner, discountBps: 1000 }, false)).toMatchObject({ discountCents: 0, partnerFeeCents: 750 });
   });
 
   it("os valores sempre fecham com o total pago", () => {
     for (const cents of [333, 12_345, 99_999]) {
-      const a = orderAmounts(cents, 1000, { commissionShareBps: 5000, discountBps: 250 }, true);
+      const a = orderAmounts(cents, { buyerFeeBps: 1500, sellerFeeBps: 300 }, { commissionShareBps: 5000, discountBps: 700 }, true);
       expect(a.sellerNetCents + a.platformFeeCents + a.partnerFeeCents).toBe(a.totalCents);
     }
   });

@@ -6,6 +6,7 @@ import { BRAND } from "@/lib/brand";
 import { listEvents, listingSummary } from "@/lib/data/repo";
 import { prisma } from "@/lib/db";
 import { isValidPartnerSlug } from "@/lib/partners/attribution";
+import { RefTracker } from "./ref-tracker";
 
 export const dynamic = "force-dynamic";
 
@@ -34,6 +35,7 @@ export default async function PartnerPage({ params }: { params: Promise<{ parcei
 
   return (
     <main>
+      <RefTracker slug={partner.slug} />
       <section className="partner-hero" style={{ background: `linear-gradient(135deg, ${partner.color}, #111114)` }}>
         <div className="container">
           {partner.logoUrl ? (

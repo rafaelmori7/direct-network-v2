@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { formatBRL } from "@/lib/money/fees";
+import { formatBRL, orderAmounts, type FeeConfig } from "@/lib/money/fees";
 import type { BuyerIdentifier } from "@/lib/rules/types";
 import { startCheckout, type CheckoutState } from "./actions";
 
@@ -10,7 +10,8 @@ interface Props {
   listingId: string;
   unitPriceCents: number;
   /** Parceiro que indicou (link/página) ou dono do evento, e o desconto que o link dá. */
-  referral: { partnerName: string; discountBps: number } | null;
+  referral: { partnerName: string; discountBps: number; commissionShareBps: number } | null;
+  fees: FeeConfig;
   maxQuantity: number;
   identifiers: { id: BuyerIdentifier; label: string; hint: string; required: boolean }[];
   requiresHalfPrice: boolean;
@@ -20,8 +21,8 @@ interface Props {
 export function CheckoutForm(props: Props) {
   const [state, action, pending] = useActionState<CheckoutState, FormData>(startCheckout, { errors: [] });
   const [quantity, setQuantity] = useState(1);
-  // Prévia: o valor final (com o limite do desconto à comissão) é calculado no servidor ao gerar o Pix.
-  const discountCents = props.referral ? Math.round((props.unitPriceCents * quantity * props.referral.discountBps) / 10_000) : 0;
+  // Prévia com a mesma conta do servidor (o valor final é recalculado ao gerar o Pix).
+  const amounts = orderAmounts(props.unitPriceCents * quantity, props.fees, props.referral, true);
 
   return (
     <form action={action} className="form">
@@ -85,15 +86,25 @@ export function CheckoutForm(props: Props) {
       </label>
 
       <div className="summary">
-        {discountCents > 0 && (
+        <div className="summary-row">
+          <span>Ingresso{quantity > 1 ? "s" : ""}</span>
+          <span>{formatBRL(amounts.listCents)}</span>
+        </div>
+        {amounts.buyerFeeCents > 0 && (
+          <div className="summary-row">
+            <span>Taxa de serviço</span>
+            <span>+ {formatBRL(amounts.buyerFeeCents)}</span>
+          </div>
+        )}
+        {amounts.discountCents > 0 && (
           <div className="summary-row">
             <span>Desconto {props.referral?.partnerName}</span>
-            <span>− {formatBRL(discountCents)}</span>
+            <span>− {formatBRL(amounts.discountCents)}</span>
           </div>
         )}
         <div className="summary-row summary-total">
           <span>Total</span>
-          <span>{formatBRL(props.unitPriceCents * quantity - discountCents)}</span>
+          <span>{formatBRL(amounts.totalCents)}</span>
         </div>
       </div>
       <button className="btn btn-primary btn-block" disabled={pending}>

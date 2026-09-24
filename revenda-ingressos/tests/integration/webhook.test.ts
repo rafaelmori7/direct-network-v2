@@ -37,7 +37,7 @@ beforeEach(async () => {
 
 async function newOrder() {
   const r = await createOrder(
-    { listingId, buyer, quantity: 1, identifiers: { EMAIL: buyer.email, CPF: buyer.cpf, NOME_COMPLETO: buyer.name }, buyerDeclaresHalfPriceEligible: false, feeBps: 1000, now },
+    { listingId, buyer, quantity: 1, identifiers: { EMAIL: buyer.email, CPF: buyer.cpf, NOME_COMPLETO: buyer.name }, buyerDeclaresHalfPriceEligible: false, fees: { buyerFeeBps: 0, sellerFeeBps: 1000 }, now },
     provider,
   );
   if (!r.ok) throw new Error(r.errors.join(", "));

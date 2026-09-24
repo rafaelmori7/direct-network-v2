@@ -13,6 +13,8 @@ interface Props {
   maxTickets: number;
   transferDeadlineHours: number;
   platformName: string;
+  /** Texto sobre taxa/comissão mostrado abaixo do preço. */
+  sellerNote: string;
 }
 
 export function ListingForm(props: Props) {
@@ -79,7 +81,8 @@ export function ListingForm(props: Props) {
           <input id="preco" name="preco" className="input" inputMode="decimal" required placeholder="500,00" />
         </div>
       </div>
-      {props.priceCapNote && <p className="hint" style={{ margin: "-8px 0 0" }}>{props.priceCapNote}</p>}
+      <p className="hint" style={{ margin: "-8px 0 0" }}>{props.sellerNote}</p>
+      {props.priceCapNote && <p className="hint" style={{ margin: 0 }}>{props.priceCapNote}</p>}
 
       <div className="row row-2">
         <div className="field">

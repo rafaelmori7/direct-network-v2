@@ -63,7 +63,10 @@ export function PartnerForm({
         <div className="field">
           <label htmlFor="desconto">Desconto do cupom/link para o comprador (%)</label>
           <input id="desconto" name="desconto" className="input" inputMode="decimal" defaultValue={values.desconto} required />
-          <span className="hint">Sai da comissão antes da divisão. 0 = sem desconto.</span>
+          <span className="hint">
+            Sobre o total (ingresso + taxa). Sai da taxa do site antes da divisão, nunca do vendedor; se passar da taxa, fica
+            limitado a ela. 0 = sem desconto.
+          </span>
         </div>
       </div>
       <div className="row row-2">

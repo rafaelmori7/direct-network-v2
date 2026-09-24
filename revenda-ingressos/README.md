@@ -127,8 +127,10 @@ npm run test:db              # testes com banco (usa TEST_DATABASE_URL ou o banc
 - **Cupom:** o comprador pode digitar o cupom do parceiro no checkout. O cupom vale mais que o link.
 - **Quem ganha a venda (um parceiro por pedido):** cupom → link/página → dono do evento. Pelo cupom ou link o comprador ganha o desconto do parceiro; pelo evento, não.
 - **Dinheiro:**
-  - o desconto sai da comissão, nunca do vendedor;
-  - o resto da comissão é dividido pela participação do parceiro (padrão 50%);
+  - o comprador paga **preço + taxa de serviço** (`BUYER_FEE_BPS`, padrão 15%);
+  - a comissão do vendedor é opcional (`SELLER_FEE_BPS`, padrão 0%);
+  - o cupom dá desconto sobre o **total** (preço + taxa) e sai da receita do site, nunca do vendedor. Ex.: R$ 100 + R$ 15 com cupom de 10% = R$ 103,50;
+  - o resto da receita é dividido pela participação do parceiro (padrão 50%);
   - com a subconta do parceiro (`gatewayWalletId`), a parte dele entra no split do Asaas; sem ela, fica com a plataforma para repasse manual.
 - **Admin:** `/admin/parceiros` cadastra os parceiros (links, cupom, cor, logo, participação, desconto) e mostra vendas e comissão de cada um. O evento pode ter um parceiro dono.
 
@@ -141,7 +143,7 @@ npm run test:db              # testes com banco (usa TEST_DATABASE_URL ou o banc
 3. **Variáveis de ambiente:**
    - `DATABASE_URL`;
    - `PAYMENT_PROVIDER`, `ASAAS_API_URL`, `ASAAS_API_KEY`, `ASAAS_WEBHOOK_TOKEN`;
-   - `CRON_SECRET`, `PLATFORM_FEE_BPS`;
+   - `CRON_SECRET`, `BUYER_FEE_BPS`, `SELLER_FEE_BPS`;
    - `SEED_DEMO=1`, só se quiser os eventos e usuários de exemplo.
 4. **Deploy:** faça o deploy do branch.
 5. **Agendador:** configure um agendador (ex.: cron-job.org) chamando `GET /api/cron/rotinas` a cada 5 min, com o header `Authorization: Bearer <CRON_SECRET>`.

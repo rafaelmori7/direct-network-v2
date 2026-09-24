@@ -2,6 +2,7 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { feeConfig } from "@/lib/money/fees";
 import { REF_COOKIE } from "@/lib/partners/attribution";
 import { getCurrentUser } from "@/lib/auth/session";
 import { createOrder } from "@/lib/orders/service";
@@ -28,7 +29,7 @@ export async function startCheckout(_prev: CheckoutState, form: FormData): Promi
       quantity: Number(form.get("quantidade")),
       identifiers,
       buyerDeclaresHalfPriceEligible: form.get("meia") === "on",
-      feeBps: Number(process.env.PLATFORM_FEE_BPS ?? 1000),
+      fees: feeConfig(),
       couponCode: String(form.get("cupom") ?? "") || null,
       refSlug: (await cookies()).get(REF_COOKIE)?.value ?? null,
     },

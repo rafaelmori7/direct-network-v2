@@ -3,7 +3,7 @@ import { SYSTEM_MESSAGES } from "@/lib/chat/policy";
 import { notifyStatusChange, sendTransferReminders } from "@/lib/notify/order-emails";
 import { prisma } from "@/lib/db";
 import { eventRuleInput, getEvent, rulesFor } from "@/lib/data/repo";
-import { orderAmounts } from "@/lib/money/fees";
+import { orderAmounts, type FeeConfig } from "@/lib/money/fees";
 import { resolvePartner } from "@/lib/partners/attribution";
 import { payerMatchesBuyer, type PaymentProvider } from "@/lib/payments/provider";
 import { checkPurchase, disputeDeadline, isSaleClosed, releaseAt, transferDeadline, type Violation } from "@/lib/rules/engine";
@@ -20,7 +20,7 @@ export interface CreateOrderInput {
   quantity: number;
   identifiers: Partial<Record<BuyerIdentifier, string>>;
   buyerDeclaresHalfPriceEligible: boolean;
-  feeBps: number;
+  fees: FeeConfig;
   /** Cupom digitado no checkout e parceiro do link (cookie). */
   couponCode?: string | null;
   refSlug?: string | null;
@@ -64,9 +64,9 @@ export async function createOrder(input: CreateOrderInput, provider: PaymentProv
   if (input.couponCode?.trim() && resolved?.attribution !== "CUPOM") {
     return { ok: false, errors: ["Cupom inválido."] };
   }
-  const { totalCents, platformFeeCents, sellerNetCents, discountCents, partnerFeeCents } = orderAmounts(
+  const { totalCents, platformFeeCents, sellerNetCents, discountCents, partnerFeeCents, buyerFeeCents, sellerFeeCents } = orderAmounts(
     listing.priceCents * input.quantity,
-    input.feeBps,
+    input.fees,
     resolved?.partner ?? null,
     resolved?.applyDiscount ?? false,
   );
@@ -90,6 +90,8 @@ export async function createOrder(input: CreateOrderInput, provider: PaymentProv
         sellerNetCents,
         discountCents,
         partnerFeeCents,
+        buyerFeeCents,
+        sellerFeeCents,
         partnerId: resolved?.partner.id ?? null,
         partnerAttribution: resolved?.attribution ?? null,
         buyerIdentifiers: input.identifiers,

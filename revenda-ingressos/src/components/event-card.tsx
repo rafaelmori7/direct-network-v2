@@ -46,7 +46,7 @@ export function EventCard({
       </div>
       {cheapest !== null && (
         <div className="event-price">
-          {available} {available === 1 ? "ingresso" : "ingressos"} a partir de <b>{formatBRL(cheapest)}</b>
+          {available} {available === 1 ? "ingresso" : "ingressos"} a partir de <b>{formatBRL(cheapest)}</b> + taxa
         </div>
       )}
     </Link>

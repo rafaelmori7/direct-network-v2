@@ -229,7 +229,11 @@ model Order {
   totalCents         Int
   platformFeeCents   Int
   sellerNetCents     Int
-  /** Desconto do cupom/link do parceiro (sai da comissão). */
+  /** Taxa de serviço paga pelo comprador (somada ao preço). */
+  buyerFeeCents      Int         @default(0)
+  /** Comissão descontada do vendedor. */
+  sellerFeeCents     Int         @default(0)
+  /** Desconto do cupom/link do parceiro, sobre o total (sai da receita do site). */
   discountCents      Int         @default(0)
   /** Parte da comissão que vai para o parceiro. */
   partnerFeeCents    Int         @default(0)

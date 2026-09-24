@@ -4,7 +4,7 @@ import { saleState } from "@/lib/data/event-status";
 import { requireUser } from "@/lib/auth/session";
 import { getEventBySlug, listEvents, rulesFor } from "@/lib/data/repo";
 import { formatDateLong } from "@/lib/format";
-import { formatBRL } from "@/lib/money/fees";
+import { feeConfig, formatBRL } from "@/lib/money/fees";
 import { NEW_SELLER_MAX_ACTIVE_TICKETS, maxPriceCents } from "@/lib/rules/engine";
 import { ListingForm } from "./listing-form";
 
@@ -43,6 +43,7 @@ export default async function SellPage({ searchParams }: { searchParams: Promise
   const event = await getEventBySlug(evento);
   if (!event) notFound();
   const rules = rulesFor(event);
+  const fees = feeConfig();
   const state = saleState(event);
   const capExample = maxPriceCents(rules, 10_000);
   const priceCapNote =
@@ -109,6 +110,11 @@ export default async function SellPage({ searchParams }: { searchParams: Promise
             maxTickets={rules.maxTicketsPerSellerPerEvent}
             transferDeadlineHours={rules.sellerTransferDeadlineHours}
             platformName={event.platformName}
+            sellerNote={
+              fees.sellerFeeBps > 0
+                ? `Você recebe o preço menos ${fees.sellerFeeBps / 100}% de comissão.`
+                : `Você recebe o preço anunciado inteiro. O comprador paga + ${fees.buyerFeeBps / 100}% de taxa de serviço.`
+            }
           />
         </>
       )}

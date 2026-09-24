@@ -52,7 +52,7 @@ beforeEach(async () => {
 });
 
 const orderFor = (buyer: (typeof buyers)[number]) =>
-  createOrder({ listingId, buyer, quantity: 1, identifiers: { EMAIL: buyer.email }, buyerDeclaresHalfPriceEligible: false, feeBps: 1000, now }, provider);
+  createOrder({ listingId, buyer, quantity: 1, identifiers: { EMAIL: buyer.email }, buyerDeclaresHalfPriceEligible: false, fees: { buyerFeeBps: 0, sellerFeeBps: 1000 }, now }, provider);
 
 describe("reserva", () => {
   it("duas compras simultâneas do último ingresso: só uma reserva", async () => {

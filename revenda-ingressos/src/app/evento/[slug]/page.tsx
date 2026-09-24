@@ -4,7 +4,7 @@ import { PlatformTag, PosterArt, ShieldIcon, posterGradient } from "@/components
 import { saleState, type SaleState } from "@/lib/data/event-status";
 import { getEventBySlug, listingsForEvent, rulesFor, wantedForEvent } from "@/lib/data/repo";
 import { TICKET_TYPE_LABEL, formatDateTime, formatRemaining, formatWeekdayTime } from "@/lib/format";
-import { formatBRL } from "@/lib/money/fees";
+import { buyerFeeCents, feeConfig, formatBRL } from "@/lib/money/fees";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +14,7 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
   if (!event) notFound();
 
   const rules = rulesFor(event);
+  const fees = feeConfig();
   const state = saleState(event);
   const [listings, wanted] = await Promise.all([listingsForEvent(event.id), wantedForEvent(event.id)]);
   const canBuy = state.kind === "ABERTA";
@@ -78,6 +79,9 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
                   <div className="offer-side">
                     <div>
                       <div className="offer-price">{formatBRL(listing.priceCents)}</div>
+                      {fees.buyerFeeBps > 0 && (
+                        <div className="offer-face">+ {formatBRL(buyerFeeCents(listing.priceCents, fees))} de taxa de serviço</div>
+                      )}
                       <div className="offer-face">Valor original {formatBRL(listing.faceValueCents)}</div>
                     </div>
                     {canBuy ? (

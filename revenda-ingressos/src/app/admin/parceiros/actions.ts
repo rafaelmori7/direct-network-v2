@@ -32,8 +32,7 @@ export async function savePartner(partnerId: string | null, _prev: PartnerFormSt
   if (logoUrl && !/^https:\/\//.test(logoUrl)) errors.push("O logo precisa ser um link https.");
   if (!Number.isInteger(commissionShareBps) || commissionShareBps < 0 || commissionShareBps > 10_000) errors.push("Participação entre 0% e 100%.");
   if (!Number.isInteger(discountBps) || discountBps < 0 || discountBps > 10_000) errors.push("Desconto inválido.");
-  const platformFeeBps = Number(process.env.PLATFORM_FEE_BPS ?? 1000);
-  if (discountBps > platformFeeBps) errors.push(`O desconto não pode passar da comissão (${platformFeeBps / 100}%).`);
+  if (discountBps > 5000) errors.push("Desconto máximo de 50%.");
   if (errors.length > 0) return { errors };
 
   const data = { name, slug, couponCode, color, logoUrl, gatewayWalletId, commissionShareBps, discountBps, active: form.get("ativo") === "on" };

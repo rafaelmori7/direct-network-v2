@@ -39,7 +39,7 @@ beforeEach(async () => {
 
 async function buy(extra: { couponCode?: string; refSlug?: string }) {
   const r = await createOrder(
-    { listingId, buyer, quantity: 1, identifiers: { EMAIL: buyer.email }, buyerDeclaresHalfPriceEligible: false, feeBps: 1000, now, ...extra },
+    { listingId, buyer, quantity: 1, identifiers: { EMAIL: buyer.email }, buyerDeclaresHalfPriceEligible: false, fees: { buyerFeeBps: 0, sellerFeeBps: 1000 }, now, ...extra },
     provider,
   );
   if (!r.ok) return r;

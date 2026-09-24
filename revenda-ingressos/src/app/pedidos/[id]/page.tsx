@@ -81,26 +81,45 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
             <span>
               {order.quantity}× {order.listing.sector} · {TICKET_TYPE_LABEL[order.listing.ticketType]}
             </span>
-            <b>{formatBRL(order.totalCents)}</b>
+            <span>{formatBRL(order.quantity * order.listing.priceCents)}</span>
           </div>
-          {order.discountCents > 0 && (isBuyer || user.isAdmin) && (
-            <div className="summary-row offer-sub">
-              <span>Desconto do cupom (já aplicado)</span>
-              <span>− {formatBRL(order.discountCents)}</span>
-            </div>
+          {(isBuyer || user.isAdmin) && (
+            <>
+              {order.buyerFeeCents > 0 && (
+                <div className="summary-row offer-sub">
+                  <span>Taxa de serviço</span>
+                  <span>+ {formatBRL(order.buyerFeeCents)}</span>
+                </div>
+              )}
+              {order.discountCents > 0 && (
+                <div className="summary-row offer-sub">
+                  <span>Desconto do cupom</span>
+                  <span>− {formatBRL(order.discountCents)}</span>
+                </div>
+              )}
+              <div className="summary-row">
+                <span>Total pago</span>
+                <b>{formatBRL(order.totalCents)}</b>
+              </div>
+            </>
           )}
-          {user.isAdmin && order.partnerId && (
+          {user.isAdmin && (
             <div className="summary-row offer-sub">
-              <span>Parceiro ({order.partnerAttribution?.toLowerCase()})</span>
-              <span>{formatBRL(order.partnerFeeCents)}</span>
+              <span>Receita do site{order.partnerId ? ` / parceiro (${order.partnerAttribution?.toLowerCase()})` : ""}</span>
+              <span>
+                {formatBRL(order.platformFeeCents)}
+                {order.partnerId ? ` / ${formatBRL(order.partnerFeeCents)}` : ""}
+              </span>
             </div>
           )}
           {isSeller && (
             <>
-              <div className="summary-row offer-sub">
-                <span>Comissão</span>
-                <span>− {formatBRL(order.platformFeeCents)}</span>
-              </div>
+              {order.sellerFeeCents > 0 && (
+                <div className="summary-row offer-sub">
+                  <span>Comissão</span>
+                  <span>− {formatBRL(order.sellerFeeCents)}</span>
+                </div>
+              )}
               <div className="summary-row">
                 <span>Você recebe</span>
                 <b>{formatBRL(order.sellerNetCents)}</b>
