@@ -86,11 +86,29 @@ npm test                     # testes de regras (sem banco)
 npm run test:db              # testes com banco (usa TEST_DATABASE_URL ou o banco local revenda_test)
 ```
 
+## Asaas (sandbox)
+
+- **Variáveis:**
+  - `PAYMENT_PROVIDER=asaas`;
+  - `ASAAS_API_URL=https://api-sandbox.asaas.com/v3`;
+  - `ASAAS_WEBHOOK_TOKEN`;
+  - `ASAAS_API_KEY`: opcional quando o ambiente injeta o header `access_token` por proxy.
+- **Conferir a conexão:** `npm run asaas:check`. O comando nunca mostra a chave.
+- **Webhook:**
+  - em Integrações > Webhooks, apontar para `https://<site>/api/webhooks/asaas`;
+  - usar o token de autenticação igual a `ASAAS_WEBHOOK_TOKEN`;
+  - eventos `PAYMENT_RECEIVED` e `PAYMENT_CONFIRMED`.
+- **O que o webhook faz:**
+  - confirma o pedido;
+  - devolve o Pix se ele foi pago por outro CPF;
+  - devolve o Pix se ele foi pago depois de vencido;
+  - é idempotente: avisos repetidos não fazem nada.
+- **Pix vencido:** a cobrança é cancelada no gateway.
+
 ## Próximos passos
 
 1. Verificação de identidade do vendedor (documento + selfie) e criação da subconta Asaas com Conta Escrow.
-2. Webhook do Asaas: confirmar pagamento, conferir se o CPF do pagador é o do comprador e reembolsar Pix pago depois de vencido.
+2. Validar no sandbox: cobrança Pix com split, reembolso, Conta Escrow e de onde vem o CPF do pagador (`getPayerCpf`).
 3. Rotinas agendadas restantes: reembolso por prazo de transferência esgotado, encerramento de anúncios e liberação automática.
 4. Chat em tempo real (polling no início) com aviso por e-mail/WhatsApp de nova mensagem.
 5. Painel admin: eventos, sobreposições de regras e disputas.
-6. Validar no sandbox do Asaas: finish/refund com escrow e dados do pagador Pix.

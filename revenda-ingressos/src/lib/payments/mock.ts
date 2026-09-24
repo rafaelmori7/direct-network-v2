@@ -1,11 +1,12 @@
 import { randomUUID } from "node:crypto";
 import type { PaymentProvider, PixCharge, PixChargeRequest } from "./provider";
 
-type MockChargeState = "PENDENTE" | "RETIDO" | "LIBERADO" | "REEMBOLSADO";
+type MockChargeState = "PENDENTE" | "RETIDO" | "LIBERADO" | "REEMBOLSADO" | "CANCELADA";
 
 /** Gateway falso para desenvolvimento e testes. Guarda tudo em memória. */
 export class MockPaymentProvider implements PaymentProvider {
-  readonly charges = new Map<string, { request: PixChargeRequest | null; state: MockChargeState }>();
+  readonly kind = "mock" as const;
+  readonly charges = new Map<string, { request: PixChargeRequest | null; state: MockChargeState; payerCpf?: string }>();
 
   async createPixCharge(request: PixChargeRequest): Promise<PixCharge> {
     const chargeId = `mock_${randomUUID()}`;
@@ -19,14 +20,25 @@ export class MockPaymentProvider implements PaymentProvider {
   }
 
   /** Simula o webhook de pagamento recebido. */
-  markPaid(chargeId: string): void {
+  markPaid(chargeId: string, payerCpf?: string): void {
     const charge = this.charges.get(chargeId);
     // Depois de reiniciar o servidor a memória some: aceita a cobrança mesmo assim.
     if (!charge) {
-      this.charges.set(chargeId, { request: null, state: "RETIDO" });
+      this.charges.set(chargeId, { request: null, state: "RETIDO", payerCpf: payerCpf ?? undefined });
       return;
     }
-    this.require(chargeId, "PENDENTE").state = "RETIDO";
+    // Uma cobrança cancelada ainda pode ter sido paga no mesmo instante (Pix já emitido).
+    if (charge.state !== "CANCELADA") this.require(chargeId, "PENDENTE");
+    charge.state = "RETIDO";
+    charge.payerCpf = payerCpf ?? charge.request?.buyer.cpf;
+  }
+
+  async cancelCharge(chargeId: string): Promise<void> {
+    this.require(chargeId, "PENDENTE").state = "CANCELADA";
+  }
+
+  async getPayerCpf(chargeId: string): Promise<string | null> {
+    return this.charges.get(chargeId)?.payerCpf ?? null;
   }
 
   async releaseEscrow(chargeId: string): Promise<void> {

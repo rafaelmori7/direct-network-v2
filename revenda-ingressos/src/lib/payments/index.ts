@@ -9,9 +9,9 @@ export function getPaymentProvider(): PaymentProvider {
   const kind = process.env.PAYMENT_PROVIDER ?? "mock";
   if (kind === "asaas") {
     const apiUrl = process.env.ASAAS_API_URL;
-    const apiKey = process.env.ASAAS_API_KEY;
-    if (!apiUrl || !apiKey) throw new Error("ASAAS_API_URL e ASAAS_API_KEY são obrigatórios");
-    provider = new AsaasPaymentProvider(apiUrl, apiKey);
+    if (!apiUrl) throw new Error("ASAAS_API_URL é obrigatório");
+    // Sem ASAAS_API_KEY, o header é colocado pelo proxy do ambiente ("API credential").
+    provider = new AsaasPaymentProvider(apiUrl, process.env.ASAAS_API_KEY || null);
   } else {
     provider = new MockPaymentProvider();
   }

@@ -17,11 +17,17 @@ export interface PixCharge {
 }
 
 export interface PaymentProvider {
+  /** "mock" aceita vendedor sem subconta no gateway (desenvolvimento e testes). */
+  readonly kind: "mock" | "asaas";
   createPixCharge(req: PixChargeRequest): Promise<PixCharge>;
   /** Libera a parte do vendedor retida na custódia. */
   releaseEscrow(chargeId: string): Promise<void>;
   /** Devolve o valor integral ao comprador. */
   refund(chargeId: string): Promise<void>;
+  /** Cancela uma cobrança ainda não paga, para o Pix não poder mais ser pago. */
+  cancelCharge(chargeId: string): Promise<void>;
+  /** CPF de quem pagou o Pix, ou null se o gateway não informar. */
+  getPayerCpf(chargeId: string): Promise<string | null>;
 }
 
 /** Só aceitamos Pix pago pelo próprio comprador: CPF do pagador = CPF do cadastro. */

@@ -25,6 +25,7 @@ export type Actor = "COMPRADOR" | "VENDEDOR" | "SISTEMA" | "ADMIN";
 export type OrderAction =
   | { type: "PAGAMENTO_CONFIRMADO" }
   | { type: "PAGAMENTO_EXPIRADO" }
+  | { type: "PAGADOR_DIFERENTE" }
   | { type: "VENDEDOR_TRANSFERIU" }
   | { type: "PRAZO_TRANSFERENCIA_ESGOTADO" }
   | { type: "COMPRADOR_CONFIRMOU_RECEBIMENTO"; checklistConfirmed: boolean }
@@ -32,7 +33,7 @@ export type OrderAction =
   | { type: "LIBERACAO_AUTOMATICA" }
   | { type: "ADMIN_DECIDIU"; winner: "COMPRADOR" | "VENDEDOR"; note: string };
 
-export type Effect = { type: "REEMBOLSAR_COMPRADOR" } | { type: "LIBERAR_CUSTODIA" };
+export type Effect = { type: "REEMBOLSAR_COMPRADOR" } | { type: "LIBERAR_CUSTODIA" } | { type: "CANCELAR_COBRANCA" };
 
 export interface OrderSnapshot {
   status: OrderStatus;
@@ -48,6 +49,7 @@ export type TransitionResult =
 const ALLOWED_ACTORS: Record<OrderAction["type"], Actor[]> = {
   PAGAMENTO_CONFIRMADO: ["SISTEMA"],
   PAGAMENTO_EXPIRADO: ["SISTEMA"],
+  PAGADOR_DIFERENTE: ["SISTEMA"],
   VENDEDOR_TRANSFERIU: ["VENDEDOR"],
   PRAZO_TRANSFERENCIA_ESGOTADO: ["SISTEMA"],
   COMPRADOR_CONFIRMOU_RECEBIMENTO: ["COMPRADOR"],
@@ -72,7 +74,11 @@ export function transition(
       return status === "AGUARDANDO_PAGAMENTO" ? ok("PAGO") : badState(status, action);
 
     case "PAGAMENTO_EXPIRADO":
-      return status === "AGUARDANDO_PAGAMENTO" ? ok("CANCELADO") : badState(status, action);
+      return status === "AGUARDANDO_PAGAMENTO" ? ok("CANCELADO", [{ type: "CANCELAR_COBRANCA" }]) : badState(status, action);
+
+    case "PAGADOR_DIFERENTE":
+      // Pix pago por outro CPF: devolve e cancela. Só aceitamos Pix do próprio comprador.
+      return status === "AGUARDANDO_PAGAMENTO" ? ok("CANCELADO", [{ type: "REEMBOLSAR_COMPRADOR" }]) : badState(status, action);
 
     case "VENDEDOR_TRANSFERIU":
       if (status !== "PAGO") return badState(status, action);

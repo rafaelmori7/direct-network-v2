@@ -4,6 +4,7 @@ import { ShieldIcon } from "@/components/chrome";
 import { requireUser } from "@/lib/auth/session";
 import { getEvent, rulesFor } from "@/lib/data/repo";
 import { prisma } from "@/lib/db";
+import { getPaymentProvider } from "@/lib/payments";
 import { TICKET_TYPE_LABEL, formatDateLong, formatDateTime } from "@/lib/format";
 import { formatBRL } from "@/lib/money/fees";
 import type { OrderStatus } from "@/lib/orders/state-machine";
@@ -47,7 +48,7 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
   if (!event) notFound();
   const rules = rulesFor(event);
   const identifiers = order.buyerIdentifiers as Partial<Record<BuyerIdentifier, string>>;
-  const isMock = (process.env.PAYMENT_PROVIDER ?? "mock") === "mock";
+  const isMock = getPaymentProvider().kind === "mock";
   const canDispute = ["PAGO", "TRANSFERIDO", "RECEBIDO"].includes(order.status) && new Date() <= order.disputeDeadlineAt;
 
   return (

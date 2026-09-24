@@ -15,9 +15,11 @@ import { onlyDigits, type PaymentProvider, type PixCharge, type PixChargeRequest
  * Referência: https://docs.asaas.com/docs/introducao-conta-escrow
  */
 export class AsaasPaymentProvider implements PaymentProvider {
+  readonly kind = "asaas" as const;
+
   constructor(
     private readonly apiUrl: string,
-    private readonly apiKey: string,
+    private readonly apiKey: string | null,
   ) {}
 
   async createPixCharge(req: PixChargeRequest): Promise<PixCharge> {
@@ -60,13 +62,24 @@ export class AsaasPaymentProvider implements PaymentProvider {
     await this.request("POST", `/payments/${chargeId}/refund`);
   }
 
-  private async request<T = unknown>(method: "GET" | "POST", path: string, body?: unknown): Promise<T> {
+  async cancelCharge(chargeId: string): Promise<void> {
+    await this.request("DELETE", `/payments/${chargeId}`);
+  }
+
+  // TODO(sandbox): confirmar qual endpoint do Asaas devolve o CPF do pagador do
+  // Pix. Enquanto não confirmado, retorna null e o pedido segue com um aviso no
+  // histórico para revisão manual.
+  async getPayerCpf(_chargeId: string): Promise<string | null> {
+    return null;
+  }
+
+  private async request<T = unknown>(method: "GET" | "POST" | "DELETE", path: string, body?: unknown): Promise<T> {
     const res = await fetch(`${this.apiUrl}${path}`, {
       method,
       headers: {
         "Content-Type": "application/json",
         "User-Agent": "revenda-ingressos",
-        access_token: this.apiKey,
+        ...(this.apiKey && { access_token: this.apiKey }),
       },
       body: body === undefined ? undefined : JSON.stringify(body),
     });

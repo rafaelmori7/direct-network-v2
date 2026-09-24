@@ -2,7 +2,7 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { eventRuleInput, getEvent, rulesFor } from "@/lib/data/repo";
 import { splitAmount } from "@/lib/money/fees";
-import type { PaymentProvider } from "@/lib/payments/provider";
+import { payerMatchesBuyer, type PaymentProvider } from "@/lib/payments/provider";
 import { checkPurchase, disputeDeadline, releaseAt, transferDeadline, type Violation } from "@/lib/rules/engine";
 import type { BuyerIdentifier, TicketType } from "@/lib/rules/types";
 import { addMinutes } from "@/lib/time";
@@ -49,7 +49,7 @@ export async function createOrder(input: CreateOrderInput, provider: PaymentProv
   );
   if (violations.length > 0) return { ok: false, errors: violations.map((v) => v.message) };
 
-  const sellerWalletId = listing.seller.gatewayWalletId ?? (process.env.PAYMENT_PROVIDER === "asaas" ? null : "mock-wallet");
+  const sellerWalletId = listing.seller.gatewayWalletId ?? (provider.kind === "mock" ? "mock-wallet" : null);
   if (!sellerWalletId) return { ok: false, errors: ["O vendedor ainda não concluiu o cadastro de recebimento."] };
 
   const { totalCents, platformFeeCents, sellerNetCents } = splitAmount(listing.priceCents * input.quantity, input.feeBps);
@@ -175,10 +175,56 @@ export async function applyAction(
 // status já mudou e o efeito precisa ser reexecutado pelo admin.
 async function runEffects(effects: Effect[], chargeId: string | null, provider: PaymentProvider): Promise<void> {
   for (const effect of effects) {
+    if (effect.type === "CANCELAR_COBRANCA") {
+      // Sem cobrança (falha ao gerar o Pix) não há o que cancelar. Se a cobrança
+      // já tiver sido paga no mesmo instante, o webhook devolve o valor.
+      if (chargeId) await provider.cancelCharge(chargeId).catch(() => undefined);
+      continue;
+    }
     if (!chargeId) throw new Error(`Pedido sem cobrança para executar ${effect.type}`);
     if (effect.type === "REEMBOLSAR_COMPRADOR") await provider.refund(chargeId);
     if (effect.type === "LIBERAR_CUSTODIA") await provider.releaseEscrow(chargeId);
   }
+}
+
+export type PaymentOutcome = "CONFIRMADO" | "PAGADOR_DIFERENTE" | "REEMBOLSADO_APOS_VENCER" | "IGNORADO";
+
+/**
+ * Chamado pelo webhook quando o gateway avisa que um Pix foi pago.
+ * Idempotente: o gateway reenvia avisos, e cada caso só age uma vez.
+ */
+export async function handlePaymentReceived(chargeId: string, provider: PaymentProvider, now = new Date()): Promise<PaymentOutcome> {
+  const order = await prisma.order.findUnique({ where: { chargeId }, include: { buyer: { select: { cpf: true } } } });
+  if (!order) return "IGNORADO";
+
+  if (order.status === "AGUARDANDO_PAGAMENTO") {
+    const payerCpf = await provider.getPayerCpf(chargeId);
+    if (payerCpf && !payerMatchesBuyer(payerCpf, order.buyer.cpf)) {
+      const r = await applyAction(order.id, { type: "PAGADOR_DIFERENTE" }, "SISTEMA", null, provider, {
+        now,
+        note: "Pix pago por outro CPF: devolvido",
+      });
+      return r.ok ? "PAGADOR_DIFERENTE" : "IGNORADO";
+    }
+    const r = await applyAction(order.id, { type: "PAGAMENTO_CONFIRMADO" }, "SISTEMA", null, provider, {
+      now,
+      note: payerCpf ? undefined : "CPF do pagador não informado pelo gateway: conferir",
+    });
+    return r.ok ? "CONFIRMADO" : "IGNORADO";
+  }
+
+  if (order.status === "CANCELADO") {
+    // Pix pago depois de vencer (o ingresso já voltou para a venda): devolve.
+    const already = await prisma.orderLog.findFirst({ where: { orderId: order.id, action: "PIX_PAGO_APOS_VENCER" } });
+    if (already) return "IGNORADO";
+    await provider.refund(chargeId);
+    await prisma.orderLog.create({
+      data: { orderId: order.id, fromStatus: "CANCELADO", toStatus: "CANCELADO", action: "PIX_PAGO_APOS_VENCER", actor: "SISTEMA", note: "Pix pago depois de vencido: devolvido" },
+    });
+    return "REEMBOLSADO_APOS_VENCER";
+  }
+
+  return "IGNORADO";
 }
 
 /** Rotina agendada: cancela Pix vencidos e devolve a reserva ao anúncio. */
