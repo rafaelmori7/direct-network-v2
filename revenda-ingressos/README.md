@@ -96,6 +96,20 @@ npm test                     # testes de regras (sem banco)
 npm run test:db              # testes com banco (usa TEST_DATABASE_URL ou o banco local revenda_test)
 ```
 
+## Publicar (Vercel + Postgres)
+
+1. **Banco:** crie um Postgres gratuito (Neon ou Supabase) e copie a URL de conexão.
+2. **Projeto:** na Vercel, clique em **Add New → Project** e importe este repositório.
+   - **Root Directory:** `revenda-ingressos`.
+   - **Build Command:** `npm run vercel-build`. Ele aplica as migrações, cadastra as ticketeiras e faz o build.
+3. **Variáveis de ambiente:**
+   - `DATABASE_URL`;
+   - `PAYMENT_PROVIDER`, `ASAAS_API_URL`, `ASAAS_API_KEY`, `ASAAS_WEBHOOK_TOKEN`;
+   - `CRON_SECRET`, `PLATFORM_FEE_BPS`;
+   - `SEED_DEMO=1`, só se quiser os eventos e usuários de exemplo.
+4. **Deploy:** faça o deploy do branch.
+5. **Agendador:** configure um agendador (ex.: cron-job.org) chamando `GET /api/cron/rotinas` a cada 5 min, com o header `Authorization: Bearer <CRON_SECRET>`.
+
 ## Asaas (sandbox)
 
 - **Variáveis:**

@@ -15,7 +15,9 @@
     "admin:verificar": "tsx scripts/verify-user.ts",
     "test:db": "DATABASE_URL=${TEST_DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/revenda_test} sh -c \"prisma migrate deploy >/dev/null && VITEST_INTEGRATION=1 vitest run\"",
     "asaas:check": "NODE_USE_ENV_PROXY=1 NODE_NO_WARNINGS=1 tsx scripts/asaas-check.ts",
-    "asaas:call": "NODE_USE_ENV_PROXY=1 NODE_NO_WARNINGS=1 tsx scripts/asaas-call.ts"
+    "asaas:call": "NODE_USE_ENV_PROXY=1 NODE_NO_WARNINGS=1 tsx scripts/asaas-call.ts",
+    "postinstall": "prisma generate",
+    "vercel-build": "prisma migrate deploy && tsx prisma/seed.ts $([ \"$SEED_DEMO\" = 1 ] && echo --demo) && next build"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
