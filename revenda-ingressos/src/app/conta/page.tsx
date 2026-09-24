@@ -34,18 +34,24 @@ export default async function AccountPage() {
         {user.name} · CPF {formatCpf(user.cpf)} · {user.email}
       </p>
 
-      {user.canSell ? (
+      {user.payoutApproved ? (
         <div className="notice notice-safe">
           <div>
-            <b>Identidade verificada</b>Você pode comprar e vender.
+            <b>Conta de recebimento aprovada</b>Você pode comprar e vender, e recebe após cada evento.
+          </div>
+        </div>
+      ) : user.hasPayoutAccount ? (
+        <div className="notice notice-warn">
+          <div>
+            <b>Conta de recebimento em análise</b>
+            Você já pode anunciar. Os pagamentos ficam guardados até a aprovação. <Link href="/conta/recebimento">Ver cadastro</Link>
           </div>
         </div>
       ) : (
         <div className="notice notice-warn">
           <div>
-            <b>Verificação para vender: pendente</b>
-            Você já pode comprar. Para anunciar, vamos conferir sua identidade (documento e selfie) e cadastrar sua conta
-            de recebimento no seu CPF.
+            <b>Quer vender?</b>
+            Crie sua conta de recebimento (2 minutos) e anuncie na hora. <Link href="/conta/recebimento">Criar agora</Link>
           </div>
         </div>
       )}

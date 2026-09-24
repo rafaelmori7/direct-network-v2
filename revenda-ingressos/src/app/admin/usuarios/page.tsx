@@ -20,7 +20,7 @@ export default async function AdminUsers({ searchParams }: { searchParams: Promi
         ...(digits.length >= 3 ? [{ cpf: { contains: digits } }] : []),
       ],
     }),
-    ...(filtro === "pendentes" && { verifiedAt: null, blockedAt: null }),
+    ...(filtro === "pendentes" && { verifiedAt: null, blockedAt: null, gatewayAccountId: { not: null } }),
     ...(filtro === "bloqueados" && { blockedAt: { not: null } }),
   };
   const users = await prisma.user.findMany({
@@ -63,7 +63,9 @@ export default async function AdminUsers({ searchParams }: { searchParams: Promi
                 {u.blockedAt ? (
                   <span className="type-badge" style={{ background: "var(--danger-soft)", color: "var(--danger)" }}>Bloqueado</span>
                 ) : u.verifiedAt ? (
-                  <span className="type-badge" style={{ background: "var(--safe-soft)", color: "var(--safe)" }}>Pode vender</span>
+                  <span className="type-badge" style={{ background: "var(--safe-soft)", color: "var(--safe)" }}>Recebimento aprovado</span>
+                ) : u.gatewayAccountId ? (
+                  <span className="type-badge">Cadastro em análise</span>
                 ) : (
                   <span className="type-badge">Só compra</span>
                 )}
@@ -81,7 +83,7 @@ export default async function AdminUsers({ searchParams }: { searchParams: Promi
             <div className="offer-side" style={{ gap: 6 }}>
               {!u.blockedAt && (
                 <form action={setVerified.bind(null, u.id, !u.verifiedAt)}>
-                  <button className={`btn ${u.verifiedAt ? "btn-outline" : "btn-primary"}`}>{u.verifiedAt ? "Remover verificação" : "Verificar vendedor"}</button>
+                  <button className={`btn ${u.verifiedAt ? "btn-outline" : "btn-primary"}`}>{u.verifiedAt ? "Remover aprovação" : "Aprovar recebimento"}</button>
                 </form>
               )}
               {u.id !== admin.id &&

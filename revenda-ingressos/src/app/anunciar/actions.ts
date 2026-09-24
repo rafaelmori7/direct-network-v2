@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/session";
-import { eventRuleInput, getEventBySlug, rulesFor, ticketsListedBySeller } from "@/lib/data/repo";
+import { activeTicketsBySeller, eventRuleInput, getEventBySlug, rulesFor, ticketsListedBySeller } from "@/lib/data/repo";
 import { prisma } from "@/lib/db";
 import { parseBRLToCents } from "@/lib/format";
 import { checkListing } from "@/lib/rules/engine";
@@ -43,7 +43,12 @@ export async function createListing(_prev: FormState, form: FormData): Promise<F
     rulesFor(event),
     eventRuleInput(event),
     { priceCents, faceValueCents, quantity, purchasedAt, sellerDeclaresOriginalBuyer },
-    { verified: user.canSell, ticketsAlreadyListedForEvent: await ticketsListedBySeller(event.id, user.id) },
+    {
+      hasPayoutAccount: user.hasPayoutAccount,
+      payoutApproved: user.payoutApproved,
+      ticketsAlreadyListedForEvent: await ticketsListedBySeller(event.id, user.id),
+      activeTicketsListed: await activeTicketsBySeller(user.id),
+    },
     new Date(),
   );
   if (violations.length > 0) return { errors: violations.map((v) => v.message) };

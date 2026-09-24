@@ -210,3 +210,9 @@ export async function ticketsListedBySeller(eventId: string, sellerId: string): 
   });
   return agg._sum.quantity ?? 0;
 }
+
+/** Ingressos ainda disponíveis em todos os anúncios ativos do vendedor. */
+export async function activeTicketsBySeller(sellerId: string): Promise<number> {
+  const agg = await prisma.listing.aggregate({ where: { sellerId, status: "ATIVO" }, _sum: { quantityAvailable: true } });
+  return agg._sum.quantityAvailable ?? 0;
+}

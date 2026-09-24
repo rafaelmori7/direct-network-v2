@@ -1,4 +1,12 @@
-import { onlyDigits, type PaymentProvider, type PixCharge, type PixChargeRequest, type RefundResult } from "./provider";
+import {
+  onlyDigits,
+  type PaymentProvider,
+  type PixCharge,
+  type PixChargeRequest,
+  type RefundResult,
+  type SellerAccount,
+  type SellerAccountRequest,
+} from "./provider";
 
 /**
  * Integração com o Asaas (Pix + split + Conta Escrow).
@@ -87,6 +95,51 @@ export class AsaasPaymentProvider implements PaymentProvider {
   // No sandbox de conta CPF não há subcontas; lá aceitamos cobrança sem split.
   get requiresSellerWallet(): boolean {
     return !this.isSandbox;
+  }
+
+  // Não testado ainda: subcontas exigem conta principal de CNPJ (a do sandbox atual é CPF).
+  async createSellerAccount(req: SellerAccountRequest): Promise<SellerAccount> {
+    const account = await this.request<{ id: string; walletId: string; apiKey?: string }>("POST", "/accounts", {
+      name: req.name,
+      email: req.email,
+      cpfCnpj: onlyDigits(req.cpf),
+      birthDate: req.birthDate.toISOString().slice(0, 10),
+      mobilePhone: onlyDigits(req.mobilePhone),
+      incomeValue: req.incomeCents / 100,
+      address: req.address,
+      addressNumber: req.addressNumber,
+      complement: req.complement,
+      province: req.province,
+      postalCode: onlyDigits(req.postalCode),
+      // Avisos da análise de documentos da subconta chegam no mesmo webhook do site.
+      ...(process.env.SITE_URL &&
+        process.env.ASAAS_WEBHOOK_TOKEN && {
+          webhooks: [
+            {
+              name: "Análise da conta",
+              url: `${process.env.SITE_URL.replace(/\/$/, "")}/api/webhooks/asaas`,
+              email: process.env.ASAAS_WEBHOOK_EMAIL ?? req.email,
+              sendType: "SEQUENTIALLY",
+              enabled: true,
+              interrupted: false,
+              authToken: process.env.ASAAS_WEBHOOK_TOKEN,
+              events: ["ACCOUNT_STATUS_GENERAL_APPROVAL_APPROVED", "ACCOUNT_STATUS_GENERAL_APPROVAL_REJECTED"],
+            },
+          ],
+        }),
+    });
+    return { accountId: account.id, walletId: account.walletId, apiKey: account.apiKey ?? null };
+  }
+
+  // Documentos pendentes da subconta; o link é consultado com a chave da própria subconta.
+  async getOnboardingUrl(account: SellerAccount): Promise<string | null> {
+    if (!account.apiKey) return null;
+    const res = await fetch(`${this.apiUrl}/myAccount/documents`, {
+      headers: { "Content-Type": "application/json", "User-Agent": "revenda-ingressos", access_token: account.apiKey },
+    });
+    if (!res.ok) throw new Error(`Asaas GET /myAccount/documents falhou: ${res.status}`);
+    const body = (await res.json()) as { data?: { onboardingUrl?: string | null }[] };
+    return body.data?.find((d) => d.onboardingUrl)?.onboardingUrl ?? null;
   }
 
   get isSandbox(): boolean {

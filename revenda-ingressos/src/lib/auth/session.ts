@@ -38,7 +38,10 @@ export type CurrentUser = {
   email: string;
   cpf: string;
   canBuy: boolean;
-  canSell: boolean;
+  /** Conta de recebimento criada: pode anunciar (com limite enquanto em análise). */
+  hasPayoutAccount: boolean;
+  /** Conta de recebimento aprovada: recebe os pagamentos e anuncia sem limite de novato. */
+  payoutApproved: boolean;
   isAdmin: boolean;
 };
 
@@ -55,7 +58,8 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
     email: user.email,
     cpf: user.cpf,
     canBuy: user.cpfCheckedAt !== null,
-    canSell: user.verifiedAt !== null,
+    hasPayoutAccount: user.gatewayAccountId !== null,
+    payoutApproved: user.verifiedAt !== null,
     isAdmin: user.isAdmin,
   };
 });

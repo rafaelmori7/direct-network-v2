@@ -6,7 +6,15 @@ import { prisma } from "@/lib/db";
 
 export async function setVerified(userId: string, verified: boolean): Promise<void> {
   await requireAdminAction();
-  await prisma.user.update({ where: { id: userId }, data: { verifiedAt: verified ? new Date() : null } });
+  // Aprovação manual (ex.: problema no gateway). Normalmente vem do aviso do Asaas.
+  const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      verifiedAt: verified ? new Date() : null,
+      gatewayAccountStatus: verified ? "APROVADA" : user.gatewayAccountId ? "EM_ANALISE" : "NENHUM",
+    },
+  });
   revalidatePath("/admin/usuarios");
 }
 

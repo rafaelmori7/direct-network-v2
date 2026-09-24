@@ -51,6 +51,9 @@ async function seedDemo() {
         passwordHash,
         cpfCheckedAt: now,
         verifiedAt: now,
+        gatewayAccountId: `mock_acc_${cpf}`,
+        gatewayWalletId: `mock_wallet_${cpf}`,
+        gatewayAccountStatus: "APROVADA",
         isAdmin: email.startsWith("admin"),
       },
     });

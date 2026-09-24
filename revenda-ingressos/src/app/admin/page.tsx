@@ -12,7 +12,7 @@ export default async function AdminHome() {
     prisma.order.count({ where: { status: "EM_DISPUTA" } }),
     prisma.order.count({ where: { refundStatus: { in: ["SOLICITADO", "AGUARDANDO_APROVACAO", "FALHOU"] } } }),
     prisma.order.count({ where: { payoutStatus: "FALHOU" } }),
-    prisma.user.count({ where: { verifiedAt: null, blockedAt: null, listings: { none: {} } } }),
+    prisma.user.count({ where: { verifiedAt: null, blockedAt: null, gatewayAccountId: { not: null } } }),
     prisma.listing.count({ where: { status: "PAUSADO" } }),
   ]);
   const cards = [
@@ -20,7 +20,7 @@ export default async function AdminHome() {
     { href: "/admin/disputas", title: "Disputas abertas", value: disputes, note: "Decida entre comprador e vendedor" },
     { href: "/admin/reembolsos", title: "Reembolsos pendentes", value: refunds, note: "Aprovar no painel do Asaas" },
     { href: "/admin/disputas", title: "Liberações com falha", value: payoutsFailed, note: "Conferir no Asaas" },
-    { href: "/admin/usuarios?filtro=pendentes", title: "Usuários sem verificação", value: pendingSellers, note: "Verificar para poderem vender" },
+    { href: "/admin/usuarios?filtro=pendentes", title: "Cadastros em análise", value: pendingSellers, note: "Vendedores que ainda não recebem" },
     { href: "/admin/anuncios?status=PAUSADO", title: "Anúncios pausados", value: paused, note: "Revisar e reativar ou remover" },
     { href: "/admin/pedidos", title: "Buscar pedidos", value: "→", note: "Por nº, cobrança, e-mail, CPF ou evento" },
     { href: "/admin/emails", title: "E-mails enviados", value: "→", note: "Avisos do sistema" },

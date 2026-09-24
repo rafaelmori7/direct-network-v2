@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { PaymentProvider, PixCharge, PixChargeRequest, RefundResult } from "./provider";
+import type { PaymentProvider, PixCharge, PixChargeRequest, RefundResult, SellerAccount, SellerAccountRequest } from "./provider";
 
 type MockChargeState = "PENDENTE" | "RETIDO" | "LIBERADO" | "REEMBOLSADO" | "CANCELADA";
 
@@ -32,6 +32,18 @@ export class MockPaymentProvider implements PaymentProvider {
     if (charge.state !== "CANCELADA") this.require(chargeId, "PENDENTE");
     charge.state = "RETIDO";
     charge.payerCpf = payerCpf ?? charge.request?.buyer.cpf;
+  }
+
+  readonly sellerAccounts = new Map<string, SellerAccountRequest>();
+
+  async createSellerAccount(req: SellerAccountRequest): Promise<SellerAccount> {
+    const accountId = `mock_acc_${randomUUID()}`;
+    this.sellerAccounts.set(accountId, req);
+    return { accountId, walletId: `mock_wallet_${randomUUID()}`, apiKey: `mock_key_${randomUUID()}` };
+  }
+
+  async getOnboardingUrl(): Promise<string | null> {
+    return null; // Em testes a aprovação é feita pelo admin ou pelo botão de simulação.
   }
 
   async simulatePayment(chargeId: string): Promise<void> {

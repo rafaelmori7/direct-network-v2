@@ -86,10 +86,18 @@ export interface ListingInput {
   sellerDeclaresOriginalBuyer: boolean;
 }
 
+/** Vendedor com a conta de recebimento ainda em análise pode ter até isto anunciado ao mesmo tempo. */
+export const NEW_SELLER_MAX_ACTIVE_TICKETS = 10;
+
 export interface SellerInput {
-  verified: boolean;
+  /** Conta de recebimento criada (documentos enviados ou em análise). Obrigatória para anunciar. */
+  hasPayoutAccount: boolean;
+  /** Conta de recebimento aprovada. Sem ela o vendedor anuncia com limite e só recebe depois da aprovação. */
+  payoutApproved: boolean;
   /** Ingressos que o vendedor já tem anunciados ou vendidos neste evento. */
   ticketsAlreadyListedForEvent: number;
+  /** Ingressos ainda disponíveis em todos os anúncios ativos do vendedor. */
+  activeTicketsListed: number;
 }
 
 export function checkListing(
@@ -109,8 +117,13 @@ export function checkListing(
   } else if (!rules.listingEnabled) {
     v.push({ code: "ANUNCIOS_DESLIGADOS", message: "Anúncios desligados para este evento." });
   }
-  if (!seller.verified) {
-    v.push({ code: "VENDEDOR_NAO_VERIFICADO", message: "Conclua a verificação de identidade para anunciar." });
+  if (!seller.hasPayoutAccount) {
+    v.push({ code: "SEM_CONTA_DE_RECEBIMENTO", message: "Cadastre sua conta de recebimento para anunciar (leva 2 minutos)." });
+  } else if (!seller.payoutApproved && seller.activeTicketsListed + listing.quantity > NEW_SELLER_MAX_ACTIVE_TICKETS) {
+    v.push({
+      code: "LIMITE_VENDEDOR_NOVO",
+      message: `Enquanto seu cadastro está em análise, você pode ter até ${NEW_SELLER_MAX_ACTIVE_TICKETS} ingressos anunciados.`,
+    });
   }
   if (now >= saleWindow(rules, event).closesAt) {
     v.push({ code: "FORA_DA_JANELA", message: "Prazo para vender este evento encerrado." });

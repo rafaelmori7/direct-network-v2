@@ -12,7 +12,7 @@ const BASE = {
   disputeWindowHoursAfterEvent: 48,
   priceCapMode: "LIVRE",
   maxMarkupPercent: 0,
-  maxTicketsPerSellerPerEvent: 4,
+  maxTicketsPerSellerPerEvent: 10,
 } satisfies Partial<RuleProfile>;
 
 export const PLATFORMS: Record<PlatformCode, { name: string; profile: RuleProfile }> = {

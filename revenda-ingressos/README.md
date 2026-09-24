@@ -97,8 +97,14 @@ tests/                testes do motor de regras, dos estados e do pagamento
   - mensagens com contato são bloqueadas e ficam visíveis só para o admin.
 
 **Níveis de conta:**
-- **Comprar:** basta o CPF válido.
-- **Vender:** a conta precisa ser verificada. Por enquanto a verificação é manual: `npm run admin:verificar -- email`.
+- **Comprar:** basta o CPF válido. A verificação do comprador é o próprio Pix, que precisa vir do mesmo CPF.
+- **Anunciar:** exige a **conta de recebimento** criada (`/conta/recebimento`, cerca de 2 min: endereço e renda).
+  - O site cria a subconta no Asaas com o CPF do vendedor e mostra o link do Asaas para enviar documento e selfie.
+  - Enquanto os documentos estão em análise, o vendedor **já anuncia**, com até **10 ingressos ativos**.
+- **Receber:**
+  - só com a conta **aprovada**, pelo webhook `ACCOUNT_STATUS_GENERAL_APPROVAL_*` ou pelo admin em Usuários;
+  - vendas concluídas antes disso ficam em `AGUARDANDO_CADASTRO`, e a rotina paga quando a conta for aprovada.
+- **Chave da subconta:** guardada **criptografada** (`ENCRYPTION_KEY`, AES-256-GCM).
 
 O nome da marca é provisório e fica em `src/lib/brand.ts`.
 
@@ -176,7 +182,7 @@ npm run test:db              # testes com banco (usa TEST_DATABASE_URL ou o banc
 
 ## Próximos passos
 
-1. Verificação de identidade do vendedor (documento + selfie) e criação da subconta Asaas com Conta Escrow.
+1. Com a conta CNPJ: validar no sandbox a criação da subconta, o link de documentos, o webhook de aprovação e se a subconta em análise já recebe split com escrow.
 2. Com uma conta de CNPJ no sandbox: validar subconta, split, Conta Escrow e `POST /escrow/{id}/finish`.
 3. Configurar o Resend com domínio próprio (SPF/DKIM) para os e-mails não caírem no spam. WhatsApp como segundo canal.
 4. Verificação de identidade automática (documento + selfie) no lugar da verificação manual.

@@ -280,13 +280,29 @@ export async function requestRefund(
   return true;
 }
 
-/** Libera a custódia ao vendedor. Mesma proteção do reembolso: uma única vez. */
+/**
+ * Libera a custódia ao vendedor. Mesma proteção do reembolso: uma única vez.
+ * Vendedor com a conta de recebimento ainda não aprovada fica em
+ * AGUARDANDO_CADASTRO; a rotina libera quando a conta for aprovada.
+ */
 export async function requestPayout(
   orderId: string,
-  from: "NENHUM" | "FALHOU",
+  from: "NENHUM" | "FALHOU" | "AGUARDANDO_CADASTRO",
   provider: PaymentProvider,
   now = new Date(),
 ): Promise<boolean> {
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    select: { listing: { select: { seller: { select: { verifiedAt: true } } } } },
+  });
+  if (!order) return false;
+  if (!order.listing.seller.verifiedAt) {
+    await prisma.order.updateMany({
+      where: { id: orderId, payoutStatus: from },
+      data: { payoutStatus: "AGUARDANDO_CADASTRO", payoutUpdatedAt: now },
+    });
+    return false;
+  }
   const claimed = await prisma.order.updateMany({
     where: { id: orderId, payoutStatus: from, chargeId: { not: null } },
     data: { payoutStatus: "SOLICITADO", payoutError: null, payoutUpdatedAt: now },
@@ -359,6 +375,15 @@ export async function runRoutines(provider: PaymentProvider, now = new Date()): 
   for (const { id } of due) {
     const r = await applyAction(id, { type: "LIBERACAO_AUTOMATICA" }, "SISTEMA", null, provider, { now });
     if (r.ok) pagamentosLiberados++;
+  }
+
+  // Vendas liberadas antes de o vendedor ter o cadastro aprovado: pagam agora, se já aprovou.
+  const waiting = await prisma.order.findMany({
+    where: { payoutStatus: "AGUARDANDO_CADASTRO", listing: { seller: { verifiedAt: { not: null } } } },
+    select: { id: true },
+  });
+  for (const { id } of waiting) {
+    if (await requestPayout(id, "AGUARDANDO_CADASTRO", provider, now)) pagamentosLiberados++;
   }
 
   const anunciosEncerrados = await closeFinishedListings(now);

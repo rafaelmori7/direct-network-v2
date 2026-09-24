@@ -17,11 +17,20 @@ model User {
   passwordHash      String
   /** CPF com dígitos válidos e único: suficiente para comprar. */
   cpfCheckedAt      DateTime?
-  /** Identidade conferida (documento/selfie ou aprovação da subconta). Obrigatório para vender. */
+  /**
+   * Conta de recebimento aprovada (documentos + selfie analisados pelo gateway,
+   * ou aprovação manual do admin). Obrigatório para RECEBER; anunciar só exige
+   * a conta de recebimento criada.
+   */
   verifiedAt        DateTime?
   /** Subconta do vendedor no gateway, com Conta Escrow ligada. */
   gatewayAccountId  String?
   gatewayWalletId   String?
+  /** Chave de API da subconta, criptografada (usada para buscar o link de documentos). */
+  gatewayApiKeyEnc  String?
+  /** Link do gateway para o vendedor enviar documento e selfie. */
+  gatewayOnboardingUrl String?
+  gatewayAccountStatus GatewayAccountStatus @default(NENHUM)
   isAdmin           Boolean   @default(false)
   /** Conta bloqueada pelo admin (ex.: fraude): não entra, não compra, não vende. */
   blockedAt         DateTime?
@@ -44,6 +53,14 @@ model Session {
   createdAt DateTime @default(now())
 
   @@index([userId])
+}
+
+enum GatewayAccountStatus {
+  NENHUM
+  /** Criada; documentos em análise. Já pode anunciar (com limite). */
+  EM_ANALISE
+  APROVADA
+  REPROVADA
 }
 
 enum PlatformCode {
@@ -143,6 +160,8 @@ model Listing {
 
 enum PayoutStatus {
   NENHUM
+  /** Pedido liberado, mas a conta de recebimento do vendedor ainda não foi aprovada. */
+  AGUARDANDO_CADASTRO
   SOLICITADO
   CONCLUIDO
   FALHOU

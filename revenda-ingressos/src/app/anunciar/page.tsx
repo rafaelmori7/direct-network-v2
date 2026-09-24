@@ -5,7 +5,7 @@ import { requireUser } from "@/lib/auth/session";
 import { getEventBySlug, listEvents, rulesFor } from "@/lib/data/repo";
 import { formatDateLong } from "@/lib/format";
 import { formatBRL } from "@/lib/money/fees";
-import { maxPriceCents } from "@/lib/rules/engine";
+import { NEW_SELLER_MAX_ACTIVE_TICKETS, maxPriceCents } from "@/lib/rules/engine";
 import { ListingForm } from "./listing-form";
 
 export const dynamic = "force-dynamic";
@@ -64,13 +64,17 @@ export default async function SellPage({ searchParams }: { searchParams: Promise
         {formatDateLong(event.startsAt)} · {event.venue}, {event.city}
       </p>
 
-      {!user.canSell ? (
-        <div className="notice notice-warn">
-          <div>
-            <b>Verificação pendente</b>
-            Para anunciar, sua identidade precisa estar verificada. Isso protege os compradores e é feito uma única vez.
-            Acompanhe em <Link href="/conta">Minha conta</Link>.
+      {!user.hasPayoutAccount ? (
+        <div className="form">
+          <div className="notice notice-warn">
+            <div>
+              <b>Falta só a sua conta de recebimento</b>
+              Leva 2 minutos e é feita uma única vez. Você anuncia na hora e recebe depois da aprovação dos documentos.
+            </div>
           </div>
+          <Link href={`/conta/recebimento?voltar=${encodeURIComponent(`/anunciar?evento=${event.slug}`)}`} className="btn btn-primary btn-block">
+            Criar conta de recebimento
+          </Link>
         </div>
       ) : state.kind === "ENCERRADA" || state.kind === "BLOQUEADA" ? (
         <div className="notice notice-warn">
@@ -81,6 +85,16 @@ export default async function SellPage({ searchParams }: { searchParams: Promise
         </div>
       ) : (
         <>
+          {!user.payoutApproved && (
+            <div className="notice notice-warn" style={{ marginBottom: 12 }}>
+              <div>
+                <b>Cadastro em análise</b>
+                Você pode anunciar até {NEW_SELLER_MAX_ACTIVE_TICKETS} ingressos. O pagamento das vendas fica guardado até a
+                aprovação dos seus documentos (e sempre sai depois do evento).{" "}
+                <Link href="/conta/recebimento">Ver cadastro</Link>
+              </div>
+            </div>
+          )}
           <div className="notice notice-safe" style={{ marginBottom: 20 }}>
             <div>
               <b>Como transferir na {event.platformName}</b>

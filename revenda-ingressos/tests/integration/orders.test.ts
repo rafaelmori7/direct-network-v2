@@ -210,3 +210,34 @@ describe("avisos por e-mail", () => {
     expect(chat).toHaveLength(2); // um para o vendedor, um para o comprador
   });
 });
+
+describe("vendedor com cadastro em análise", () => {
+  it("vende na hora, mas só recebe depois da aprovação", async () => {
+    const { runRoutines } = await import("@/lib/orders/service");
+    const { handleSellerAccountStatus } = await import("@/lib/sellers/service");
+    const listing = await prisma.listing.findUniqueOrThrow({ where: { id: listingId } });
+    await prisma.user.update({
+      where: { id: listing.sellerId },
+      data: { verifiedAt: null, gatewayAccountId: "acc_teste", gatewayWalletId: "wallet_teste", gatewayAccountStatus: "EM_ANALISE" },
+    });
+
+    const r = await orderFor(buyers[0]);
+    expect(r.ok).toBe(true);
+    const id = r.ok ? r.orderId : "";
+    const o = await prisma.order.findUniqueOrThrow({ where: { id } });
+    provider.markPaid(o.chargeId!);
+    await applyAction(id, { type: "PAGAMENTO_CONFIRMADO" }, "SISTEMA", null, provider, { now });
+    await applyAction(id, { type: "VENDEDOR_TRANSFERIU" }, "VENDEDOR", null, provider, { now });
+
+    const afterEvent = addDays(o.releaseAt, 0.01);
+    await runRoutines(provider, afterEvent);
+    expect(await prisma.order.findUniqueOrThrow({ where: { id } })).toMatchObject({ status: "LIBERADO", payoutStatus: "AGUARDANDO_CADASTRO" });
+    expect(provider.charges.get(o.chargeId!)?.state).toBe("RETIDO");
+    expect(await prisma.emailLog.findFirst({ where: { orderId: id, kind: "LIBERADO_AGUARDANDO_CADASTRO" } })).not.toBeNull();
+
+    expect(await handleSellerAccountStatus("acc_teste", true)).toBe(true);
+    expect((await runRoutines(provider, addDays(afterEvent, 0.01))).pagamentosLiberados).toBe(1);
+    expect(await prisma.order.findUniqueOrThrow({ where: { id } })).toMatchObject({ payoutStatus: "CONCLUIDO" });
+    expect(provider.charges.get(o.chargeId!)?.state).toBe("LIBERADO");
+  });
+});

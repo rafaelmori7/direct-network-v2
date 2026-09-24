@@ -55,8 +55,13 @@ export async function notifyStatusChange(orderId: string, next: OrderStatus, act
           `Seu pagamento de ${formatBRL(order.sellerNetCents)} será liberado em ${formatDateTime(order.releaseAt)}, se não houver disputa.`);
         break;
       case "LIBERADO":
-        await send(seller.email, "LIBERADO", `Pagamento liberado: ${event}`,
-          `${formatBRL(order.sellerNetCents)} foram liberados na sua conta de recebimento.`);
+        if (order.payoutStatus === "AGUARDANDO_CADASTRO") {
+          await send(seller.email, "LIBERADO_AGUARDANDO_CADASTRO", `Seu pagamento está esperando a aprovação do cadastro: ${event}`,
+            `A venda foi concluída, mas ${formatBRL(order.sellerNetCents)} só podem ser liberados depois que sua conta de recebimento for aprovada. Envie seus documentos em Minha conta → Conta de recebimento.`);
+        } else {
+          await send(seller.email, "LIBERADO", `Pagamento liberado: ${event}`,
+            `${formatBRL(order.sellerNetCents)} foram liberados na sua conta de recebimento.`);
+        }
         break;
       case "REEMBOLSADO":
       case "CANCELADO":

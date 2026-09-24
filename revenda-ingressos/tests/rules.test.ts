@@ -36,7 +36,7 @@ const listing: ListingInput = {
   sellerDeclaresOriginalBuyer: true,
 };
 
-const seller = { verified: true, ticketsAlreadyListedForEvent: 0 };
+const seller = { hasPayoutAccount: true, payoutApproved: true, ticketsAlreadyListedForEvent: 0, activeTicketsListed: 0 };
 
 const purchase: PurchaseInput = {
   buyerId: "comprador",
@@ -118,16 +118,23 @@ describe("anúncio", () => {
   });
 
   it("limita ingressos por vendedor no evento", () => {
-    const s = { ...seller, ticketsAlreadyListedForEvent: 3 };
+    const s = { ...seller, ticketsAlreadyListedForEvent: 9 };
     const l = { ...listing, quantity: 2 };
     expect(codes(checkListing(effectiveRules(ingresse, event), event, l, s, now))).toContain("LIMITE_POR_VENDEDOR");
   });
 
-  it("exige vendedor verificado", () => {
-    const s = { ...seller, verified: false };
-    expect(codes(checkListing(effectiveRules(ingresse, event), event, listing, s, now))).toContain(
-      "VENDEDOR_NAO_VERIFICADO",
-    );
+  it("exige conta de recebimento criada para anunciar", () => {
+    const s = { ...seller, hasPayoutAccount: false, payoutApproved: false };
+    expect(codes(checkListing(effectiveRules(ingresse, event), event, listing, s, now))).toContain("SEM_CONTA_DE_RECEBIMENTO");
+  });
+
+  it("cadastro em análise anuncia na hora, até 10 ingressos ativos", () => {
+    const novo = { ...seller, payoutApproved: false, activeTicketsListed: 9 };
+    expect(checkListing(effectiveRules(ingresse, event), event, listing, novo, now)).toEqual([]);
+    const cheio = { ...novo, activeTicketsListed: 10 };
+    expect(codes(checkListing(effectiveRules(ingresse, event), event, listing, cheio, now))).toContain("LIMITE_VENDEDOR_NOVO");
+    const aprovado = { ...cheio, payoutApproved: true };
+    expect(checkListing(effectiveRules(ingresse, event), event, listing, aprovado, now)).toEqual([]);
   });
 });
 

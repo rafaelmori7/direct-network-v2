@@ -1,5 +1,6 @@
 import { timingSafeEqual } from "node:crypto";
 import { handlePaymentReceived, handleRefundCompleted } from "@/lib/orders/service";
+import { handleSellerAccountStatus } from "@/lib/sellers/service";
 import { getPaymentProvider } from "@/lib/payments";
 
 // Configurado no painel do Asaas (Integrações > Webhooks) apontando para
@@ -22,8 +23,22 @@ export async function POST(request: Request) {
     return new Response("Não autorizado", { status: 401 });
   }
 
-  const body = (await request.json().catch(() => null)) as { event?: string; payment?: { id?: string } } | null;
+  const body = (await request.json().catch(() => null)) as {
+    event?: string;
+    payment?: { id?: string };
+    accountStatus?: { id?: string };
+  } | null;
   const chargeId = body?.payment?.id;
+
+  // Análise da conta de recebimento do vendedor (webhook configurado na subconta).
+  // TODO(CNPJ): validar o formato do aviso no sandbox com subconta real.
+  const accountId = body?.accountStatus?.id;
+  if (accountId && body?.event === "ACCOUNT_STATUS_GENERAL_APPROVAL_APPROVED") {
+    return Response.json({ ok: true, sellerApproved: await handleSellerAccountStatus(accountId, true) });
+  }
+  if (accountId && body?.event === "ACCOUNT_STATUS_GENERAL_APPROVAL_REJECTED") {
+    return Response.json({ ok: true, sellerRejected: await handleSellerAccountStatus(accountId, false) });
+  }
   if (body?.event === "PAYMENT_REFUNDED" && chargeId) {
     return Response.json({ ok: true, refundCompleted: await handleRefundCompleted(chargeId) });
   }
