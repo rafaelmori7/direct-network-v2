@@ -58,10 +58,20 @@ npm run db:seed           # cadastra as ticketeiras
 npm run dev
 ```
 
+## Telas (modo demonstração)
+
+- **`/`:** busca, categorias e cards de evento com selos ("Últimas horas", "Últimos ingressos", "Revenda em análise").
+- **`/evento/[slug]`:** ofertas (VENDO), pedidos (COMPRO), setores e valores originais, prazo de vendas e garantia.
+- **`/anunciar`:** anúncio validado pelo motor de regras, com instruções de transferência da ticketeira.
+- **`/evento/[slug]/compro`:** pedido de compra.
+- **`/comprar/[id]`:** checkout pedindo os dados de transferência exigidos por cada ticketeira, e Pix (mock).
+
+Os dados ficam em memória (`src/lib/data/store.ts`), com eventos de exemplo, até o banco e o login entrarem. O nome da marca é provisório e fica em `src/lib/brand.ts`.
+
 ## Próximos passos
 
 1. Cadastro e verificação de identidade (CPF + selfie), com criação da subconta Asaas do vendedor.
-2. Telas de evento, anúncio ("VENDO") e pedido de compra ("COMPRO").
+2. Trocar o armazenamento em memória pelo Prisma e criar o pedido/reserva no checkout.
 3. Checkout Pix e webhook do Asaas, que confere se o CPF do pagador é o do comprador.
 4. Telas "transferi" (vendedor) e "recebi" com checklist (comprador).
 5. Rotinas agendadas: reembolso por prazo esgotado, encerramento de anúncios e liberação automática.
