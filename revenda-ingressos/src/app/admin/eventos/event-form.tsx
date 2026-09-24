@@ -135,6 +135,7 @@ export function EventForm({
         <span>A ticketeira tem revenda oficial ligada para este evento (só informativo)</span>
       </label>
 
+      {partners.length > 0 && (
       <div className="field">
         <label htmlFor="parceiro">Parceiro dono do evento (opcional)</label>
         <select id="parceiro" name="parceiro" className="select" defaultValue={values.parceiro}>
@@ -147,6 +148,7 @@ export function EventForm({
         </select>
         <span className="hint">O parceiro ganha nas vendas do evento e ele aparece com selo de revenda oficial na página dele.</span>
       </div>
+      )}
       <div className="field">
         <label htmlFor="setores">Setores e valores originais</label>
         <textarea id="setores" name="setores" className="input" style={{ height: 120, paddingTop: 10 }} defaultValue={values.setores} placeholder={"Pista; 420,00\nÁrea VIP; 950,00"} />

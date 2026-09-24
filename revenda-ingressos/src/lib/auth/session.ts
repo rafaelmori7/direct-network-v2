@@ -43,13 +43,18 @@ export type CurrentUser = {
   /** Conta de recebimento aprovada: recebe os pagamentos e anuncia sem limite de novato. */
   payoutApproved: boolean;
   isAdmin: boolean;
+  /** Agência da qual a pessoa faz parte (painel do parceiro), se houver. */
+  partner: { id: string; slug: string; name: string } | null;
 };
 
 /** Usuário logado, ou null. Uma consulta por requisição. */
 export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   const token = (await cookies()).get(COOKIE)?.value;
   if (!token) return null;
-  const session = await prisma.session.findUnique({ where: { id: hashToken(token) }, include: { user: true } });
+  const session = await prisma.session.findUnique({
+    where: { id: hashToken(token) },
+    include: { user: { include: { partnerMemberships: { include: { partner: true }, take: 1 } } } },
+  });
   if (!session || session.expiresAt < new Date() || session.user.blockedAt) return null;
   const { user } = session;
   return {
@@ -61,6 +66,9 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
     hasPayoutAccount: user.gatewayAccountId !== null,
     payoutApproved: user.verifiedAt !== null,
     isAdmin: user.isAdmin,
+    partner: user.partnerMemberships[0]
+      ? { id: user.partnerMemberships[0].partner.id, slug: user.partnerMemberships[0].partner.slug, name: user.partnerMemberships[0].partner.name }
+      : null,
   };
 });
 

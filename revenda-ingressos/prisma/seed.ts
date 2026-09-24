@@ -125,6 +125,18 @@ async function seedDemo() {
       data: { eventId: await eventId("adriatique-x-future"), buyerId: users["marina@demo.local"], sector: "Pista", quantity: 1, maxPriceCents: 45_000 },
     });
   }
+  // Parceiro de exemplo: Isabela tem acesso ao painel da agência.
+  const partner = await prisma.partner.upsert({
+    where: { slug: "timelapse" },
+    update: {},
+    create: { slug: "timelapse", name: "Timelapse", couponCode: "TIMELAPSE", color: "#e4572e", commissionShareBps: 5000, discountBps: 1000 },
+  });
+  await prisma.partnerMember.upsert({
+    where: { partnerId_userId: { partnerId: partner.id, userId: users["isabela@demo.local"] } },
+    update: {},
+    create: { partnerId: partner.id, userId: users["isabela@demo.local"] },
+  });
+  await prisma.event.update({ where: { slug: "sunset-5521-sp" }, data: { partnerId: partner.id } });
   console.log("Dados de demonstração criados (senha: demo1234)");
 }
 

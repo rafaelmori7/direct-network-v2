@@ -133,6 +133,13 @@ npm run test:db              # testes com banco (usa TEST_DATABASE_URL ou o banc
   - o resto da receita é dividido pela participação do parceiro (padrão 50%);
   - com a subconta do parceiro (`gatewayWalletId`), a parte dele entra no split do Asaas; sem ela, fica com a plataforma para repasse manual.
 - **Admin:** `/admin/parceiros` cadastra os parceiros (links, cupom, cor, logo, participação, desconto) e mostra vendas e comissão de cada um. O evento pode ter um parceiro dono.
+- **Painel da agência (`/parceiro`):**
+  - o admin dá acesso pelo e-mail de quem já tem conta;
+  - a agência vê os links e o cupom, as vendas indicadas e a comissão (a liberar e liberada);
+  - cadastra e edita **os próprios eventos**, que entram na página dela com o selo de revenda oficial;
+  - ajusta a cor e o logo.
+
+  Na demonstração, `isabela@demo.local` é da Timelapse.
 
 ## Publicar (Vercel + Postgres)
 
@@ -199,4 +206,4 @@ npm run test:db              # testes com banco (usa TEST_DATABASE_URL ou o banc
 1. Com a conta CNPJ: validar no sandbox a criação da subconta, o link de documentos, o webhook de aprovação e se a subconta em análise já recebe split com escrow.
 2. Com uma conta de CNPJ no sandbox: validar subconta, split, Conta Escrow e `POST /escrow/{id}/finish`.
 3. Configurar o Resend com domínio próprio (SPF/DKIM) para os e-mails não caírem no spam. WhatsApp como segundo canal.
-4. Parceiros, fase 2: acesso do parceiro ao próprio painel (eventos e vendas), widget para o site dele e domínio próprio (nível 3).
+4. Parceiros, próximas fases: widget para o site da agência e domínio próprio (nível 3).

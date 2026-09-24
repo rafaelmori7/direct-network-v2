@@ -36,6 +36,11 @@ export async function SiteHeader() {
                   Painel
                 </Link>
               )}
+              {user.partner && (
+                <Link href="/parceiro" className="header-link">
+                  {user.partner.name}
+                </Link>
+              )}
               <Link href="/conta" className="header-link">
                 {user.name.split(" ")[0]}
               </Link>

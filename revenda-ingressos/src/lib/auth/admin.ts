@@ -14,3 +14,16 @@ export async function requireAdminAction(): Promise<CurrentUser> {
   if (!user?.isAdmin) throw new Error("Apenas administradores.");
   return user;
 }
+
+/** Página do painel do parceiro: pede login e exige fazer parte de uma agência. */
+export async function requirePartnerPage(returnTo: string): Promise<CurrentUser & { partner: NonNullable<CurrentUser["partner"]> }> {
+  const user = await requireUser(returnTo);
+  if (!user.partner) notFound();
+  return user as CurrentUser & { partner: NonNullable<CurrentUser["partner"]> };
+}
+
+export async function requirePartnerAction(): Promise<CurrentUser & { partner: NonNullable<CurrentUser["partner"]> }> {
+  const user = await getCurrentUser();
+  if (!user?.partner) throw new Error("Apenas membros de parceiros.");
+  return user as CurrentUser & { partner: NonNullable<CurrentUser["partner"]> };
+}

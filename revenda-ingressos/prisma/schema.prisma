@@ -42,6 +42,7 @@ model User {
   wantedPosts WantedPost[]
   messages    Message[]
   sessions    Session[]
+  partnerMemberships PartnerMember[]
 }
 
 model Session {
@@ -107,8 +108,22 @@ model Partner {
   active           Boolean  @default(true)
   createdAt        DateTime @default(now())
 
-  events Event[]
-  orders Order[]
+  events  Event[]
+  orders  Order[]
+  members PartnerMember[]
+}
+
+/** Pessoas da agência com acesso ao painel do parceiro (/parceiro). */
+model PartnerMember {
+  id        String   @id @default(cuid())
+  partnerId String
+  partner   Partner  @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([partnerId, userId])
+  @@index([userId])
 }
 
 model Event {

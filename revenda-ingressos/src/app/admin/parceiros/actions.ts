@@ -1,6 +1,7 @@
 "use server";
 
 import { Prisma } from "@prisma/client";
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdminAction } from "@/lib/auth/admin";
 import { prisma } from "@/lib/db";
@@ -46,4 +47,24 @@ export async function savePartner(partnerId: string | null, _prev: PartnerFormSt
     throw error;
   }
   redirect("/admin/parceiros");
+}
+
+/** Dá acesso ao painel da agência para uma pessoa já cadastrada no site. */
+export async function addPartnerMember(partnerId: string, form: FormData): Promise<void> {
+  await requireAdminAction();
+  const email = String(form.get("email") ?? "").trim().toLowerCase();
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user) throw new Error("Nenhuma conta com este e-mail. A pessoa precisa se cadastrar no site antes.");
+  await prisma.partnerMember.upsert({
+    where: { partnerId_userId: { partnerId, userId: user.id } },
+    update: {},
+    create: { partnerId, userId: user.id },
+  });
+  revalidatePath(`/admin/parceiros/${partnerId}`);
+}
+
+export async function removePartnerMember(partnerId: string, memberId: string): Promise<void> {
+  await requireAdminAction();
+  await prisma.partnerMember.deleteMany({ where: { id: memberId, partnerId } });
+  revalidatePath(`/admin/parceiros/${partnerId}`);
 }

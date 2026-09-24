@@ -1,98 +1,17 @@
 "use server";
 
-import type { PlatformCode, TransferAllowed } from "@prisma/client";
 import { redirect } from "next/navigation";
 import { requireAdminAction } from "@/lib/auth/admin";
-import { CATEGORIES } from "@/lib/data/repo";
-import { parseBrtInput } from "@/lib/datetime-input";
 import { prisma } from "@/lib/db";
-import { parseBRLToCents } from "@/lib/format";
+import { parseEventForm, uniqueEventSlug } from "@/lib/events/form";
 
 export type EventFormState = { errors: string[] };
 
-const PLATFORMS: PlatformCode[] = ["INGRESSE", "SYMPLA", "TICKETMASTER"];
-const TRANSFER: TransferAllowed[] = ["SIM", "NAO", "DESCONHECIDO"];
-
-function slugify(text: string): string {
-  return text
-    .normalize("NFD")
-    .replace(/\p{Diacritic}/gu, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "")
-    .slice(0, 60);
-}
-
-/** Uma linha por setor: "Pista; 420,00". */
-function parseSectors(text: string): { sectors: { name: string; faceValueCents: number }[]; errors: string[] } {
-  const sectors: { name: string; faceValueCents: number }[] = [];
-  const errors: string[] = [];
-  for (const line of text.split("\n").map((l) => l.trim()).filter(Boolean)) {
-    const [name, price] = line.split(";").map((p) => p.trim());
-    const cents = parseBRLToCents(price ?? "");
-    if (!name || !Number.isFinite(cents) || cents <= 0) errors.push(`Setor inválido: "${line}" (use "Nome; 420,00").`);
-    else sectors.push({ name, faceValueCents: cents });
-  }
-  return { sectors, errors };
-}
-
 export async function saveEvent(eventId: string | null, _prev: EventFormState, form: FormData): Promise<EventFormState> {
   await requireAdminAction();
-  const name = String(form.get("nome") ?? "").trim();
-  const venue = String(form.get("local") ?? "").trim();
-  const city = String(form.get("cidade") ?? "").trim();
-  const category = String(form.get("categoria") ?? "");
-  const platformCode = String(form.get("ticketeira") ?? "") as PlatformCode;
-  const transferAllowed = String(form.get("transferencia") ?? "") as TransferAllowed;
-  const startsAt = parseBrtInput(form.get("inicio"));
-  const endsAt = parseBrtInput(form.get("fim"));
-  const transferOpensAt = parseBrtInput(form.get("transferenciaAbre"));
-  const transferEndsAt = parseBrtInput(form.get("transferenciaFecha"));
-  const deadlineRaw = String(form.get("prazoVendedor") ?? "").trim();
-  const { sectors, errors } = parseSectors(String(form.get("setores") ?? ""));
-
-  if (!name) errors.push("Informe o nome.");
-  if (!venue || !city) errors.push("Informe local e cidade.");
-  if (!(CATEGORIES as readonly string[]).includes(category)) errors.push("Escolha a categoria.");
-  if (!PLATFORMS.includes(platformCode)) errors.push("Escolha a ticketeira.");
-  if (!TRANSFER.includes(transferAllowed)) errors.push("Informe se a transferência é permitida.");
-  if (!startsAt || !endsAt) errors.push("Informe início e fim do evento.");
-  else if (endsAt <= startsAt) errors.push("O fim precisa ser depois do início.");
-  if (transferOpensAt && transferEndsAt && transferEndsAt <= transferOpensAt) errors.push("O fim da transferência precisa ser depois da abertura.");
-  if (transferEndsAt && startsAt && transferEndsAt > startsAt) errors.push("A transferência não pode terminar depois do início do evento.");
-  const deadline = deadlineRaw ? Number(deadlineRaw) : null;
-  if (deadline !== null && (!Number.isInteger(deadline) || deadline < 1 || deadline > 72)) errors.push("Prazo do vendedor entre 1 e 72 horas.");
-  if (errors.length > 0) return { errors };
-
-  const platform = await prisma.platform.findUnique({ where: { code: platformCode } });
-  if (!platform) return { errors: ["Ticketeira não cadastrada (rode o seed)."] };
-
-  const data = {
-    name,
-    venue,
-    city,
-    category,
-    platformId: platform.id,
-    startsAt: startsAt!,
-    endsAt: endsAt!,
-    isSports: form.get("esportivo") === "on",
-    transferAllowed,
-    nominalBiometric: form.get("biometria") === "on",
-    officialResaleActive: form.get("revendaOficial") === "on",
-    transferOpensAt,
-    transferEndsAt,
-    ruleOverrides: deadline ? { sellerTransferDeadlineHours: deadline } : {},
-    sectors,
-    hue: Number(form.get("cor") ?? 260) || 260,
-    partnerId: String(form.get("parceiro") ?? "") || null,
-  };
-
-  if (eventId) {
-    await prisma.event.update({ where: { id: eventId }, data });
-  } else {
-    let slug = slugify(`${name} ${startsAt!.toISOString().slice(0, 10)}`);
-    if (await prisma.event.findUnique({ where: { slug } })) slug = `${slug}-${Date.now().toString(36)}`;
-    await prisma.event.create({ data: { ...data, slug } });
-  }
+  const parsed = await parseEventForm(form);
+  if (!parsed.ok) return { errors: parsed.errors };
+  if (eventId) await prisma.event.update({ where: { id: eventId }, data: parsed.data });
+  else await prisma.event.create({ data: { ...parsed.data, slug: await uniqueEventSlug(String(parsed.data.name), parsed.startsAt) } });
   redirect("/admin/eventos");
 }
