@@ -1,12 +1,10 @@
+/**
+ * Cobrança sem split: o valor todo fica na conta da plataforma até a liberação,
+ * quando repassamos a parte do vendedor e a do parceiro com transferToWallet.
+ */
 export interface PixChargeRequest {
   orderId: string;
   totalCents: number;
-  /** Parte do vendedor; fica retida na subconta dele até a liberação. */
-  sellerNetCents: number;
-  /** null só em testes, quando o gateway aceita cobrança sem split. */
-  sellerWalletId: string | null;
-  /** Parte do parceiro (agência/promoter), quando ele tem subconta. */
-  partnerSplit?: { walletId: string; cents: number } | null;
   buyer: { name: string; cpf: string; email: string };
   expiresAt: Date;
   description: string;
@@ -41,17 +39,26 @@ export interface SellerAccount {
   apiKey: string | null;
 }
 
+/** Repasse da conta da plataforma para a subconta (carteira) do vendedor ou do parceiro. */
+export interface TransferRequest {
+  walletId: string;
+  cents: number;
+  /** Identifica o repasse no extrato, ex.: "pedido-<id>-vendedor". */
+  externalReference: string;
+  description: string;
+}
+
 /** CONCLUIDO: devolvido. AGUARDANDO_APROVACAO: precisa ser aprovado no painel do gateway. */
 export type RefundResult = { status: "CONCLUIDO" | "AGUARDANDO_APROVACAO" | "SOLICITADO" };
 
 export interface PaymentProvider {
   /** "mock" aceita vendedor sem subconta no gateway (desenvolvimento e testes). */
   readonly kind: "mock" | "asaas";
-  /** Em produção toda venda exige a subconta (com custódia) do vendedor. */
+  /** Em produção toda venda exige a subconta do vendedor (para onde vai o repasse). */
   readonly requiresSellerWallet: boolean;
   createPixCharge(req: PixChargeRequest): Promise<PixCharge>;
-  /** Libera a parte do vendedor retida na custódia. */
-  releaseEscrow(chargeId: string): Promise<void>;
+  /** Transfere da conta da plataforma para uma subconta. Devolve o id da transferência. */
+  transferToWallet(req: TransferRequest): Promise<{ transferId: string }>;
   /**
    * Devolve o valor integral ao comprador. A taxa do gateway já descontada no
    * recebimento sai do saldo da plataforma.
@@ -61,7 +68,7 @@ export interface PaymentProvider {
   cancelCharge(chargeId: string): Promise<void>;
   /** CPF de quem pagou o Pix, possivelmente mascarado ("***.444.777-**"), ou null. */
   getPayerCpf(chargeId: string): Promise<string | null>;
-  /** Cria a subconta do vendedor (com Conta Escrow configurada na conta principal). */
+  /** Cria a subconta do vendedor. */
   createSellerAccount(req: SellerAccountRequest): Promise<SellerAccount>;
   /** Link onde o vendedor envia documento e selfie; null se não houver pendência. */
   getOnboardingUrl(account: SellerAccount): Promise<string | null>;

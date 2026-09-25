@@ -4,7 +4,7 @@ Marketplace de revenda em que **ninguém corre risco financeiro**:
 
 - **Entrega:** o ingresso só é entregue por transferência no **app oficial** da ticketeira. PDF e print não valem.
 - **Pagamento:** só **Pix**, pago pelo próprio CPF do comprador, então não existe chargeback.
-- **Custódia:** o dinheiro fica retido na subconta do vendedor, com a Conta Escrow do Asaas.
+- **Custódia:** o Pix cai todo na conta da plataforma no Asaas (sem split). A parte do vendedor e a do parceiro só saem por transferência na liberação.
 - **Liberação:** só **depois do evento** (D+3 dias úteis) e sem disputa aberta.
 - **Regras:** cada ticketeira tem seu perfil de regras, e cada evento pode sobrescrever o que precisar.
 
@@ -20,7 +20,7 @@ Os perfis ficam em `src/lib/platforms/profiles.ts`. Valores marcados "a confirma
 
 ## Travas que o código garante
 
-- **Custódia:** a compra só abre quando a custódia de 45 dias cobre a data de liberação. A trava fica em `saleWindow` e é coberta por teste.
+- **Custódia:** a compra só abre quando a custódia de 45 dias cobre a data de liberação. A trava fica em `saleWindow` e é coberta por teste. (O limite vinha da Conta Escrow; com o repasse por transferência ele não é mais obrigatório, mas continua no código até ser revisto.)
 - **Prazo de arrependimento:** ingressos comprados há menos de 8 dias não podem ser anunciados. Isso cobre os 7 dias do CDC art. 49, em que o comprador original ainda pode cancelar na ticketeira.
 - **Futebol:** evento esportivo sempre tem o preço travado no valor de face (Lei 14.597/2023, art. 166).
 - **Transferência:** eventos com transferência não confirmada, ou com ingresso nominal e biometria, ficam bloqueados.
@@ -44,7 +44,7 @@ Os perfis ficam em `src/lib/platforms/profiles.ts`. Valores marcados "a confirma
 ```
 src/lib/rules/        motor de regras (perfil + evento → regras efetivas, validação de anúncio e compra)
 src/lib/orders/       máquina de estados do pedido (funções puras)
-src/lib/payments/     gateway: interface, mock (dev/testes) e Asaas (Pix + split + escrow)
+src/lib/payments/     gateway: interface, mock (dev/testes) e Asaas (Pix + repasse por transferência)
 src/lib/platforms/    perfis iniciais das ticketeiras
 src/lib/chat/         regras do chat do pedido (quando abre, filtro de contato)
 src/lib/partners/     parceiros: slug, indicação e opções do widget
@@ -141,7 +141,7 @@ npm run test:db              # testes com banco (usa TEST_DATABASE_URL ou o banc
   - a comissão do vendedor é opcional (`SELLER_FEE_BPS`, padrão 0%);
   - o cupom dá desconto sobre o **total** (preço + taxa) e sai da receita do site, nunca do vendedor. Ex.: R$ 100 + R$ 15 com cupom de 10% = R$ 103,50;
   - o resto da receita é dividido pela participação do parceiro (padrão 50%);
-  - com a subconta do parceiro (`gatewayWalletId`), a parte dele entra no split do Asaas; sem ela, fica com a plataforma para repasse manual.
+  - com a subconta do parceiro (`gatewayWalletId`), a parte dele é transferida na liberação, junto com a do vendedor; sem ela, fica com a plataforma para repasse manual.
 - **Admin:** `/admin/parceiros` cadastra os parceiros (links, cupom, cor, logo, participação, desconto) e mostra vendas e comissão de cada um. O evento pode ter um parceiro dono.
 - **Painel da agência (`/parceiro`):**
   - o admin dá acesso pelo e-mail de quem já tem conta;
@@ -215,7 +215,7 @@ npm run test:db              # testes com banco (usa TEST_DATABASE_URL ou o banc
 
 ### Conta principal CNPJ no sandbox (25/09/2026)
 
-- **Subconta do vendedor:** `POST /accounts` funciona e devolve `walletId` e a chave da subconta. O site liga a Conta Escrow dela logo em seguida (`POST /accounts/{id}/escrow`, `enabled`, `daysToExpire: 45`).
+- **Subconta do vendedor:** `POST /accounts` funciona e devolve `walletId` e a chave da subconta. (O site ligava a Conta Escrow dela com `POST /accounts/{id}/escrow`; deixou de ligar com o repasse por transferência.)
 - **Split para subconta ainda em análise:** a cobrança paga fica com o split `DONE` (R$ 100 do vendedor foi para a subconta; a plataforma ficou com R$ 15 menos a taxa do Pix).
 - **Chave Pix:** a conta precisa de uma chave Pix (criamos uma aleatória, `POST /pix/addressKeys`), senão o QR Code falha.
 - **Reembolso de cobrança com split:** o Asaas debita o **valor total da conta principal** (`PAYMENT_REVERSAL` de -R$ 115). Sem saldo para isso, recusa ("não há saldo suficiente"). Com saldo, fica aguardando autorização. O reembolso de `pay_njy75jq1nmjix4s4` terminou **`CANCELLED`** (`PAYMENT_REFUND_CANCELLED` +R$ 115, `refundedSplits: null`, split continua `DONE`), então **ainda não se sabe** se a parte do vendedor volta da subconta.
@@ -230,7 +230,28 @@ npm run test:db              # testes com banco (usa TEST_DATABASE_URL ou o banc
 - **Pix na subconta:** só depois de aprovada ("O Pix não está disponível no momento. Para utilizá-lo, sua conta precisa estar aprovada."). Boleto funciona e dá para confirmar no sandbox.
 - **Reembolso de cobrança com escrow:** não deu para testar. O Asaas só estorna Pix ou cartão, e a subconta ainda não aprovada só emite boleto.
 - **Link de documentos:** `GET /myAccount/documents` com a chave da subconta responde 200 (`IDENTIFICATION`, `NOT_SENT`), mas com `onboardingUrl: null` logo após a criação.
-- Scripts: `scripts/asaas-sandbox-flow.ts` (cria subconta com escrow) e `scripts/asaas-sandbox-pay.ts <walletId>` (Pix com split, pago na hora).
+
+### Repasse por transferência (decidido em 25/09/2026)
+
+Como o split não fica retido, o site passou a:
+
+- **Cobrar sem split:** o Pix cai todo na conta da plataforma.
+- **Liberar por transferência:** depois do evento, `requestPayout` faz `POST /transfers` (`walletId`, `value`, `externalReference` `pedido-<id>-vendedor` / `pedido-<id>-parceiro`) para a subconta do vendedor e, se houver, a do parceiro.
+- **Não pagar duas vezes:** o id de cada transferência feita fica no pedido (`sellerTransferId`, `partnerTransferId`). Se uma falhar, o pedido vai para `FALHOU` e "tentar de novo" só faz a que faltou.
+- **Reembolsar sem ninguém devolver nada:** o dinheiro ainda está todo na conta da plataforma.
+
+Testado no sandbox:
+
+- **Reembolso de Pix sem split** (`pay_ahx1nga5y1w10bfo`, R$ 115): aceito e aguardando autorização (`AWAITING_CRITICAL_ACTION_AUTHORIZATION`). Logo depois do pagamento, o Asaas respondeu "Não é possível solicitar estorno para essa cobrança no momento. Tente novamente em alguns instantes."; cerca de 20 s depois funcionou. O "tentar de novo" de `/admin/reembolsos` cobre esse caso.
+- **Transferência:** a chave de API da conta principal **não tem permissão de saque via API** (403 `insufficient_permission`). **Falta testar** com a permissão ligada no painel: transferência para subconta ainda não aprovada (a subconta 3 está com `general: PENDING`), se exige autorização de ação crítica e o status devolvido.
+
+Scripts:
+
+- `scripts/asaas-sandbox-flow.ts <arquivo>` cria a subconta e grava a chave dela no arquivo (permissão 600);
+- `scripts/asaas-sandbox-pay.ts` cria um Pix sem split e paga na hora;
+- `scripts/asaas-sandbox-transfer.ts <walletId> [centavos]` testa o repasse.
+
+Todos com `NODE_USE_ENV_PROXY=1` e `ASAAS_API_KEY`.
 
 ### Política de reembolso (decidida)
 
@@ -243,8 +264,8 @@ npm run test:db              # testes com banco (usa TEST_DATABASE_URL ou o banc
 
 ## Próximos passos
 
-1. Com a conta CNPJ: validar no sandbox a criação da subconta, o link de documentos, o webhook de aprovação e se a subconta em análise já recebe split com escrow.
-2. Com uma conta de CNPJ no sandbox: validar subconta, split, Conta Escrow e `POST /escrow/{id}/finish`.
+1. Ligar a permissão de saque via API na chave do Asaas e testar `POST /transfers` para subconta em análise e aprovada (`scripts/asaas-sandbox-transfer.ts`).
+2. Validar no sandbox o link de documentos (`onboardingUrl` veio `null`) e o webhook de aprovação da subconta.
 3. Configurar o Resend com domínio próprio (SPF/DKIM) para os e-mails não caírem no spam, e o WhatsApp Cloud API (número, token e modelos aprovados).
 4. Revisão jurídica dos termos e da política de privacidade; depois, `LEGAL_REVIEWED=1`.
 5. Parceiros, próxima fase: domínio próprio da agência (nível 3).

@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
-import type { PaymentProvider, PixCharge, PixChargeRequest, RefundResult, SellerAccount, SellerAccountRequest } from "./provider";
+import type { PaymentProvider, PixCharge, PixChargeRequest, RefundResult, SellerAccount, SellerAccountRequest, TransferRequest } from "./provider";
 
-type MockChargeState = "PENDENTE" | "RETIDO" | "LIBERADO" | "REEMBOLSADO" | "CANCELADA";
+type MockChargeState = "PENDENTE" | "RETIDO" | "REEMBOLSADO" | "CANCELADA";
 
 /** Gateway falso para desenvolvimento e testes. Guarda tudo em memória. */
 export class MockPaymentProvider implements PaymentProvider {
@@ -58,8 +58,20 @@ export class MockPaymentProvider implements PaymentProvider {
     return this.charges.get(chargeId)?.payerCpf ?? null;
   }
 
-  async releaseEscrow(chargeId: string): Promise<void> {
-    this.require(chargeId, "RETIDO").state = "LIBERADO";
+  readonly transfers: (TransferRequest & { transferId: string })[] = [];
+
+  /** Faz a próxima transferência falhar (ex.: saldo insuficiente). */
+  failNextTransfer: string | null = null;
+
+  async transferToWallet(req: TransferRequest): Promise<{ transferId: string }> {
+    if (this.failNextTransfer) {
+      const message = this.failNextTransfer;
+      this.failNextTransfer = null;
+      throw new Error(message);
+    }
+    const transferId = `mock_tra_${randomUUID()}`;
+    this.transfers.push({ ...req, transferId });
+    return { transferId };
   }
 
   /** Resultado do próximo reembolso (para simular a aprovação manual do Asaas). */

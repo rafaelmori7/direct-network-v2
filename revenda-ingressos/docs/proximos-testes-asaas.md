@@ -38,18 +38,22 @@ Postgres: `service postgresql start`.
 - 3. Não testado: o estorno só vale para Pix/cartão, e a subconta só emite Pix depois de aprovada.
 - 4. `GET /myAccount/documents`: 200, mas `onboardingUrl: null` logo após criar a subconta.
 
-## Decisão pendente antes de mexer no código
+## Decisão (25/09/2026): repasse por transferência
 
-Com o fluxo atual (cobrança na conta principal + split), o dinheiro do vendedor **não fica protegido**.
-Para usar o escrow, a cobrança precisa ser criada com a chave da subconta do vendedor, com split de volta
-para a carteira da plataforma (testado: as duas partes ficam bloqueadas e o `finish` com a chave principal
-libera as duas). Isso muda `createPixCharge`, `refund`, `cancelCharge`, `getPayerCpf`, `releaseEscrow` e o
-webhook (os eventos passam a vir da subconta), e o vendedor só recebe Pix depois de aprovado.
+Cobrança na conta principal sem split; na liberação, `POST /transfers` com `walletId` para o vendedor e o
+parceiro. Código, testes e README atualizados.
+
+- Reembolso de Pix sem split (`pay_ahx1nga5y1w10bfo`): aceito, aguardando autorização no painel.
+- `POST /transfers`: 403 `insufficient_permission` (a chave não tem permissão de saque via API).
 
 ## Ainda falta
 
-1. Decidir a arquitetura acima e ajustar `src/lib/payments/asaas.ts`.
-2. Reembolso de cobrança com escrow (precisa de subconta aprovada para ter Pix).
-3. Reembolso de cobrança com split, aprovado de fato no painel (o de `pay_njy75jq1nmjix4s4` foi cancelado).
-4. `onboardingUrl`: consultar de novo depois de um tempo, ou ver se só vem em produção.
+1. Ligar a permissão de saque via API na chave e rodar
+   `NODE_USE_ENV_PROXY=1 npx tsx scripts/asaas-sandbox-transfer.ts 2c1f0bf7-e4e4-4afe-ba3e-df93161ef302`
+   (subconta 3, ainda não aprovada). Anotar: aceita? exige autorização de ação crítica? qual `status` volta?
+   Se a transferência ficar aguardando autorização, decidir se `payoutStatus` precisa de um estado
+   `AGUARDANDO_APROVACAO`, como no reembolso.
+2. Aprovar no painel o reembolso de `pay_ahx1nga5y1w10bfo` e conferir o webhook `PAYMENT_REFUNDED`.
+3. `onboardingUrl`: consultar de novo depois de um tempo, ou ver se só vem em produção.
+4. Revisar a trava de 45 dias (`ESCROW_MAX_DAYS` em `src/lib/rules/engine.ts`): ela vinha da Conta Escrow.
 5. Testar o fluxo inteiro pelo site (`PAYMENT_PROVIDER=asaas`).

@@ -147,8 +147,8 @@ describe("rotinas", () => {
     expect((await runRoutines(provider, addDays(now, 5))).pagamentosLiberados).toBe(0);
     const report2 = await runRoutines(provider, addDays(o2.releaseAt, 0.01));
     expect(report2.pagamentosLiberados).toBe(1);
-    expect(await prisma.order.findUniqueOrThrow({ where: { id: id2 } })).toMatchObject({ status: "LIBERADO", payoutStatus: "CONCLUIDO" });
-    expect(provider.charges.get(o2.chargeId!)?.state).toBe("LIBERADO");
+    // Vendedor sem carteira no mock: nada a transferir, o valor fica na conta da plataforma.
+    expect(await prisma.order.findUniqueOrThrow({ where: { id: id2 } })).toMatchObject({ status: "LIBERADO", payoutStatus: "CONCLUIDO", sellerTransferId: null });
 
     // Rodar de novo não faz nada.
     expect(await runRoutines(provider, addDays(o2.releaseAt, 0.02))).toMatchObject({ pagamentosLiberados: 0, prazosDeTransferenciaEsgotados: 0 });
@@ -247,12 +247,14 @@ describe("vendedor com cadastro em análise", () => {
     const afterEvent = addDays(o.releaseAt, 0.01);
     await runRoutines(provider, afterEvent);
     expect(await prisma.order.findUniqueOrThrow({ where: { id } })).toMatchObject({ status: "LIBERADO", payoutStatus: "AGUARDANDO_CADASTRO" });
-    expect(provider.charges.get(o.chargeId!)?.state).toBe("RETIDO");
+    expect(provider.transfers.filter((t) => t.externalReference === `pedido-${id}-vendedor`)).toHaveLength(0);
     expect(await prisma.emailLog.findFirst({ where: { orderId: id, kind: "LIBERADO_AGUARDANDO_CADASTRO" } })).not.toBeNull();
 
     expect(await handleSellerAccountStatus("acc_teste", true)).toBe(true);
     expect((await runRoutines(provider, addDays(afterEvent, 0.01))).pagamentosLiberados).toBe(1);
     expect(await prisma.order.findUniqueOrThrow({ where: { id } })).toMatchObject({ payoutStatus: "CONCLUIDO" });
-    expect(provider.charges.get(o.chargeId!)?.state).toBe("LIBERADO");
+    expect(provider.transfers.filter((t) => t.externalReference === `pedido-${id}-vendedor`)).toEqual([
+      expect.objectContaining({ walletId: "wallet_teste", cents: o.sellerNetCents }),
+    ]);
   });
 });

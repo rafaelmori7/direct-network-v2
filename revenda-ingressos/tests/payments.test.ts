@@ -32,21 +32,28 @@ describe("pagador", () => {
 });
 
 describe("gateway mock", () => {
-  it("só libera ou reembolsa o que está retido, uma única vez", async () => {
+  it("só reembolsa o que foi pago, uma única vez", async () => {
     const gateway = new MockPaymentProvider();
     const charge = await gateway.createPixCharge({
       orderId: "o1",
       totalCents: 47_000,
-      sellerNetCents: 42_300,
-      sellerWalletId: "w1",
       buyer: { name: "Fulano", cpf: "12345678900", email: "f@x.com" },
       expiresAt: new Date("2026-10-05T13:00:00Z"),
       description: "Adriatique - Pista",
     });
-    await expect(gateway.releaseEscrow(charge.chargeId)).rejects.toThrow();
-    gateway.markPaid(charge.chargeId);
-    await gateway.releaseEscrow(charge.chargeId);
     await expect(gateway.refund(charge.chargeId)).rejects.toThrow();
+    gateway.markPaid(charge.chargeId);
+    await gateway.refund(charge.chargeId);
+    await expect(gateway.refund(charge.chargeId)).rejects.toThrow();
+  });
+
+  it("registra as transferências e pode simular falha", async () => {
+    const gateway = new MockPaymentProvider();
+    gateway.failNextTransfer = "saldo insuficiente";
+    const req = { walletId: "w1", cents: 42_300, externalReference: "pedido-o1-vendedor", description: "Venda" };
+    await expect(gateway.transferToWallet(req)).rejects.toThrow("saldo insuficiente");
+    const { transferId } = await gateway.transferToWallet(req);
+    expect(gateway.transfers).toEqual([{ ...req, transferId }]);
   });
 });
 

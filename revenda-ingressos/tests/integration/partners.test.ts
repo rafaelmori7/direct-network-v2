@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { prisma } from "@/lib/db";
-import { createOrder } from "@/lib/orders/service";
+import { createOrder, requestPayout } from "@/lib/orders/service";
 import { MockPaymentProvider } from "@/lib/payments/mock";
 import { PLATFORMS } from "@/lib/platforms/profiles";
 import { addDays } from "@/lib/time";
@@ -26,6 +26,7 @@ beforeEach(async () => {
   const mk = (name: string, cpf: string) =>
     prisma.user.create({ data: { name, email: `${cpf}@t.local`, cpf, phone: "11999999999", birthDate: new Date("1990-01-01"), passwordHash: "x", cpfCheckedAt: now, verifiedAt: now } });
   const seller = await mk("Vendedor P", "52998224725");
+  await prisma.user.update({ where: { id: seller.id }, data: { gatewayWalletId: "wallet_vendedor" } });
   const b = await mk("Comprador P", "11144477735");
   buyer = { id: b.id, name: b.name, cpf: b.cpf, email: b.email, canBuy: true };
   listingId = (
@@ -52,14 +53,46 @@ describe("parceiros", () => {
     expect(r.ok && r.order).toMatchObject({ totalCents: 50_000, platformFeeCents: 5_000, partnerFeeCents: 0, partnerId: null });
   });
 
-  it("link do parceiro: desconto e metade da comissão, parte dele no split", async () => {
+  it("link do parceiro: desconto e metade da comissão, parte dele transferida na liberação", async () => {
     const r = await buy({ refSlug: "timelapse" });
     expect(r.ok && r.order).toMatchObject({
       partnerAttribution: "LINK", discountCents: 2_000, totalCents: 48_000, sellerNetCents: 45_000, platformFeeCents: 1_500, partnerFeeCents: 1_500,
     });
     const charge = r.ok ? provider.charges.get(r.order.chargeId!) : undefined;
-    expect(charge?.request?.partnerSplit).toEqual({ walletId: "wallet_timelapse", cents: 1_500 });
     expect(charge?.request?.totalCents).toBe(48_000);
+
+    const id = r.ok ? r.order.id : "";
+    const before = provider.transfers.length;
+    expect(await requestPayout(id, "NENHUM", provider)).toBe(true);
+    const made = provider.transfers.slice(before);
+    expect(made).toEqual([
+      expect.objectContaining({ walletId: "wallet_vendedor", cents: 45_000, externalReference: `pedido-${id}-vendedor` }),
+      expect.objectContaining({ walletId: "wallet_timelapse", cents: 1_500, externalReference: `pedido-${id}-parceiro` }),
+    ]);
+    expect(await prisma.order.findUniqueOrThrow({ where: { id } })).toMatchObject({
+      payoutStatus: "CONCLUIDO", sellerTransferId: made[0].transferId, partnerTransferId: made[1].transferId,
+    });
+  });
+
+  it("se a transferência do parceiro falha, tentar de novo não paga o vendedor duas vezes", async () => {
+    const r = await buy({ refSlug: "timelapse" });
+    const id = r.ok ? r.order.id : "";
+    const before = provider.transfers.length;
+    const transferToWallet = provider.transferToWallet.bind(provider);
+    let calls = 0;
+    provider.transferToWallet = async (req) => {
+      if (++calls === 2) throw new Error("saldo insuficiente");
+      return transferToWallet(req);
+    };
+    try {
+      await requestPayout(id, "NENHUM", provider);
+      expect(await prisma.order.findUniqueOrThrow({ where: { id } })).toMatchObject({ payoutStatus: "FALHOU", partnerTransferId: null });
+      expect(await requestPayout(id, "FALHOU", provider)).toBe(true);
+    } finally {
+      provider.transferToWallet = transferToWallet;
+    }
+    expect(provider.transfers.slice(before).map((t) => t.walletId)).toEqual(["wallet_vendedor", "wallet_timelapse"]);
+    expect(await prisma.order.findUniqueOrThrow({ where: { id } })).toMatchObject({ payoutStatus: "CONCLUIDO" });
   });
 
   it("cupom vale mais que o link", async () => {

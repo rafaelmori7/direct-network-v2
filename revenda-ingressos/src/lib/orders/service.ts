@@ -55,8 +55,7 @@ export async function createOrder(input: CreateOrderInput, provider: PaymentProv
   );
   if (violations.length > 0) return { ok: false, errors: violations.map((v) => v.message) };
 
-  const sellerWalletId = listing.seller.gatewayWalletId;
-  if (!sellerWalletId && provider.requiresSellerWallet) {
+  if (!listing.seller.gatewayWalletId && provider.requiresSellerWallet) {
     return { ok: false, errors: ["O vendedor ainda não concluiu o cadastro de recebimento."] };
   }
 
@@ -107,10 +106,6 @@ export async function createOrder(input: CreateOrderInput, provider: PaymentProv
     const charge = await provider.createPixCharge({
       orderId: order.id,
       totalCents,
-      sellerNetCents,
-      sellerWalletId,
-      // Sem subconta do parceiro, a parte dele fica na conta da plataforma para repasse manual.
-      partnerSplit: resolved?.partner.gatewayWalletId && partnerFeeCents > 0 ? { walletId: resolved.partner.gatewayWalletId, cents: partnerFeeCents } : null,
       buyer: { name: input.buyer.name, cpf: input.buyer.cpf, email: input.buyer.email },
       expiresAt: paymentExpiresAt,
       description: `${event.name} - ${listing.sector} (${input.quantity}x)`,
@@ -302,9 +297,13 @@ export async function requestRefund(
 }
 
 /**
- * Libera a custódia ao vendedor. Mesma proteção do reembolso: uma única vez.
- * Vendedor com a conta de recebimento ainda não aprovada fica em
- * AGUARDANDO_CADASTRO; a rotina libera quando a conta for aprovada.
+ * Repassa ao vendedor (e ao parceiro) o que ficou na conta da plataforma.
+ * Mesma proteção do reembolso: uma única vez. Vendedor com a conta de
+ * recebimento ainda não aprovada fica em AGUARDANDO_CADASTRO; a rotina libera
+ * quando a conta for aprovada.
+ *
+ * Cada transferência feita é gravada no pedido na hora; se a outra falhar,
+ * "tentar de novo" só faz a que faltou.
  */
 export async function requestPayout(
   orderId: string,
@@ -329,9 +328,44 @@ export async function requestPayout(
     data: { payoutStatus: "SOLICITADO", payoutError: null, payoutUpdatedAt: now },
   });
   if (claimed.count === 0) return false;
-  const { chargeId } = await prisma.order.findUniqueOrThrow({ where: { id: orderId }, select: { chargeId: true } });
+  const o = await prisma.order.findUniqueOrThrow({
+    where: { id: orderId },
+    select: {
+      sellerNetCents: true,
+      partnerFeeCents: true,
+      sellerTransferId: true,
+      partnerTransferId: true,
+      partner: { select: { gatewayWalletId: true } },
+      listing: { select: { event: { select: { name: true } }, seller: { select: { gatewayWalletId: true } } } },
+    },
+  });
   try {
-    await provider.releaseEscrow(chargeId!);
+    const sellerWalletId = o.listing.seller.gatewayWalletId;
+    if (!o.sellerTransferId && o.sellerNetCents > 0) {
+      if (sellerWalletId) {
+        const { transferId } = await provider.transferToWallet({
+          walletId: sellerWalletId,
+          cents: o.sellerNetCents,
+          externalReference: `pedido-${orderId}-vendedor`,
+          description: `Venda de ingresso - ${o.listing.event.name}`,
+        });
+        await prisma.order.update({ where: { id: orderId }, data: { sellerTransferId: transferId } });
+      } else if (provider.requiresSellerWallet) {
+        throw new Error("Vendedor sem conta de recebimento");
+      }
+      // Sem carteira em desenvolvimento/sandbox CPF: o valor fica na conta da plataforma.
+    }
+    // Sem subconta do parceiro, a parte dele fica na conta da plataforma para repasse manual.
+    const partnerWalletId = o.partner?.gatewayWalletId;
+    if (!o.partnerTransferId && o.partnerFeeCents > 0 && partnerWalletId) {
+      const { transferId } = await provider.transferToWallet({
+        walletId: partnerWalletId,
+        cents: o.partnerFeeCents,
+        externalReference: `pedido-${orderId}-parceiro`,
+        description: `Comissão de parceiro - ${o.listing.event.name}`,
+      });
+      await prisma.order.update({ where: { id: orderId }, data: { partnerTransferId: transferId } });
+    }
     await prisma.order.update({ where: { id: orderId }, data: { payoutStatus: "CONCLUIDO", payoutUpdatedAt: new Date() } });
   } catch (error) {
     await prisma.order.update({

@@ -267,10 +267,17 @@ model Order {
   refundStatus       RefundStatus @default(NENHUM)
   refundError        String?
   refundUpdatedAt    DateTime?
-  /** Liberação da custódia ao vendedor (POST /escrow/{id}/finish no Asaas). */
+  /**
+   * Repasse depois do evento: o Pix fica todo na conta da plataforma e, na liberação,
+   * transferimos (POST /transfers no Asaas) a parte do vendedor e a do parceiro.
+   */
   payoutStatus       PayoutStatus @default(NENHUM)
   payoutError        String?
   payoutUpdatedAt    DateTime?
+  /** Transferência já feita ao vendedor; evita pagar de novo ao tentar outra vez. */
+  sellerTransferId   String?
+  /** Transferência já feita ao parceiro (só quando ele tem subconta). */
+  partnerTransferId  String?
   paymentExpiresAt   DateTime
   paidAt             DateTime?
   transferDeadlineAt DateTime?

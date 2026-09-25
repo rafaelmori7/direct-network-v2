@@ -6,29 +6,30 @@ import {
   type RefundResult,
   type SellerAccount,
   type SellerAccountRequest,
+  type TransferRequest,
 } from "./provider";
-import { ESCROW_MAX_DAYS } from "@/lib/rules/engine";
 
 /**
- * Integração com o Asaas (Pix + split + Conta Escrow).
+ * Integração com o Asaas (Pix + repasse por transferência).
  *
- * Fluxo atual (ainda NÃO protege o dinheiro, ver o ATENÇÃO abaixo):
- * - a cobrança é criada na conta principal (plataforma) com split para a
- *   subconta do vendedor;
- * - a subconta do vendedor tem a Conta Escrow ligada (POST /accounts/{id}/escrow,
- *   daysToExpire = 45);
- * - liberamos com POST /escrow/{id}/finish depois do evento.
+ * Como o dinheiro fica protegido:
+ * - a cobrança é criada na conta principal (plataforma), SEM split: o valor todo
+ *   fica no saldo da plataforma até a liberação;
+ * - na liberação, transferimos a parte do vendedor e a do parceiro para as
+ *   subcontas deles (POST /transfers com walletId);
+ * - no reembolso, o Asaas devolve o valor todo da conta principal, e ninguém
+ *   precisa devolver nada.
+ *
+ * Por que não split + Conta Escrow (testado no sandbox em 25/09/2026): o split
+ * vindo da conta principal cai LIVRE no saldo da subconta; o escrow só retém
+ * cobranças criadas com a chave da própria subconta. Ver README.
  *
  * Testado no sandbox (25/09/2026, conta principal CNPJ):
- * - subconta criada e escrow ligado por POST /accounts/{id}/escrow;
- * - split para subconta ainda não aprovada: status DONE;
- * - reembolso de cobrança com split: exige saldo na conta principal para o valor
- *   TOTAL (sem saldo: "não há saldo suficiente") e fica aguardando autorização.
- * - ATENÇÃO: o split vindo da conta principal cai LIVRE no saldo da subconta; o
- *   escrow só retém cobranças criadas com a chave da própria subconta. Liberar
- *   (POST /escrow/{id}/finish) só funciona com a chave principal. Ver README,
- *   "Conta Escrow no sandbox".
- * Referência: https://docs.asaas.com/docs/introducao-conta-escrow
+ * - subconta criada por POST /accounts;
+ * - reembolso de Pix sem split: fica aguardando autorização no painel. Logo
+ *   depois do pagamento o Asaas responde "tente novamente em alguns instantes";
+ * - POST /transfers: a chave precisa da permissão de saque via API (sem ela: 403
+ *   insufficient_permission). Falta testar com a permissão ligada.
  */
 export class AsaasPaymentProvider implements PaymentProvider {
   readonly kind = "asaas" as const;
@@ -53,12 +54,6 @@ export class AsaasPaymentProvider implements PaymentProvider {
       dueDate: req.expiresAt.toISOString().slice(0, 10),
       description: req.description,
       externalReference: req.orderId,
-      ...((req.sellerWalletId || req.partnerSplit) && {
-        split: [
-          ...(req.sellerWalletId ? [{ walletId: req.sellerWalletId, fixedValue: req.sellerNetCents / 100 }] : []),
-          ...(req.partnerSplit ? [{ walletId: req.partnerSplit.walletId, fixedValue: req.partnerSplit.cents / 100 }] : []),
-        ],
-      }),
     });
 
     const qr = await this.request<{ encodedImage: string; payload: string; expirationDate: string }>(
@@ -74,9 +69,14 @@ export class AsaasPaymentProvider implements PaymentProvider {
     };
   }
 
-  async releaseEscrow(chargeId: string): Promise<void> {
-    const escrow = await this.request<{ id: string }>("GET", `/payments/${chargeId}/escrow`);
-    await this.request("POST", `/escrow/${escrow.id}/finish`);
+  async transferToWallet(req: TransferRequest): Promise<{ transferId: string }> {
+    const transfer = await this.request<{ id: string }>("POST", "/transfers", {
+      value: req.cents / 100,
+      walletId: req.walletId,
+      externalReference: req.externalReference,
+      description: req.description,
+    });
+    return { transferId: transfer.id };
   }
 
   // Testado no sandbox: com a autorização de ações críticas ligada, o reembolso
@@ -105,12 +105,13 @@ export class AsaasPaymentProvider implements PaymentProvider {
     return tx.externalAccount?.cpfCnpj ?? null;
   }
 
-  // No sandbox de conta CPF não há subcontas; lá aceitamos cobrança sem split.
+  // No sandbox de conta CPF não há subcontas; lá aceitamos vendedor sem carteira.
   get requiresSellerWallet(): boolean {
     return !this.isSandbox;
   }
 
   // Testado no sandbox com conta principal CNPJ: cria a subconta e devolve walletId e chave.
+  // Não ligamos a Conta Escrow dela: o dinheiro fica na conta da plataforma até o repasse.
   async createSellerAccount(req: SellerAccountRequest): Promise<SellerAccount> {
     const account = await this.request<{ id: string; walletId: string; apiKey?: string }>("POST", "/accounts", {
       name: req.name,
@@ -141,9 +142,6 @@ export class AsaasPaymentProvider implements PaymentProvider {
           ],
         }),
     });
-    // Testado no sandbox (25/09/2026): liga a Conta Escrow da subconta. Sem isso, a parte do
-    // vendedor cairia livre no saldo dele no momento do pagamento.
-    await this.request("POST", `/accounts/${account.id}/escrow`, { enabled: true, daysToExpire: ESCROW_MAX_DAYS });
     return { accountId: account.id, walletId: account.walletId, apiKey: account.apiKey ?? null };
   }
 
