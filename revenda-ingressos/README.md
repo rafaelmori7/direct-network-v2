@@ -77,7 +77,7 @@ tests/                testes do motor de regras, dos estados e do pagamento
   - **eventos:** criar e editar, com ticketeira, transferência permitida, janela exata, prazo do vendedor, setores, esportivo e biometria;
   - **disputas:** a decisão fica na página do pedido. Se o vendedor tiver razão antes da data de liberação, o pedido volta a aguardar essa data;
   - **reembolsos pendentes;**
-  - **repasses:** liberações com falha e transferências esperando autorização no painel do Asaas (em `/admin/disputas`);
+  - **repasses:** liberações com falha, com "tentar de novo", e transferências esperando autorização no painel do Asaas (em `/admin/disputas`);
   - **usuários:** busca por nome, e-mail ou CPF; verificar e remover a verificação de vendedor. **Bloquear** encerra as sessões, pausa os anúncios e desativa os COMPRO;
   - **anúncios:** pausados, ativos, encerrados e removidos; reativar (só se a venda do evento ainda estiver aberta) ou remover;
   - **pedidos:** busca por nº, cobrança, e-mail, CPF ou evento;
@@ -238,7 +238,7 @@ Como o split não fica retido, o site passou a:
 
 - **Cobrar sem split:** o Pix cai todo na conta da plataforma.
 - **Liberar por transferência:** depois do evento, `requestPayout` faz `POST /transfers` (`walletId`, `value`, `externalReference` `pedido-<id>-vendedor` / `pedido-<id>-parceiro`) para a subconta do vendedor e, se houver, a do parceiro.
-- **Não pagar duas vezes:** o id de cada transferência feita fica no pedido (`sellerTransferId`, `partnerTransferId`). Se uma falhar, o pedido vai para `FALHOU` e "tentar de novo" só faz a que faltou.
+- **Não pagar duas vezes:** o id de cada transferência feita fica no pedido (`sellerTransferId`, `partnerTransferId`). Se uma falhar, o pedido vai para `FALHOU` e "tentar de novo" (botão em `/admin/disputas`) só faz a que faltou.
 - **Autorização no painel:** transferência criada mas não autorizada deixa o repasse em `AGUARDANDO_APROVACAO` (como no reembolso). O webhook `TRANSFER_DONE` / `TRANSFER_FAILED` / `TRANSFER_CANCELLED` e a rotina periódica consultam `GET /transfers/{id}`: todas concluídas → `CONCLUIDO`; uma recusada ou cancelada → `FALHOU`, e o id dela sai do pedido para "tentar de novo" transferir outra vez. O admin vê as pendentes em `/admin/disputas` ("Repasses para aprovar").
 - **Reembolsar sem ninguém devolver nada:** o dinheiro ainda está todo na conta da plataforma.
 

@@ -3,6 +3,7 @@ import { requireAdminPage } from "@/lib/auth/admin";
 import { prisma } from "@/lib/db";
 import { formatDateTime } from "@/lib/format";
 import { formatBRL } from "@/lib/money/fees";
+import { retryPayout } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -62,15 +63,27 @@ export default async function AdminDisputes() {
           <h2 className="section-title" style={{ marginTop: 32 }}>
             Liberações com falha
           </h2>
+          <p className="page-sub">
+            Confira o erro e o saldo no Asaas antes de tentar de novo. Só são refeitas as transferências que ainda não
+            saíram, então o vendedor e o parceiro não recebem duas vezes.
+          </p>
           <div className="offers">
             {payoutsFailed.map((o) => (
-              <Link key={o.id} href={`/pedidos/${o.id}`} className="offer">
+              <article key={o.id} className="offer">
                 <div>
-                  <h3>{o.listing.event.name}</h3>
+                  <h3>
+                    <Link href={`/pedidos/${o.id}`}>{o.listing.event.name}</Link>
+                  </h3>
                   <div className="offer-sub">Erro: {o.payoutError}</div>
+                  <div className="offer-sub">Desde {o.payoutUpdatedAt ? formatDateTime(o.payoutUpdatedAt) : "—"}</div>
                 </div>
-                <div className="offer-price">{formatBRL(o.sellerNetCents)}</div>
-              </Link>
+                <div className="offer-side">
+                  <div className="offer-price">{formatBRL(o.sellerNetCents)}</div>
+                  <form action={retryPayout.bind(null, o.id)}>
+                    <button className="btn btn-primary">Tentar de novo</button>
+                  </form>
+                </div>
+              </article>
             ))}
           </div>
         </>

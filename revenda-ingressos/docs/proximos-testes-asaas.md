@@ -64,7 +64,7 @@ parceiro. Código, testes e README atualizados.
 ## Ainda falta
 
 1. Reembolso em produção com valor baixo: termina `DONE`? chega o `PAYMENT_REFUNDED`?
-2. Cadastrar os eventos `TRANSFER_DONE`, `TRANSFER_FAILED` e `TRANSFER_CANCELLED` no webhook do painel e conferir o
+2. Ao publicar o site: cadastrar os eventos `TRANSFER_DONE`, `TRANSFER_FAILED` e `TRANSFER_CANCELLED` no webhook do painel e conferir o
    formato do aviso (o código usa só `transfer.id` e consulta `GET /transfers/{id}`).
 3. `onboardingUrl`: consultar de novo depois de um tempo, ou ver se só vem em produção.
 4. Testar o fluxo inteiro pelo site (`PAYMENT_PROVIDER=asaas`).
