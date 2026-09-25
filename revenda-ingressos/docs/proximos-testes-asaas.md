@@ -26,14 +26,30 @@ Postgres: `service postgresql start`.
   em arquivo com permissão 600; nunca imprimir a chave) e pague com
   `npx tsx scripts/asaas-sandbox-pay.ts <walletId>` (prefixar com `NODE_USE_ENV_PROXY=1`).
 
-## Falta testar (com a chave da subconta)
+## Resultado dos testes de 25/09/2026 (detalhes no README, "Conta Escrow no sandbox")
 
-1. O valor do split fica retido? `GET /finance/balance` da subconta e `GET /payments/{id}/escrow`
-   com a chave da subconta. Descobrir qual id de cobrança a subconta enxerga.
-2. Liberar: `POST /escrow/{id}/finish`. Com qual chave (principal ou subconta)?
-3. Reembolso depois do split com escrow: a parte do vendedor volta da subconta?
-4. Link de documentos da subconta: `GET /myAccount/documents` com a chave da subconta (`onboardingUrl`).
-5. Ajustar `releaseEscrow` em `src/lib/payments/asaas.ts` conforme o resultado (hoje usa a chave
-   principal e `GET /payments/{chargeId}/escrow`, que devolve 404 na conta principal). A chave da
-   subconta do vendedor fica criptografada em `User.gatewayApiKeyEnc` (`src/lib/crypto.ts`).
-6. Registrar os resultados no README e testar o fluxo inteiro pelo site (`PAYMENT_PROVIDER=asaas`).
+- `pay_njy75jq1nmjix4s4`: o reembolso terminou `CANCELLED` (estorno de -R$ 115 da conta principal, depois
+  cancelado). Não responde se o split volta da subconta.
+- Subconta 3: id `5ee83598-108b-41f7-ba2c-d1288e070be9`, wallet `2c1f0bf7-e4e4-4afe-ba3e-df93161ef302`
+  (chave só no scratchpad da sessão, perdida ao fim dela).
+- 1. Split vindo da conta principal **não fica retido**: cai livre no saldo da subconta. O escrow só vale
+  para cobranças criadas com a chave da subconta.
+- 2. `POST /escrow/{id}/finish`: só com a **chave principal**. `GET /payments/{id}/escrow`: só com a chave da subconta.
+- 3. Não testado: o estorno só vale para Pix/cartão, e a subconta só emite Pix depois de aprovada.
+- 4. `GET /myAccount/documents`: 200, mas `onboardingUrl: null` logo após criar a subconta.
+
+## Decisão pendente antes de mexer no código
+
+Com o fluxo atual (cobrança na conta principal + split), o dinheiro do vendedor **não fica protegido**.
+Para usar o escrow, a cobrança precisa ser criada com a chave da subconta do vendedor, com split de volta
+para a carteira da plataforma (testado: as duas partes ficam bloqueadas e o `finish` com a chave principal
+libera as duas). Isso muda `createPixCharge`, `refund`, `cancelCharge`, `getPayerCpf`, `releaseEscrow` e o
+webhook (os eventos passam a vir da subconta), e o vendedor só recebe Pix depois de aprovado.
+
+## Ainda falta
+
+1. Decidir a arquitetura acima e ajustar `src/lib/payments/asaas.ts`.
+2. Reembolso de cobrança com escrow (precisa de subconta aprovada para ter Pix).
+3. Reembolso de cobrança com split, aprovado de fato no painel (o de `pay_njy75jq1nmjix4s4` foi cancelado).
+4. `onboardingUrl`: consultar de novo depois de um tempo, ou ver se só vem em produção.
+5. Testar o fluxo inteiro pelo site (`PAYMENT_PROVIDER=asaas`).

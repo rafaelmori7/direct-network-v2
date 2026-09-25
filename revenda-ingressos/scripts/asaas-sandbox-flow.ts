@@ -2,7 +2,7 @@ export {};
 import { AsaasPaymentProvider } from "@/lib/payments/asaas";
 
 // Etapa 1 do teste no sandbox: cria a subconta de um vendedor fictício.
-const provider = new AsaasPaymentProvider(process.env.ASAAS_API_URL ?? "https://api-sandbox.asaas.com/v3", null);
+const provider = new AsaasPaymentProvider(process.env.ASAAS_API_URL ?? "https://api-sandbox.asaas.com/v3", process.env.ASAAS_API_KEY ?? null);
 
 function cpf(): string {
   const n = Array.from({ length: 9 }, () => Math.floor(Math.random() * 10));

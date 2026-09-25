@@ -218,8 +218,18 @@ npm run test:db              # testes com banco (usa TEST_DATABASE_URL ou o banc
 - **Subconta do vendedor:** `POST /accounts` funciona e devolve `walletId` e a chave da subconta. O site liga a Conta Escrow dela logo em seguida (`POST /accounts/{id}/escrow`, `enabled`, `daysToExpire: 45`).
 - **Split para subconta ainda em análise:** a cobrança paga fica com o split `DONE` (R$ 100 do vendedor foi para a subconta; a plataforma ficou com R$ 15 menos a taxa do Pix).
 - **Chave Pix:** a conta precisa de uma chave Pix (criamos uma aleatória, `POST /pix/addressKeys`), senão o QR Code falha.
-- **Reembolso de cobrança com split:** o Asaas debita o **valor total da conta principal**. Sem saldo para isso, recusa ("não há saldo suficiente"). Com saldo, fica aguardando autorização. **Falta ver** se, ao aprovar, a parte do vendedor volta da subconta.
-- **Falta validar** (precisa da chave da subconta; o proxy do ambiente troca pela da conta principal): se o valor do split fica retido no escrow, `GET /payments/{id}/escrow`, `POST /escrow/{id}/finish` e o link de documentos.
+- **Reembolso de cobrança com split:** o Asaas debita o **valor total da conta principal** (`PAYMENT_REVERSAL` de -R$ 115). Sem saldo para isso, recusa ("não há saldo suficiente"). Com saldo, fica aguardando autorização. O reembolso de `pay_njy75jq1nmjix4s4` terminou **`CANCELLED`** (`PAYMENT_REFUND_CANCELLED` +R$ 115, `refundedSplits: null`, split continua `DONE`), então **ainda não se sabe** se a parte do vendedor volta da subconta.
+
+### Conta Escrow no sandbox (25/09/2026, com a chave da subconta)
+
+- **Split vindo da conta principal NÃO fica retido.** Com escrow ligado na subconta (`GET /accounts/{id}/escrow` → `enabled: true`, 45 dias), o split de R$ 100 de `pay_beikef87rxse4z9h` caiu **livre** no saldo da subconta (`INTERNAL_TRANSFER_CREDIT`, saldo R$ 100). A cobrança não tem `escrow`, e `GET /payments/{id}/escrow` dá 404 com as duas chaves. A subconta não enxerga a cobrança (`GET /payments` vazio), só a transação com o `splitId`.
+- **O escrow só vale para cobranças criadas pela própria subconta** (com a chave dela): na confirmação aparece `PAYMENT_CUSTODY_BLOCK` do valor líquido, e a cobrança traz `escrow.status: ACTIVE` (vence em 45 dias).
+- **Cobrança da subconta com split para a plataforma** (`pay_x566o7r0bia0xbig`, R$ 115, split R$ 15 para a carteira da conta principal): fica tudo bloqueado, R$ 99,01 na subconta e **os R$ 15 também na conta principal** (`PAYMENT_CUSTODY_BLOCK` nas duas).
+- **Consultar:** `GET /payments/{id}/escrow` só funciona com a **chave da subconta** (a conta principal nem enxerga a cobrança: 404).
+- **Liberar:** `POST /escrow/{escrowId}/finish` só funciona com a **chave da conta principal** (com a chave da subconta: 404, testado duas vezes). Volta a cobrança com `escrow.status: DONE`, `finishReason: REQUESTED_BY_CUSTOMER`, e desbloqueia as duas partes (`PAYMENT_CUSTODY_BLOCK_REVERSAL` na subconta e na principal). O `escrow.id` também vem em `GET /payments/{id}` (chave da subconta).
+- **Pix na subconta:** só depois de aprovada ("O Pix não está disponível no momento. Para utilizá-lo, sua conta precisa estar aprovada."). Boleto funciona e dá para confirmar no sandbox.
+- **Reembolso de cobrança com escrow:** não deu para testar. O Asaas só estorna Pix ou cartão, e a subconta ainda não aprovada só emite boleto.
+- **Link de documentos:** `GET /myAccount/documents` com a chave da subconta responde 200 (`IDENTIFICATION`, `NOT_SENT`), mas com `onboardingUrl: null` logo após a criação.
 - Scripts: `scripts/asaas-sandbox-flow.ts` (cria subconta com escrow) e `scripts/asaas-sandbox-pay.ts <walletId>` (Pix com split, pago na hora).
 
 ### Política de reembolso (decidida)

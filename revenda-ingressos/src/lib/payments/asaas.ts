@@ -12,11 +12,11 @@ import { ESCROW_MAX_DAYS } from "@/lib/rules/engine";
 /**
  * Integração com o Asaas (Pix + split + Conta Escrow).
  *
- * Como o dinheiro fica protegido:
+ * Fluxo atual (ainda NÃO protege o dinheiro, ver o ATENÇÃO abaixo):
  * - a cobrança é criada na conta principal (plataforma) com split para a
  *   subconta do vendedor;
  * - a subconta do vendedor tem a Conta Escrow ligada (POST /accounts/{id}/escrow,
- *   daysToExpire = 45), então a parte dele fica bloqueada;
+ *   daysToExpire = 45);
  * - liberamos com POST /escrow/{id}/finish depois do evento.
  *
  * Testado no sandbox (25/09/2026, conta principal CNPJ):
@@ -24,8 +24,10 @@ import { ESCROW_MAX_DAYS } from "@/lib/rules/engine";
  * - split para subconta ainda não aprovada: status DONE;
  * - reembolso de cobrança com split: exige saldo na conta principal para o valor
  *   TOTAL (sem saldo: "não há saldo suficiente") e fica aguardando autorização.
- * Falta validar: consulta/finish do escrow e estorno do split (exigem a chave da
- * subconta; o proxy deste ambiente troca a chave pela da conta principal).
+ * - ATENÇÃO: o split vindo da conta principal cai LIVRE no saldo da subconta; o
+ *   escrow só retém cobranças criadas com a chave da própria subconta. Liberar
+ *   (POST /escrow/{id}/finish) só funciona com a chave principal. Ver README,
+ *   "Conta Escrow no sandbox".
  * Referência: https://docs.asaas.com/docs/introducao-conta-escrow
  */
 export class AsaasPaymentProvider implements PaymentProvider {

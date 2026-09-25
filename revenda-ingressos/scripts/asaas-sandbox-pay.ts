@@ -3,7 +3,7 @@ import { AsaasPaymentProvider } from "@/lib/payments/asaas";
 
 // Etapa 2 do teste no sandbox: Pix com split para a subconta, pago na hora.
 // Uso: tsx scripts/asaas-sandbox-pay.ts <walletIdDoVendedor>
-const provider = new AsaasPaymentProvider(process.env.ASAAS_API_URL ?? "https://api-sandbox.asaas.com/v3", null);
+const provider = new AsaasPaymentProvider(process.env.ASAAS_API_URL ?? "https://api-sandbox.asaas.com/v3", process.env.ASAAS_API_KEY ?? null);
 
 async function main() {
   const walletId = process.argv[2];
