@@ -29,7 +29,10 @@ import {
  * - reembolso de Pix sem split: fica aguardando autorização no painel. Logo
  *   depois do pagamento o Asaas responde "tente novamente em alguns instantes";
  * - POST /transfers: a chave precisa da permissão de saque via API (sem ela: 403
- *   insufficient_permission). Falta testar com a permissão ligada.
+ *   insufficient_permission). Com a permissão, subconta ainda não aprovada é
+ *   recusada (400 "...quando a aprovação do cadastro da conta de destino for
+ *   concluída"); por isso o repasse ao vendedor espera a aprovação
+ *   (AGUARDANDO_CADASTRO). Falta testar com subconta aprovada.
  */
 export class AsaasPaymentProvider implements PaymentProvider {
   readonly kind = "asaas" as const;

@@ -46,14 +46,17 @@ parceiro. Código, testes e README atualizados.
 - Reembolso de Pix sem split (`pay_ahx1nga5y1w10bfo`): aceito, aguardando autorização no painel.
 - `POST /transfers`: 403 `insufficient_permission` (a chave não tem permissão de saque via API).
 
+- Com a permissão ligada: transferência para a subconta 3 (não aprovada) recusada com 400 "Você poderá solicitar
+  transferências quando a aprovação do cadastro da conta de destino for concluída."
+- Reembolso de `pay_ahx1nga5y1w10bfo` aprovado no painel: terminou `CANCELLED` (estorno -R$ 115 e depois
+  cancelamento do estorno +R$ 115), igual ao de `pay_njy75jq1nmjix4s4`.
+- Removida a trava de 45 dias; termos de uso ajustados.
+
 ## Ainda falta
 
-1. Ligar a permissão de saque via API na chave e rodar
-   `NODE_USE_ENV_PROXY=1 npx tsx scripts/asaas-sandbox-transfer.ts 2c1f0bf7-e4e4-4afe-ba3e-df93161ef302`
-   (subconta 3, ainda não aprovada). Anotar: aceita? exige autorização de ação crítica? qual `status` volta?
-   Se a transferência ficar aguardando autorização, decidir se `payoutStatus` precisa de um estado
-   `AGUARDANDO_APROVACAO`, como no reembolso.
-2. Aprovar no painel o reembolso de `pay_ahx1nga5y1w10bfo` e conferir o webhook `PAYMENT_REFUNDED`.
+1. Transferência para subconta **aprovada** (nenhuma das 3 do sandbox está): aceita? exige autorização de ação
+   crítica? qual `status` volta? Se ficar aguardando autorização, criar `AGUARDANDO_APROVACAO` no repasse.
+2. Por que os reembolsos aprovados terminam `CANCELLED`: conferir no painel o motivo (sandbox com Pix simulado?
+   autorização expirada?). Com um reembolso `DONE`, conferir o webhook `PAYMENT_REFUNDED`.
 3. `onboardingUrl`: consultar de novo depois de um tempo, ou ver se só vem em produção.
-4. Revisar a trava de 45 dias (`ESCROW_MAX_DAYS` em `src/lib/rules/engine.ts`): ela vinha da Conta Escrow.
-5. Testar o fluxo inteiro pelo site (`PAYMENT_PROVIDER=asaas`).
+4. Testar o fluxo inteiro pelo site (`PAYMENT_PROVIDER=asaas`).

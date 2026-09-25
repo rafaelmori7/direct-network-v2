@@ -67,7 +67,10 @@ export default function TermsPage() {
           O pagamento é feito só por Pix, em até {PIX_EXPIRATION_MINUTES} minutos, <b>de uma conta no CPF do comprador</b>. Pix feito por
           outra pessoa é devolvido e o pedido é cancelado.
         </li>
-        <li>O valor fica retido em conta de custódia do nosso parceiro de pagamentos até a liberação ao vendedor.</li>
+        <li>
+          O valor pago fica na conta da plataforma no Asaas (instituição de pagamento) até a liberação. Só então a parte do vendedor é
+          transferida para a conta de recebimento dele.
+        </li>
       </ul>
 
       <h2>5. Transferência e confirmação</h2>

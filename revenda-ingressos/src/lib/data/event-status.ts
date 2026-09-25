@@ -15,6 +15,6 @@ export function saleState(event: EventRecord, now = new Date()): SaleState {
   }
   const { opensAt, closesAt } = saleWindow(rulesFor(event), eventRuleInput(event));
   if (now >= closesAt) return { kind: "ENCERRADA" };
-  if (now < opensAt) return { kind: "EM_BREVE", opensAt, closesAt };
+  if (opensAt && now < opensAt) return { kind: "EM_BREVE", opensAt, closesAt };
   return { kind: "ABERTA", closesAt };
 }

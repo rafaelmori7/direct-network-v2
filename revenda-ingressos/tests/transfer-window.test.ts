@@ -68,7 +68,7 @@ describe("prazo exato de transferência do evento", () => {
   it("não abre a venda antes da data de abertura da transferência", () => {
     const event = { ...festival, transferOpensAt: new Date("2026-10-10T15:00:00Z") };
     const r = effectiveRules(PLATFORMS.INGRESSE.profile, event);
-    expect(saleWindow(r, event).opensAt.toISOString()).toBe("2026-10-10T15:00:00.000Z");
+    expect(saleWindow(r, event).opensAt?.toISOString()).toBe("2026-10-10T15:00:00.000Z");
     const codes = checkPurchase(r, event, purchase, new Date("2026-10-09T12:00:00Z")).map((v) => v.code);
     expect(codes).toContain("VENDA_AINDA_NAO_ABERTA");
   });

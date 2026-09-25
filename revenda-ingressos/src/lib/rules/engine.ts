@@ -1,13 +1,6 @@
 import { addDays, addHours, endOfNthBusinessDay, maxDate, minDate } from "@/lib/time";
 import type { BuyerIdentifier, EventRuleInput, RuleProfile, TicketType } from "./types";
 
-/**
- * A Conta Escrow do Asaas libera sozinha depois de no máximo 45 dias.
- * Usamos uma margem para nunca deixar a custódia vencer antes da liberação.
- */
-export const ESCROW_MAX_DAYS = 45;
-export const ESCROW_SAFETY_MARGIN_DAYS = 2;
-
 export type Violation = { code: string; message: string };
 
 /** Perfil da ticketeira com as sobreposições do evento e as travas legais. */
@@ -48,16 +41,14 @@ export function transferOpensAt(rules: RuleProfile, event: EventRuleInput): Date
 
 /**
  * Janela em que uma compra pode ser paga:
- * - abre quando a transferência já é possível E quando a custódia de 45 dias
- *   ainda cobre a data de liberação;
+ * - abre quando a transferência já é possível (null: sem restrição da ticketeira);
  * - fecha a tempo de o vendedor transferir antes do bloqueio da ticketeira
  *   (o prazo do vendedor pode ser encurtado por evento para vender até mais tarde).
+ * O dinheiro fica na conta da plataforma até o repasse, sem prazo máximo de custódia.
  */
 export function saleWindow(rules: RuleProfile, event: EventRuleInput, holidays?: ReadonlySet<string>) {
   const release = releaseAt(rules, event, holidays);
-  const escrowBound = addDays(release, -(ESCROW_MAX_DAYS - ESCROW_SAFETY_MARGIN_DAYS));
-  const opens = transferOpensAt(rules, event);
-  const opensAt = opens ? maxDate(escrowBound, opens) : escrowBound;
+  const opensAt = transferOpensAt(rules, event);
   const closesAt = addHours(transferLockAt(rules, event), -rules.sellerTransferDeadlineHours);
   return { opensAt, closesAt, releaseAt: release };
 }
@@ -190,10 +181,10 @@ export function checkPurchase(
     v.push({ code: "COMPRADOR_NAO_VERIFICADO", message: "Confirme seu CPF para comprar." });
   }
   const window = saleWindow(rules, event);
-  if (now < window.opensAt) {
+  if (window.opensAt && now < window.opensAt) {
     v.push({
       code: "VENDA_AINDA_NAO_ABERTA",
-      message: "As compras deste evento ainda não abriram (transferência ou custódia indisponível).",
+      message: "As compras deste evento ainda não abriram (a ticketeira ainda não libera a transferência).",
     });
   }
   if (now >= window.closesAt) {

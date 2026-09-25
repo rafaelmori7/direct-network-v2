@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { PLATFORMS } from "@/lib/platforms/profiles";
 import {
-  ESCROW_MAX_DAYS,
   checkListing,
   checkPurchase,
   effectiveRules,
@@ -138,18 +137,16 @@ describe("anúncio", () => {
   });
 });
 
-describe("janela de venda e custódia", () => {
-  it("a custódia de 45 dias sempre cobre a liberação", () => {
-    for (const profile of [ingresse, sympla, ticketmaster]) {
-      const rules = effectiveRules(profile, event);
-      const { opensAt, releaseAt } = saleWindow(rules, event);
-      const escrowExpires = opensAt.getTime() + ESCROW_MAX_DAYS * 24 * 3600 * 1000;
-      expect(escrowExpires).toBeGreaterThan(releaseAt.getTime());
-    }
+describe("janela de venda", () => {
+  it("sem trava de custódia: vende longe do evento quando a ticketeira não restringe", () => {
+    const rules = effectiveRules(ingresse, event);
+    expect(saleWindow(rules, event).opensAt).toBeNull();
+    const farAway = new Date("2026-08-20T12:00:00Z");
+    expect(codes(checkPurchase(rules, event, purchase, farAway))).not.toContain("VENDA_AINDA_NAO_ABERTA");
   });
 
-  it("não abre compra longe demais do evento", () => {
-    const rules = effectiveRules(ingresse, event);
+  it("não abre antes de a ticketeira liberar a transferência", () => {
+    const rules = effectiveRules(ticketmaster, event);
     const tooEarly = new Date("2026-08-20T12:00:00Z");
     expect(codes(checkPurchase(rules, event, purchase, tooEarly))).toContain("VENDA_AINDA_NAO_ABERTA");
   });
@@ -157,7 +154,7 @@ describe("janela de venda e custódia", () => {
   it("Ticketmaster só vende a partir de 30 dias e fecha 7 dias + prazo do vendedor antes", () => {
     const rules = effectiveRules(ticketmaster, event);
     const { opensAt, closesAt } = saleWindow(rules, event);
-    expect(opensAt.toISOString()).toBe("2026-09-18T02:00:00.000Z");
+    expect(opensAt?.toISOString()).toBe("2026-09-18T02:00:00.000Z");
     expect(closesAt.toISOString()).toBe("2026-10-10T02:00:00.000Z");
   });
 

@@ -14,13 +14,13 @@ Marketplace de revenda em que **ninguém corre risco financeiro**:
 |---|---|---|---|
 | Dado do comprador | E-mail | Nome + CPF + e-mail | E-mail (ou Quentro ID) |
 | Quem vende | Titular da carteira | Só o comprador original | Só o comprador original |
-| Janela de venda | Custódia de 45 dias | Fecha 48h antes | Abre 30 dias antes, fecha 8 dias antes |
+| Janela de venda | Até o prazo de transferência | Fecha 48h antes | Abre 30 dias antes, fecha 8 dias antes |
 
 Os perfis ficam em `src/lib/platforms/profiles.ts`. Valores marcados "a confirmar" precisam de um teste de transferência real.
 
 ## Travas que o código garante
 
-- **Custódia:** a compra só abre quando a custódia de 45 dias cobre a data de liberação. A trava fica em `saleWindow` e é coberta por teste. (O limite vinha da Conta Escrow; com o repasse por transferência ele não é mais obrigatório, mas continua no código até ser revisto.)
+- **Janela de venda:** a compra abre quando a ticketeira libera a transferência (se ela restringir) e fecha a tempo de o vendedor transferir antes do bloqueio. Não há mais limite de custódia: o dinheiro fica na conta da plataforma até o repasse. A trava fica em `saleWindow` e é coberta por teste.
 - **Prazo de arrependimento:** ingressos comprados há menos de 8 dias não podem ser anunciados. Isso cobre os 7 dias do CDC art. 49, em que o comprador original ainda pode cancelar na ticketeira.
 - **Futebol:** evento esportivo sempre tem o preço travado no valor de face (Lei 14.597/2023, art. 166).
 - **Transferência:** eventos com transferência não confirmada, ou com ingresso nominal e biometria, ficam bloqueados.
@@ -243,7 +243,8 @@ Como o split não fica retido, o site passou a:
 Testado no sandbox:
 
 - **Reembolso de Pix sem split** (`pay_ahx1nga5y1w10bfo`, R$ 115): aceito e aguardando autorização (`AWAITING_CRITICAL_ACTION_AUTHORIZATION`). Logo depois do pagamento, o Asaas respondeu "Não é possível solicitar estorno para essa cobrança no momento. Tente novamente em alguns instantes."; cerca de 20 s depois funcionou. O "tentar de novo" de `/admin/reembolsos` cobre esse caso.
-- **Transferência:** a chave de API da conta principal **não tem permissão de saque via API** (403 `insufficient_permission`). **Falta testar** com a permissão ligada no painel: transferência para subconta ainda não aprovada (a subconta 3 está com `general: PENDING`), se exige autorização de ação crítica e o status devolvido.
+- **Reembolso aprovado no painel:** terminou **`CANCELLED`** (`PAYMENT_REVERSAL` -R$ 115 e depois `PAYMENT_REFUND_CANCELLED` +R$ 115), igual ao de `pay_njy75jq1nmjix4s4`. Ainda não se sabe se é limite do sandbox com Pix simulado ou se a autorização não foi concluída.
+- **Transferência:** a chave precisa da **permissão de saque via API** (sem ela: 403 `insufficient_permission`). Com a permissão, a transferência para a subconta 3 (ainda não aprovada, `general: PENDING`) foi recusada: 400 "Você poderá solicitar transferências quando a aprovação do cadastro da conta de destino for concluída." O repasse ao vendedor já espera a aprovação (`AGUARDANDO_CADASTRO`). Parceiro com subconta ainda não aprovada: a transferência dele falha, o pedido fica `FALHOU` e o admin tenta de novo depois. **Falta testar** com subconta aprovada: se exige autorização de ação crítica e o status devolvido.
 
 Scripts:
 
