@@ -7,6 +7,7 @@ import {
   type SellerAccount,
   type SellerAccountRequest,
 } from "./provider";
+import { ESCROW_MAX_DAYS } from "@/lib/rules/engine";
 
 /**
  * Integração com o Asaas (Pix + split + Conta Escrow).
@@ -18,8 +19,13 @@ import {
  *   daysToExpire = 45), então a parte dele fica bloqueada;
  * - liberamos com POST /escrow/{id}/finish depois do evento.
  *
- * Validar no sandbox antes de produção: se o finish/refund exigem a chave da
- * conta principal ou da subconta, e o comportamento do refund com escrow ativo.
+ * Testado no sandbox (25/09/2026, conta principal CNPJ):
+ * - subconta criada e escrow ligado por POST /accounts/{id}/escrow;
+ * - split para subconta ainda não aprovada: status DONE;
+ * - reembolso de cobrança com split: exige saldo na conta principal para o valor
+ *   TOTAL (sem saldo: "não há saldo suficiente") e fica aguardando autorização.
+ * Falta validar: consulta/finish do escrow e estorno do split (exigem a chave da
+ * subconta; o proxy deste ambiente troca a chave pela da conta principal).
  * Referência: https://docs.asaas.com/docs/introducao-conta-escrow
  */
 export class AsaasPaymentProvider implements PaymentProvider {
@@ -102,7 +108,7 @@ export class AsaasPaymentProvider implements PaymentProvider {
     return !this.isSandbox;
   }
 
-  // Não testado ainda: subcontas exigem conta principal de CNPJ (a do sandbox atual é CPF).
+  // Testado no sandbox com conta principal CNPJ: cria a subconta e devolve walletId e chave.
   async createSellerAccount(req: SellerAccountRequest): Promise<SellerAccount> {
     const account = await this.request<{ id: string; walletId: string; apiKey?: string }>("POST", "/accounts", {
       name: req.name,
@@ -133,6 +139,9 @@ export class AsaasPaymentProvider implements PaymentProvider {
           ],
         }),
     });
+    // Testado no sandbox (25/09/2026): liga a Conta Escrow da subconta. Sem isso, a parte do
+    // vendedor cairia livre no saldo dele no momento do pagamento.
+    await this.request("POST", `/accounts/${account.id}/escrow`, { enabled: true, daysToExpire: ESCROW_MAX_DAYS });
     return { accountId: account.id, walletId: account.walletId, apiKey: account.apiKey ?? null };
   }
 

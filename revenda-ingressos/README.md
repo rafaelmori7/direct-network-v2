@@ -213,6 +213,15 @@ npm run test:db              # testes com banco (usa TEST_DATABASE_URL ou o banc
   - devolver o valor cheio exige **saldo na conta da plataforma** para cobrir essa taxa (erro "Saldo insuficiente").
 - **Autorização de reembolso:** reembolsos pela API ficam em `AWAITING_CRITICAL_ACTION_AUTHORIZATION` até alguém aprovar a "ação crítica" no painel.
 
+### Conta principal CNPJ no sandbox (25/09/2026)
+
+- **Subconta do vendedor:** `POST /accounts` funciona e devolve `walletId` e a chave da subconta. O site liga a Conta Escrow dela logo em seguida (`POST /accounts/{id}/escrow`, `enabled`, `daysToExpire: 45`).
+- **Split para subconta ainda em análise:** a cobrança paga fica com o split `DONE` (R$ 100 do vendedor foi para a subconta; a plataforma ficou com R$ 15 menos a taxa do Pix).
+- **Chave Pix:** a conta precisa de uma chave Pix (criamos uma aleatória, `POST /pix/addressKeys`), senão o QR Code falha.
+- **Reembolso de cobrança com split:** o Asaas debita o **valor total da conta principal**. Sem saldo para isso, recusa ("não há saldo suficiente"). Com saldo, fica aguardando autorização. **Falta ver** se, ao aprovar, a parte do vendedor volta da subconta.
+- **Falta validar** (precisa da chave da subconta; o proxy do ambiente troca pela da conta principal): se o valor do split fica retido no escrow, `GET /payments/{id}/escrow`, `POST /escrow/{id}/finish` e o link de documentos.
+- Scripts: `scripts/asaas-sandbox-flow.ts` (cria subconta com escrow) e `scripts/asaas-sandbox-pay.ts <walletId>` (Pix com split, pago na hora).
+
 ### Política de reembolso (decidida)
 
 - **Valor:** o comprador recebe sempre o **valor integral**, e a taxa do Pix sai do saldo da plataforma. Mantenha saldo de reserva no Asaas.
