@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireAdminPage } from "@/lib/auth/admin";
 import { prisma } from "@/lib/db";
 import { formatDateTime } from "@/lib/format";
+import { whatsappConfigured } from "@/lib/notify/whatsapp";
 
 export const dynamic = "force-dynamic";
 
@@ -11,14 +12,16 @@ export default async function AdminEmails() {
   await requireAdminPage("/admin/emails");
   const emails = await prisma.emailLog.findMany({ orderBy: { createdAt: "desc" }, take: 50 });
   const configured = Boolean(process.env.RESEND_API_KEY && process.env.EMAIL_FROM);
+  const whatsapp = whatsappConfigured();
   return (
     <main className="form-page" style={{ maxWidth: 900 }}>
       <Link href="/admin" className="back">
         ← Painel
       </Link>
       <h1 className="page-title" style={{ marginTop: 0 }}>
-        E-mails
+        Avisos enviados
       </h1>
+      <p className="page-sub">E-mails e mensagens de WhatsApp dos pedidos (últimos 50).</p>
       {!configured && (
         <div className="notice notice-warn" style={{ marginBottom: 16 }}>
           <div>
@@ -27,11 +30,20 @@ export default async function AdminEmails() {
           </div>
         </div>
       )}
+      {!whatsapp && (
+        <div className="notice notice-warn" style={{ marginBottom: 16 }}>
+          <div>
+            <b>WhatsApp desligado</b>Configure WHATSAPP_TOKEN e WHATSAPP_PHONE_NUMBER_ID (WhatsApp Cloud API) e cadastre os modelos de
+            mensagem na Meta. Até lá, as mensagens ficam só registradas aqui.
+          </div>
+        </div>
+      )}
       <div className="offers">
-        {emails.length === 0 && <p className="empty">Nenhum e-mail ainda.</p>}
+        {emails.length === 0 && <p className="empty">Nenhum aviso ainda.</p>}
         {emails.map((e) => (
           <details key={e.id} className="offer" style={{ display: "block" }}>
             <summary style={{ cursor: "pointer" }}>
+              <span className="type-badge">{e.channel === "WHATSAPP" ? "WhatsApp" : "E-mail"}</span>{" "}
               <span className="type-badge">{STATUS_LABEL[e.status]}</span> <b>{e.subject}</b>
               <div className="offer-sub">
                 Para {e.to} · {formatDateTime(e.createdAt)} · {e.kind}

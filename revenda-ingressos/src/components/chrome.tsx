@@ -68,6 +68,11 @@ export function SiteFooter() {
   return (
     <footer className="site-footer">
       <div className="container">
+        <nav className="footer-links">
+          <Link href="/como-funciona">Como funciona</Link>
+          <Link href="/termos">Termos de uso</Link>
+          <Link href="/privacidade">Privacidade</Link>
+        </nav>
         {BRAND.name} é um intermediador independente de revenda entre pessoas. Não somos parceiros das ticketeiras
         citadas; os ingressos são transferidos pelos apps oficiais delas.
       </div>

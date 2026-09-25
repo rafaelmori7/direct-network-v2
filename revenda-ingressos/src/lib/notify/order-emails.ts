@@ -4,6 +4,7 @@ import { formatDateTime } from "@/lib/format";
 import { formatBRL } from "@/lib/money/fees";
 import type { OrderStatus } from "@/lib/orders/state-machine";
 import { alreadySent, sendEmail } from "./email";
+import { sendWhatsApp, type WhatsAppTemplate } from "./whatsapp";
 
 function orderUrl(orderId: string): string {
   const base = (process.env.SITE_URL ?? "http://localhost:3000").replace(/\/$/, "");
@@ -14,12 +15,26 @@ function footer(orderId: string): string {
   return `\n\nVer pedido: ${orderUrl(orderId)}\n\n${BRAND.name} — pagamento protegido até o fim do evento. Nunca pague por fora do site.`;
 }
 
+const CONTACT = { name: true, email: true, phone: true, whatsappOptIn: true } as const;
+
+interface Contact {
+  name: string;
+  phone: string;
+  whatsappOptIn: boolean;
+}
+
+/** WhatsApp só para os avisos que pedem ação ou envolvem dinheiro, e só para quem aceitou. */
+async function whats(person: Contact, orderId: string, kind: string, template: WhatsAppTemplate, params: string[]) {
+  if (!person.whatsappOptIn) return;
+  await sendWhatsApp({ phone: person.phone, template, params: [person.name.split(" ")[0], ...params], kind, orderId });
+}
+
 async function loadOrder(orderId: string) {
   return prisma.order.findUnique({
     where: { id: orderId },
     include: {
-      buyer: { select: { name: true, email: true } },
-      listing: { include: { event: { select: { name: true } }, seller: { select: { name: true, email: true } } } },
+      buyer: { select: CONTACT },
+      listing: { include: { event: { select: { name: true } }, seller: { select: CONTACT } } },
     },
   });
 }
@@ -35,6 +50,8 @@ export async function notifyStatusChange(orderId: string, next: OrderStatus, act
     const first = (name: string) => name.split(" ")[0];
     const send = (to: string, kind: string, subject: string, text: string) =>
       sendEmail({ to, kind, orderId, subject, text: text + footer(orderId) });
+    const link = orderUrl(orderId);
+    const deadline = order.transferDeadlineAt ? formatDateTime(order.transferDeadlineAt) : "o prazo";
 
     switch (next) {
       case "PAGO":
@@ -45,10 +62,13 @@ export async function notifyStatusChange(orderId: string, next: OrderStatus, act
           `Oi, ${first(seller.name)}! Seu ingresso de ${event} foi vendido.\n` +
           `Transfira pelo app oficial até ${order.transferDeadlineAt ? formatDateTime(order.transferDeadlineAt) : "o prazo"} usando os dados do comprador que estão na página do pedido, e depois clique em "Já transferi".\n` +
           `Você recebe ${formatBRL(order.sellerNetCents)} depois do evento.`);
+        await whats(buyer, orderId, "PAGO_COMPRADOR", "pagamento_confirmado", [formatBRL(order.totalCents), event, deadline, link]);
+        await whats(seller, orderId, "PAGO_VENDEDOR", "venda_transferir", [event, deadline, link]);
         break;
       case "TRANSFERIDO":
         await send(buyer.email, "TRANSFERIDO", `O vendedor transferiu seu ingresso: ${event}`,
           `Abra o app oficial da ticketeira, aceite a transferência se for pedido e confirme o recebimento na página do pedido.`);
+        await whats(buyer, orderId, "TRANSFERIDO", "ingresso_transferido", [event, link]);
         break;
       case "RECEBIDO":
         await send(seller.email, "RECEBIDO", `O comprador confirmou o recebimento: ${event}`,
@@ -61,6 +81,7 @@ export async function notifyStatusChange(orderId: string, next: OrderStatus, act
         } else {
           await send(seller.email, "LIBERADO", `Pagamento liberado: ${event}`,
             `${formatBRL(order.sellerNetCents)} foram liberados na sua conta de recebimento.`);
+          await whats(seller, orderId, "LIBERADO", "pagamento_liberado", [formatBRL(order.sellerNetCents), event, link]);
         }
         break;
       case "REEMBOLSADO":
@@ -71,6 +92,7 @@ export async function notifyStatusChange(orderId: string, next: OrderStatus, act
         } else {
           await send(buyer.email, "REEMBOLSO", `Devolução do seu pagamento: ${event}`,
             `Vamos devolver ${formatBRL(order.totalCents)} para a conta que fez o Pix. Avisaremos quando concluir.`);
+          await whats(buyer, orderId, "REEMBOLSO", "reembolso", [formatBRL(order.totalCents), event, link]);
           if (action === "PRAZO_TRANSFERENCIA_ESGOTADO") {
             await send(seller.email, "PRAZO_PERDIDO", `Venda cancelada: ${event}`,
               `O prazo para transferir terminou e o comprador foi reembolsado. Seu anúncio foi pausado.`);
@@ -85,6 +107,7 @@ export async function notifyStatusChange(orderId: string, next: OrderStatus, act
         for (const person of [buyer, seller]) {
           await send(person.email, "DISPUTA", `Disputa aberta: ${event}`,
             `Nossa equipe vai analisar a conversa e o histórico do pedido. O dinheiro segue retido até a decisão.`);
+          await whats(person, orderId, "DISPUTA", "disputa_aberta", [event, link]);
         }
         break;
       }
@@ -124,7 +147,7 @@ export async function sendTransferReminders(now: Date, hoursBefore = 6): Promise
   const soon = new Date(now.getTime() + hoursBefore * 3600_000);
   const orders = await prisma.order.findMany({
     where: { status: "PAGO", transferDeadlineAt: { gt: now, lte: soon } },
-    include: { listing: { include: { seller: { select: { email: true } }, event: { select: { name: true } } } } },
+    include: { listing: { include: { seller: { select: CONTACT }, event: { select: { name: true } } } } },
   });
   let sent = 0;
   for (const o of orders) {
@@ -137,6 +160,11 @@ export async function sendTransferReminders(now: Date, hoursBefore = 6): Promise
       subject: `Lembrete: transfira o ingresso até ${formatDateTime(o.transferDeadlineAt!)}`,
       text: `Faltam poucas horas para o fim do prazo de transferência de ${o.listing.event.name}. Se não transferir, a venda é cancelada e o comprador reembolsado.` + footer(o.id),
     });
+    await whats(o.listing.seller, o.id, "LEMBRETE_TRANSFERENCIA", "lembrete_transferencia", [
+      o.listing.event.name,
+      formatDateTime(o.transferDeadlineAt!),
+      orderUrl(o.id),
+    ]);
     sent++;
   }
   return sent;

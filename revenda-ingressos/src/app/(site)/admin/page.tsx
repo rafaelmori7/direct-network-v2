@@ -23,7 +23,7 @@ export default async function AdminHome() {
     { href: "/admin/usuarios?filtro=pendentes", title: "Cadastros em análise", value: pendingSellers, note: "Vendedores que ainda não recebem" },
     { href: "/admin/anuncios?status=PAUSADO", title: "Anúncios pausados", value: paused, note: "Revisar e reativar ou remover" },
     { href: "/admin/pedidos", title: "Buscar pedidos", value: "→", note: "Por nº, cobrança, e-mail, CPF ou evento" },
-    { href: "/admin/emails", title: "E-mails enviados", value: "→", note: "Avisos do sistema" },
+    { href: "/admin/emails", title: "Avisos enviados", value: "→", note: "E-mail e WhatsApp" },
     { href: "/admin/parceiros", title: "Parceiros", value: "→", note: "Agências, links, cupons e comissões" },
   ];
   return (

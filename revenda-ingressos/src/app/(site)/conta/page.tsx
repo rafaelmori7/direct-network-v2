@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { setWhatsAppOptIn } from "@/app/auth-actions";
 import { formatCpf } from "@/lib/auth/cpf";
 import { requireUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/db";
@@ -26,6 +27,8 @@ export default async function AccountPage() {
       orderBy: { createdAt: "desc" },
     }),
   ]);
+
+  const contact = await prisma.user.findUniqueOrThrow({ where: { id: user.id }, select: { phone: true, whatsappOptIn: true } });
 
   return (
     <main className="form-page">
@@ -55,6 +58,14 @@ export default async function AccountPage() {
           </div>
         </div>
       )}
+
+      <form action={setWhatsAppOptIn.bind(null, !contact.whatsappOptIn)} className="notice" style={{ alignItems: "center", marginTop: 12, background: "var(--surface)", flexWrap: "wrap" }}>
+        <div style={{ flex: 1 }}>
+          <b>Avisos pelo WhatsApp: {contact.whatsappOptIn ? "ligados" : "desligados"}</b>
+          Venda, transferência, prazos e pagamentos no celular {formatPhone(contact.phone)}. Os e-mails continuam chegando.
+        </div>
+        <button className="btn btn-outline">{contact.whatsappOptIn ? "Desligar" : "Ligar"}</button>
+      </form>
 
       <Section title="Minhas compras" empty="Você ainda não comprou nada.">
         {purchases.map((o) => (
@@ -120,4 +131,9 @@ function OrderRow({ id, title, sub, value, status }: { id: string; title: string
       <div className="offer-price">{formatBRL(value)}</div>
     </Link>
   );
+}
+
+function formatPhone(phone: string): string {
+  const d = phone.replace(/\D/g, "");
+  return d.length >= 10 ? `(${d.slice(0, 2)}) ${d.slice(2, -4)}-${d.slice(-4)}` : phone;
 }

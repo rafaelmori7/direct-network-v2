@@ -80,10 +80,21 @@ export function SignUpForm({ returnTo }: { returnTo: string }) {
         <input id="senha" name="senha" type="password" className="input" autoComplete="new-password" required minLength={8} />
       </div>
       <label className="check">
+        <input type="checkbox" name="whatsapp" />
+        <span>Quero receber os avisos dos meus pedidos pelo WhatsApp (venda, transferência, prazos e pagamentos).</span>
+      </label>
+      <label className="check">
         <input type="checkbox" name="termos" />
         <span>
-          Li e aceito os termos de uso. Pagamentos só pelo site, com Pix do meu próprio CPF; negociações por fora não têm
-          garantia.
+          Li e aceito os{" "}
+          <Link href="/termos" target="_blank" style={{ color: "var(--brand)", fontWeight: 700 }}>
+            termos de uso
+          </Link>{" "}
+          e a{" "}
+          <Link href="/privacidade" target="_blank" style={{ color: "var(--brand)", fontWeight: 700 }}>
+            política de privacidade
+          </Link>
+          . Pagamentos só pelo site, com Pix do meu próprio CPF; negociações por fora não têm garantia.
         </span>
       </label>
       <button className="btn btn-primary btn-block" disabled={pending}>

@@ -80,14 +80,20 @@ tests/                testes do motor de regras, dos estados e do pagamento
   - **usuários:** busca por nome, e-mail ou CPF; verificar e remover a verificação de vendedor. **Bloquear** encerra as sessões, pausa os anúncios e desativa os COMPRO;
   - **anúncios:** pausados, ativos, encerrados e removidos; reativar (só se a venda do evento ainda estiver aberta) ou remover;
   - **pedidos:** busca por nº, cobrança, e-mail, CPF ou evento;
-  - **e-mails:** os avisos enviados ou registrados.
+  - **avisos:** e-mails e WhatsApp enviados ou registrados.
 - **Avisos por e-mail (Resend):**
   - quando: pagamento confirmado (comprador e vendedor), "transfira até…", transferido, recebido, liberado, reembolso, Pix vencido e disputa (partes e admins);
   - lembrete ao vendedor 6h antes do fim do prazo de transferência;
   - nova mensagem no chat, no máximo um e-mail a cada 15 min por pedido;
   - sem `RESEND_API_KEY` e `EMAIL_FROM`, os e-mails só ficam registrados (`EmailLog`);
   - falha no envio nunca trava o pedido.
-- **Minha conta (`/conta`):** compras, vendas (com data de liberação) e anúncios.
+- **Avisos por WhatsApp (WhatsApp Cloud API, da Meta):**
+  - só para quem aceitou: caixa no cadastro, ou ligar/desligar em Minha conta (`whatsappOptIn`);
+  - só os avisos que pedem ação ou envolvem dinheiro: pagamento confirmado, "transfira até…", lembrete de prazo, transferido, reembolso, pagamento liberado e disputa. O chat fica só no e-mail;
+  - a Meta só entrega mensagem iniciada pela empresa com **modelo aprovado**. Os textos estão em `src/lib/notify/whatsapp.ts` (`WHATSAPP_TEMPLATES`): cadastre cada um no WhatsApp Manager com o mesmo nome, idioma Português (BR) e categoria Utilidade;
+  - sem `WHATSAPP_TOKEN` e `WHATSAPP_PHONE_NUMBER_ID`, as mensagens só ficam registradas (mesma tabela dos e-mails, canal WHATSAPP).
+- **Como funciona, termos e privacidade (`/como-funciona`, `/termos`, `/privacidade`):** textos montados a partir das regras reais (taxas, prazos, limites). Razão social, CNPJ e e-mails vêm de `COMPANY_*`, `CONTACT_EMAIL` e `PRIVACY_EMAIL`. O aviso "versão preliminar" some com `LEGAL_REVIEWED=1`, depois da revisão do advogado.
+- **Minha conta (`/conta`):** compras, vendas (com data de liberação), anúncios e avisos pelo WhatsApp.
 - **Rotinas (`/api/cron/rotinas`):** chamar a cada ~5 min com `Authorization: Bearer $CRON_SECRET`. A cada chamada:
   - cancela Pix vencidos e devolve a reserva;
   - reembolsa quando o vendedor perde o prazo;
@@ -220,5 +226,6 @@ npm run test:db              # testes com banco (usa TEST_DATABASE_URL ou o banc
 
 1. Com a conta CNPJ: validar no sandbox a criação da subconta, o link de documentos, o webhook de aprovação e se a subconta em análise já recebe split com escrow.
 2. Com uma conta de CNPJ no sandbox: validar subconta, split, Conta Escrow e `POST /escrow/{id}/finish`.
-3. Configurar o Resend com domínio próprio (SPF/DKIM) para os e-mails não caírem no spam. WhatsApp como segundo canal.
-4. Parceiros, próxima fase: domínio próprio da agência (nível 3).
+3. Configurar o Resend com domínio próprio (SPF/DKIM) para os e-mails não caírem no spam, e o WhatsApp Cloud API (número, token e modelos aprovados).
+4. Revisão jurídica dos termos e da política de privacidade; depois, `LEGAL_REVIEWED=1`.
+5. Parceiros, próxima fase: domínio próprio da agência (nível 3).

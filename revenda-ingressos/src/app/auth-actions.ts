@@ -1,10 +1,11 @@
 "use server";
 
 import { Prisma } from "@prisma/client";
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { ageAt, isValidCpf, normalizeCpf } from "@/lib/auth/cpf";
 import { MIN_PASSWORD_LENGTH, hashPassword, verifyPassword } from "@/lib/auth/password";
-import { createSession, destroySession } from "@/lib/auth/session";
+import { createSession, destroySession, getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/db";
 
 export type AuthState = { errors: string[] };
@@ -37,7 +38,7 @@ export async function signUp(_prev: AuthState, form: FormData): Promise<AuthStat
 
   try {
     const user = await prisma.user.create({
-      data: { name, email, cpf, phone, birthDate, passwordHash: await hashPassword(password), cpfCheckedAt: new Date() },
+      data: { name, email, cpf, phone, whatsappOptIn: form.get("whatsapp") === "on", birthDate, passwordHash: await hashPassword(password), cpfCheckedAt: new Date() },
     });
     await createSession(user.id);
   } catch (error) {
@@ -65,4 +66,12 @@ export async function signIn(_prev: AuthState, form: FormData): Promise<AuthStat
 export async function signOut(): Promise<void> {
   await destroySession();
   redirect("/");
+}
+
+/** Liga ou desliga os avisos pelo WhatsApp (Minha conta). */
+export async function setWhatsAppOptIn(enabled: boolean): Promise<void> {
+  const user = await getCurrentUser();
+  if (!user) redirect("/entrar?voltar=/conta");
+  await prisma.user.update({ where: { id: user.id }, data: { whatsappOptIn: enabled } });
+  revalidatePath("/conta");
 }

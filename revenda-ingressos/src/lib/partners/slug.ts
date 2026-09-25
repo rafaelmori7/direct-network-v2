@@ -9,7 +9,7 @@ export const REF_COOKIE_DAYS = 30;
  */
 export const RESERVED_SLUGS = new Set([
   "admin", "anunciar", "embed", "widget", "api", "cadastro", "comprar", "conta", "entrar", "evento", "pedidos", "parceiro", "parceiros",
-  "sobre", "ajuda", "termos", "privacidade", "_next", "favicon.ico", "robots.txt", "sitemap.xml",
+  "sobre", "ajuda", "como-funciona", "termos", "privacidade", "_next", "favicon.ico", "robots.txt", "sitemap.xml",
 ]);
 
 export function isValidPartnerSlug(slug: string): boolean {

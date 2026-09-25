@@ -13,6 +13,8 @@ model User {
   email             String    @unique
   cpf               String    @unique
   phone             String
+  /** Aceitou receber avisos do pedido pelo WhatsApp (exigência da Meta e da LGPD). */
+  whatsappOptIn     Boolean   @default(false)
   birthDate         DateTime
   passwordHash      String
   /** CPF com dígitos válidos e único: suficiente para comprar. */
@@ -362,9 +364,16 @@ enum EmailStatus {
   FALHOU
 }
 
-/** Todo e-mail enviado (ou só registrado, sem provedor configurado). Também evita avisos repetidos. */
+enum NotificationChannel {
+  EMAIL
+  WHATSAPP
+}
+
+/** Todo aviso enviado (ou só registrado, sem provedor configurado). Também evita avisos repetidos. */
 model EmailLog {
   id        String      @id @default(cuid())
+  channel   NotificationChannel @default(EMAIL)
+  /** E-mail, ou celular com DDI no WhatsApp. */
   to        String
   subject   String
   body      String

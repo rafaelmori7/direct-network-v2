@@ -199,6 +199,21 @@ describe("avisos por e-mail", () => {
     expect((await runRoutines(provider, new Date(later.getTime() + 60_000))).lembretesDeTransferencia).toBe(0);
   });
 
+  it("WhatsApp só para quem aceitou, com o modelo certo", async () => {
+    await prisma.user.update({ where: { id: buyers[0].id }, data: { whatsappOptIn: true, phone: "21912345678" } });
+    const r = await orderFor(buyers[0]);
+    const id = r.ok ? r.orderId : "";
+    const o = await prisma.order.findUniqueOrThrow({ where: { id } });
+    provider.markPaid(o.chargeId!);
+    await applyAction(id, { type: "PAGAMENTO_CONFIRMADO" }, "SISTEMA", null, provider, { now });
+
+    const whats = await prisma.emailLog.findMany({ where: { orderId: id, channel: "WHATSAPP" } });
+    expect(whats).toHaveLength(1); // o vendedor não aceitou
+    expect(whats[0]).toMatchObject({ to: "5521912345678", subject: "pagamento_confirmado", kind: "PAGO_COMPRADOR", status: "REGISTRADO" });
+    expect(whats[0].body).toMatch(/^Olá, Ana! Seu pagamento de R\$\s?500,00 para Teste foi confirmado/);
+    expect(await prisma.emailLog.count({ where: { orderId: id, channel: "EMAIL" } })).toBe(2);
+  });
+
   it("chat avisa a outra parte no máximo a cada 15 minutos", async () => {
     const { notifyChatMessage } = await import("@/lib/notify/order-emails");
     const r = await orderFor(buyers[0]);
