@@ -337,7 +337,7 @@ export async function requestPayout(
       partnerFeeCents: true,
       sellerTransferId: true,
       partnerTransferId: true,
-      partner: { select: { gatewayWalletId: true } },
+      partner: { select: { gatewayWalletId: true, gatewayAccountId: true, gatewayAccountStatus: true } },
       listing: { select: { event: { select: { name: true } }, seller: { select: { gatewayWalletId: true } } } },
     },
   });
@@ -363,7 +363,12 @@ export async function requestPayout(
     }
     // Sem subconta do parceiro, a parte dele fica na conta da plataforma para repasse manual.
     const partnerWalletId = o.partner?.gatewayWalletId;
-    if (o.partnerTransferId) {
+    // Conta de recebimento da agência criada por nós e ainda em análise: o Asaas
+    // recusaria a transferência. O vendedor recebe agora; a comissão espera a aprovação.
+    const partnerWaiting = Boolean(o.partner?.gatewayAccountId && o.partner.gatewayAccountStatus !== "APROVADA");
+    if (!o.partnerTransferId && o.partnerFeeCents > 0 && partnerWaiting) {
+      await prisma.order.update({ where: { id: orderId }, data: { partnerPayoutWaiting: true } });
+    } else if (o.partnerTransferId) {
       results.push({ field: "partnerTransferId", result: await provider.getTransfer(o.partnerTransferId) });
     } else if (o.partnerFeeCents > 0 && partnerWalletId) {
       const result = await provider.transferToWallet({
@@ -406,9 +411,13 @@ async function settlePayout(orderId: string, from: "SOLICITADO" | "AGUARDANDO_AP
   }
   const updated = await prisma.order.updateMany({ where: { id: orderId, payoutStatus: from }, data });
   if (updated.count > 0 && data.payoutStatus === "CONCLUIDO") {
-    // O dinheiro chegou na conta de recebimento: agenda o Pix automático para o vendedor.
-    const o = await prisma.order.findUnique({ where: { id: orderId }, select: { listing: { select: { sellerId: true } } } });
-    if (o) await scheduleWithdrawal(o.listing.sellerId);
+    // O dinheiro chegou nas contas de recebimento: agenda o Pix automático do vendedor e da agência.
+    const o = await prisma.order.findUnique({
+      where: { id: orderId },
+      select: { partnerId: true, partnerTransferId: true, listing: { select: { sellerId: true } } },
+    });
+    if (o) await scheduleWithdrawal({ kind: "user", id: o.listing.sellerId });
+    if (o?.partnerId && o.partnerTransferId) await scheduleWithdrawal({ kind: "partner", id: o.partnerId });
   }
   return updated.count > 0 && data.payoutStatus !== from;
 }
@@ -427,6 +436,47 @@ export async function refreshPayout(orderId: string, provider: PaymentProvider):
   if (o.sellerTransferId) transfers.push({ field: "sellerTransferId", result: await provider.getTransfer(o.sellerTransferId) });
   if (o.partnerTransferId) transfers.push({ field: "partnerTransferId", result: await provider.getTransfer(o.partnerTransferId) });
   return settlePayout(orderId, "AGUARDANDO_APROVACAO", transfers);
+}
+
+/**
+ * Transfere a comissão da agência que esperava a aprovação da conta dela. O
+ * vendedor já foi pago; se a transferência precisar de autorização no painel, o
+ * repasse volta para AGUARDANDO_APROVACAO e segue o caminho normal.
+ */
+export async function payWaitingPartnerCommission(orderId: string, provider: PaymentProvider): Promise<boolean> {
+  const claimed = await prisma.order.updateMany({
+    where: { id: orderId, partnerPayoutWaiting: true, partnerTransferId: null, payoutStatus: "CONCLUIDO" },
+    data: { partnerPayoutWaiting: false },
+  });
+  if (claimed.count === 0) return false;
+  const o = await prisma.order.findUniqueOrThrow({
+    where: { id: orderId },
+    select: { partnerId: true, partnerFeeCents: true, partner: { select: { gatewayWalletId: true } }, listing: { select: { event: { select: { name: true } } } } },
+  });
+  const walletId = o.partner?.gatewayWalletId;
+  if (!walletId || !o.partnerId) return false;
+  let result: TransferResult;
+  try {
+    result = await provider.transferToWallet({
+      walletId,
+      cents: o.partnerFeeCents,
+      externalReference: `pedido-${orderId}-parceiro`,
+      description: `Comissão de parceiro - ${o.listing.event.name}`,
+    });
+  } catch (error) {
+    await prisma.order.update({ where: { id: orderId }, data: { partnerPayoutWaiting: true } });
+    throw error;
+  }
+  if (result.status === "FALHOU") {
+    await prisma.order.update({ where: { id: orderId }, data: { partnerPayoutWaiting: true } });
+    return false;
+  }
+  await prisma.order.update({
+    where: { id: orderId },
+    data: { partnerTransferId: result.transferId, ...(result.status !== "CONCLUIDO" && { payoutStatus: "AGUARDANDO_APROVACAO" }) },
+  });
+  if (result.status === "CONCLUIDO") await scheduleWithdrawal({ kind: "partner", id: o.partnerId });
+  return true;
 }
 
 /** Aviso do gateway sobre uma transferência de repasse (id devolvido por transferToWallet). */
@@ -509,6 +559,19 @@ export async function runRoutines(provider: PaymentProvider, now = new Date()): 
   for (const { id } of awaiting) {
     try {
       await refreshPayout(id, provider);
+    } catch {
+      // Tenta de novo na próxima rodada.
+    }
+  }
+
+  // Comissões de agências que esperavam a aprovação da conta de recebimento.
+  const waitingPartner = await prisma.order.findMany({
+    where: { partnerPayoutWaiting: true, partner: { gatewayAccountStatus: "APROVADA" } },
+    select: { id: true },
+  });
+  for (const { id } of waitingPartner) {
+    try {
+      await payWaitingPartnerCommission(id, provider);
     } catch {
       // Tenta de novo na próxima rodada.
     }

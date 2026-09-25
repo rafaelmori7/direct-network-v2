@@ -5,17 +5,20 @@ import { sendEmail } from "@/lib/notify/email";
 import type { PaymentProvider, TransferResult } from "@/lib/payments/provider";
 
 /**
- * Saque automático: depois do repasse, o saldo da conta de recebimento do
- * vendedor (subconta BaaS, sem acesso ao painel do Asaas) vai por Pix para a
- * chave CPF dele. Só CPF: garante que o dinheiro sai para a mesma pessoa.
+ * Saque automático: depois do repasse, o saldo da conta de recebimento (subconta
+ * BaaS, sem acesso ao painel do Asaas) vai por Pix para a chave do próprio
+ * titular: CPF do vendedor ou CNPJ da agência. Só essas chaves garantem que o
+ * dinheiro sai para a mesma pessoa/empresa.
  *
- * `User.withdrawalDueAt` marca que há saque a fazer e serve de trava: a rotina
- * só pega usuários com a data vencida e empurra a data para frente ao pegar.
+ * `withdrawalDueAt` (em User e Partner) marca que há saque a fazer e serve de
+ * trava: a rotina só pega quem está com a data vencida e empurra a data ao pegar.
  */
+
+export type WithdrawalOwner = { kind: "user"; id: string } | { kind: "partner"; id: string };
 
 /** Enquanto um saque está em andamento, a rotina volta a consultar depois deste intervalo. */
 const RECHECK_MS = 15 * 60_000;
-/** Depois de uma falha (ex.: CPF sem chave Pix), tenta de novo no dia seguinte. */
+/** Depois de uma falha (ex.: CPF/CNPJ sem chave Pix), tenta de novo no dia seguinte. */
 const RETRY_AFTER_FAILURE_MS = 24 * 3600_000;
 /** Tarifa do Pix de saída cobrada da subconta, se houver (centavos). */
 function withdrawalFeeCents(): number {
@@ -25,84 +28,125 @@ function withdrawalFeeCents(): number {
 
 export type WithdrawalOutcome = "ENVIADO" | "AGUARDANDO" | "SEM_SALDO" | "FALHOU" | "IGNORADO";
 
-/** Marca o vendedor para sacar o saldo na próxima rodada (chamado quando um repasse conclui). */
-export async function scheduleWithdrawal(userId: string, now = new Date()): Promise<void> {
-  await prisma.user.updateMany({ where: { id: userId, withdrawalDueAt: null }, data: { withdrawalDueAt: now } });
+/** Agenda o saque do saldo na próxima rodada (chamado quando um repasse conclui). */
+export async function scheduleWithdrawal(owner: WithdrawalOwner, now = new Date()): Promise<void> {
+  const args = { where: { id: owner.id, withdrawalDueAt: null }, data: { withdrawalDueAt: now } };
+  if (owner.kind === "user") await prisma.user.updateMany(args);
+  else await prisma.partner.updateMany(args);
 }
 
-export async function processWithdrawal(userId: string, provider: PaymentProvider, now = new Date()): Promise<WithdrawalOutcome> {
-  const claimed = await prisma.user.updateMany({
-    where: { id: userId, withdrawalDueAt: { lte: now } },
-    data: { withdrawalDueAt: new Date(now.getTime() + RECHECK_MS) },
+interface Holder {
+  firstName: string;
+  email: string | null;
+  pixKey: string;
+  pixKeyType: "CPF" | "CNPJ";
+  /** Conta aprovada, com chave da subconta e não bloqueada. */
+  apiKeyEnc: string | null;
+}
+
+async function loadHolder(owner: WithdrawalOwner): Promise<Holder | null> {
+  if (owner.kind === "user") {
+    const u = await prisma.user.findUniqueOrThrow({
+      where: { id: owner.id },
+      select: { name: true, email: true, cpf: true, verifiedAt: true, blockedAt: true, gatewayApiKeyEnc: true },
+    });
+    const ok = u.verifiedAt && !u.blockedAt && u.gatewayApiKeyEnc;
+    return { firstName: u.name.split(" ")[0], email: u.email, pixKey: u.cpf, pixKeyType: "CPF", apiKeyEnc: ok ? u.gatewayApiKeyEnc : null };
+  }
+  const p = await prisma.partner.findUniqueOrThrow({
+    where: { id: owner.id },
+    select: { name: true, payoutEmail: true, cnpj: true, gatewayAccountStatus: true, gatewayApiKeyEnc: true },
   });
+  if (!p.cnpj) return null;
+  const ok = p.gatewayAccountStatus === "APROVADA" && p.gatewayApiKeyEnc;
+  return { firstName: p.name, email: p.payoutEmail, pixKey: p.cnpj, pixKeyType: "CNPJ", apiKeyEnc: ok ? p.gatewayApiKeyEnc : null };
+}
+
+async function setDue(owner: WithdrawalOwner, at: Date | null) {
+  if (owner.kind === "user") await prisma.user.update({ where: { id: owner.id }, data: { withdrawalDueAt: at } });
+  else await prisma.partner.update({ where: { id: owner.id }, data: { withdrawalDueAt: at } });
+}
+
+const ownerWhere = (owner: WithdrawalOwner) => (owner.kind === "user" ? { userId: owner.id } : { partnerId: owner.id });
+
+export async function processWithdrawal(owner: WithdrawalOwner, provider: PaymentProvider, now = new Date()): Promise<WithdrawalOutcome> {
+  const claimArgs = {
+    where: { id: owner.id, withdrawalDueAt: { lte: now } },
+    data: { withdrawalDueAt: new Date(now.getTime() + RECHECK_MS) },
+  };
+  const claimed = owner.kind === "user" ? await prisma.user.updateMany(claimArgs) : await prisma.partner.updateMany(claimArgs);
   if (claimed.count === 0) return "IGNORADO";
 
-  const user = await prisma.user.findUniqueOrThrow({
-    where: { id: userId },
-    select: { name: true, email: true, cpf: true, verifiedAt: true, blockedAt: true, gatewayApiKeyEnc: true },
-  });
-  // Sem conta de recebimento aprovada (ou em desenvolvimento, sem subconta): nada a sacar.
-  if (!user.verifiedAt || !user.gatewayApiKeyEnc || user.blockedAt) {
-    await setDue(userId, null);
+  const holder = await loadHolder(owner);
+  // Sem conta de recebimento aprovada (ou agência que recebe na própria conta Asaas): nada a sacar.
+  if (!holder?.apiKeyEnc) {
+    await setDue(owner, null);
     return "IGNORADO";
   }
-  const apiKey = decrypt(user.gatewayApiKeyEnc);
+  const apiKey = decrypt(holder.apiKeyEnc);
 
   // Um saque ainda em andamento: só acompanha, não abre outro.
-  const open = await prisma.sellerWithdrawal.findFirst({
-    where: { userId, status: { in: ["SOLICITADO", "AGUARDANDO_APROVACAO"] } },
+  const open = await prisma.withdrawal.findFirst({
+    where: { ...ownerWhere(owner), status: { in: ["SOLICITADO", "AGUARDANDO_APROVACAO"] } },
     orderBy: { createdAt: "desc" },
   });
   if (open && !open.transferId) {
     // Registro sem transferência: a chamada ao gateway foi interrompida. Se passou
     // do tempo, encerra; como o próximo saque usa o saldo real, não paga duas vezes.
     if (now.getTime() - open.createdAt.getTime() < RECHECK_MS) return "AGUARDANDO";
-    await prisma.sellerWithdrawal.update({ where: { id: open.id }, data: { status: "FALHOU", error: "Interrompido antes da resposta do gateway" } });
+    await prisma.withdrawal.update({ where: { id: open.id }, data: { status: "FALHOU", error: "Interrompido antes da resposta do gateway" } });
   } else if (open?.transferId) {
     const result = await provider.getAccountTransfer(apiKey, open.transferId);
     await saveResult(open.id, result);
     if (result.status === "SOLICITADO" || result.status === "AGUARDANDO_APROVACAO") return "AGUARDANDO";
-    if (result.status === "FALHOU") return failed(userId, user, result.error ?? "Transferência recusada", now);
-    await notifySent(user, open.cents);
+    if (result.status === "FALHOU") return failed(owner, holder, result.error ?? "Transferência recusada", now);
+    await notifySent(holder, open.cents);
     // Concluído: segue para ver se entrou mais saldo enquanto isso.
   }
 
   const balance = await provider.getAccountBalance(apiKey);
   const cents = balance - withdrawalFeeCents();
   if (cents <= 0) {
-    await setDue(userId, null);
+    await setDue(owner, null);
     return "SEM_SALDO";
   }
 
-  const withdrawal = await prisma.sellerWithdrawal.create({ data: { userId, cents, pixKey: user.cpf, status: "SOLICITADO" } });
+  const withdrawal = await prisma.withdrawal.create({
+    data: { ...ownerWhere(owner), cents, pixKey: holder.pixKey, pixKeyType: holder.pixKeyType, status: "SOLICITADO" },
+  });
   let result: TransferResult;
   try {
     result = await provider.withdrawToPix(apiKey, {
       cents,
-      cpf: user.cpf,
+      pixKey: holder.pixKey,
+      pixKeyType: holder.pixKeyType,
       externalReference: `saque-${withdrawal.id}`,
-      description: "Vendas de ingressos",
+      description: owner.kind === "user" ? "Vendas de ingressos" : "Comissões de parceiro",
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    await prisma.sellerWithdrawal.update({ where: { id: withdrawal.id }, data: { status: "FALHOU", error: message.slice(0, 500) } });
-    return failed(userId, user, message, now);
+    await prisma.withdrawal.update({ where: { id: withdrawal.id }, data: { status: "FALHOU", error: message.slice(0, 500) } });
+    return failed(owner, holder, message, now);
   }
   await saveResult(withdrawal.id, result);
-  if (result.status === "FALHOU") return failed(userId, user, result.error ?? "Transferência recusada", now);
+  if (result.status === "FALHOU") return failed(owner, holder, result.error ?? "Transferência recusada", now);
   if (result.status !== "CONCLUIDO") return "AGUARDANDO";
-  await notifySent(user, cents);
-  await setDue(userId, null);
+  await notifySent(holder, cents);
+  await setDue(owner, null);
   return "ENVIADO";
 }
 
-/** Rotina: saques vencidos (novos, em andamento ou para tentar de novo). */
+/** Rotina: saques vencidos (novos, em andamento ou para tentar de novo), de vendedores e agências. */
 export async function processDueWithdrawals(provider: PaymentProvider, now = new Date()): Promise<number> {
-  const due = await prisma.user.findMany({ where: { withdrawalDueAt: { lte: now } }, select: { id: true }, take: 50 });
+  const due = { where: { withdrawalDueAt: { lte: now } }, select: { id: true }, take: 50 };
+  const owners: WithdrawalOwner[] = [
+    ...(await prisma.user.findMany(due)).map(({ id }) => ({ kind: "user" as const, id })),
+    ...(await prisma.partner.findMany(due)).map(({ id }) => ({ kind: "partner" as const, id })),
+  ];
   let sent = 0;
-  for (const { id } of due) {
+  for (const owner of owners) {
     try {
-      if ((await processWithdrawal(id, provider, now)) === "ENVIADO") sent++;
+      if ((await processWithdrawal(owner, provider, now)) === "ENVIADO") sent++;
     } catch {
       // Erro de rede etc.: a trava já adiou a próxima tentativa.
     }
@@ -110,49 +154,46 @@ export async function processDueWithdrawals(provider: PaymentProvider, now = new
   return sent;
 }
 
-async function setDue(userId: string, at: Date | null) {
-  await prisma.user.update({ where: { id: userId }, data: { withdrawalDueAt: at } });
-}
-
 async function saveResult(id: string, result: TransferResult) {
-  await prisma.sellerWithdrawal.update({
+  await prisma.withdrawal.update({
     where: { id },
     data: { transferId: result.transferId || undefined, status: result.status, error: result.error?.slice(0, 500) ?? null },
   });
 }
 
-type Seller = { name: string; email: string; cpf: string };
-
-async function failed(userId: string, user: Seller, reason: string, now: Date): Promise<WithdrawalOutcome> {
-  // Avisa o vendedor só na primeira falha seguida; depois tenta todo dia em silêncio.
-  const previous = await prisma.sellerWithdrawal.count({
-    where: { userId, status: "FALHOU", createdAt: { gte: new Date(now.getTime() - RETRY_AFTER_FAILURE_MS * 1.5) } },
+async function failed(owner: WithdrawalOwner, holder: Holder, reason: string, now: Date): Promise<WithdrawalOutcome> {
+  // Avisa só na primeira falha seguida; depois tenta todo dia em silêncio.
+  const recent = await prisma.withdrawal.count({
+    where: { ...ownerWhere(owner), status: "FALHOU", createdAt: { gte: new Date(now.getTime() - RETRY_AFTER_FAILURE_MS * 1.5) } },
   });
-  if (previous <= 1) {
+  if (recent <= 1 && holder.email) {
     await sendEmail({
-      to: user.email,
+      to: holder.email,
       kind: "SAQUE_FALHOU",
       subject: "Não conseguimos enviar o seu Pix",
       text:
-        `Oi, ${user.name.split(" ")[0]}! Tentamos enviar o dinheiro das suas vendas por Pix para a chave CPF ${formatCpfKey(user.cpf)}, mas não deu certo.\n` +
-        `Confira se o seu CPF está cadastrado como chave Pix no seu banco. Tentamos de novo automaticamente a cada 24 horas; o dinheiro continua guardado na sua conta de recebimento.\n\n` +
+        `Oi, ${holder.firstName}! Tentamos enviar o seu saldo por Pix para a chave ${holder.pixKeyType} ${maskKey(holder)}, mas não deu certo.\n` +
+        `Confira se o ${holder.pixKeyType} está cadastrado como chave Pix no seu banco. Tentamos de novo automaticamente a cada 24 horas; o dinheiro continua guardado na sua conta de recebimento.\n\n` +
         `Detalhe: ${reason.slice(0, 200)}`,
     });
   }
-  await setDue(userId, new Date(now.getTime() + RETRY_AFTER_FAILURE_MS));
+  await setDue(owner, new Date(now.getTime() + RETRY_AFTER_FAILURE_MS));
   return "FALHOU";
 }
 
-async function notifySent(user: Seller, cents: number) {
+async function notifySent(holder: Holder, cents: number) {
+  if (!holder.email) return;
   await sendEmail({
-    to: user.email,
+    to: holder.email,
     kind: "SAQUE_ENVIADO",
     subject: `Pix de ${formatBRL(cents)} enviado`,
-    text: `Oi, ${user.name.split(" ")[0]}! Enviamos ${formatBRL(cents)} das suas vendas por Pix para a chave CPF ${formatCpfKey(user.cpf)}.`,
+    text: `Oi, ${holder.firstName}! Enviamos ${formatBRL(cents)} por Pix para a chave ${holder.pixKeyType} ${maskKey(holder)}.`,
   });
 }
 
-function formatCpfKey(cpf: string): string {
-  const d = cpf.replace(/\D/g, "");
-  return d.length === 11 ? `***.${d.slice(3, 6)}.${d.slice(6, 9)}-**` : cpf;
+function maskKey(holder: Holder): string {
+  const d = holder.pixKey.replace(/\D/g, "");
+  if (holder.pixKeyType === "CPF" && d.length === 11) return `***.${d.slice(3, 6)}.${d.slice(6, 9)}-**`;
+  if (holder.pixKeyType === "CNPJ" && d.length === 14) return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8, 12)}-${d.slice(12)}`;
+  return holder.pixKey;
 }

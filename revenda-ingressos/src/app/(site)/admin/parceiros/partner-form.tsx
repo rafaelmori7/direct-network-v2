@@ -10,6 +10,8 @@ export interface PartnerFormValues {
   cor: string;
   logo: string;
   wallet: string;
+  /** Conta de recebimento criada por nós: a carteira não se edita à mão. */
+  walletLocked?: boolean;
   participacao: string;
   desconto: string;
   ativo: boolean;
@@ -79,11 +81,16 @@ export function PartnerForm({
           <input id="logo" name="logo" className="input" defaultValue={values.logo} />
         </div>
       </div>
-      <div className="field">
-        <label htmlFor="wallet">Subconta do parceiro no Asaas (walletId, opcional)</label>
-        <input id="wallet" name="wallet" className="input" defaultValue={values.wallet} />
-        <span className="hint">Com ela, a parte do parceiro cai direto na conta dele. Sem ela, fica com vocês para repasse.</span>
-      </div>
+      {!values.walletLocked && (
+        <div className="field">
+          <label htmlFor="wallet">Conta Asaas própria da agência (walletId, opcional)</label>
+          <input id="wallet" name="wallet" className="input" defaultValue={values.wallet} />
+          <span className="hint">
+            Só se a agência já tem conta no Asaas: a comissão cai direto nela. Se não tem, crie a conta de recebimento acima (Pix
+            automático para o CNPJ). Sem nenhuma das duas, a comissão fica com vocês para repasse manual.
+          </span>
+        </div>
+      )}
       <label className="check">
         <input type="checkbox" name="ativo" defaultChecked={values.ativo} />
         <span>Parceiro ativo (página no ar e link/cupom valendo)</span>

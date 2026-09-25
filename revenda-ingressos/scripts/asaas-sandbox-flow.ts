@@ -20,7 +20,7 @@ async function main() {
 const account = await provider.createSellerAccount({
   name: "Vendedor Teste Sandbox",
   email: `vendedor.${Date.now()}@example.com`,
-  cpf: cpf(),
+  cpfCnpj: cpf(),
   birthDate: new Date("1990-05-10"),
   mobilePhone: "11987654321",
   incomeCents: 500_000,

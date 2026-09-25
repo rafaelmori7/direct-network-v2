@@ -18,7 +18,7 @@ async function reset() {
   await prisma.wantedPost.deleteMany();
   await prisma.event.deleteMany();
   await prisma.session.deleteMany();
-  await prisma.sellerWithdrawal.deleteMany();
+  await prisma.withdrawal.deleteMany();
   await prisma.user.deleteMany();
   await prisma.platform.deleteMany();
 }
@@ -287,10 +287,10 @@ describe("saque automático para a chave Pix CPF do vendedor", () => {
     expect(report.saquesEnviados).toBe(1);
     expect(await prisma.order.findUniqueOrThrow({ where: { id: s.id } })).toMatchObject({ payoutStatus: "CONCLUIDO" });
     expect(provider.withdrawals.filter((w) => w.apiKey === s.apiKey)).toEqual([
-      expect.objectContaining({ cents: s.sellerNet, cpf: "52998224725" }),
+      expect.objectContaining({ cents: s.sellerNet, pixKey: "52998224725", pixKeyType: "CPF" }),
     ]);
     expect(await provider.getAccountBalance(s.apiKey)).toBe(0);
-    expect(await prisma.sellerWithdrawal.findFirstOrThrow({ where: { userId: s.sellerId } })).toMatchObject({ status: "CONCLUIDO", cents: s.sellerNet });
+    expect(await prisma.withdrawal.findFirstOrThrow({ where: { userId: s.sellerId } })).toMatchObject({ status: "CONCLUIDO", cents: s.sellerNet });
     expect(await prisma.user.findUniqueOrThrow({ where: { id: s.sellerId } })).toMatchObject({ withdrawalDueAt: null });
     expect(await prisma.emailLog.count({ where: { kind: "SAQUE_ENVIADO" } })).toBe(1);
 
@@ -306,7 +306,7 @@ describe("saque automático para a chave Pix CPF do vendedor", () => {
     await runRoutines(provider, s.afterEvent);
     const user = await prisma.user.findUniqueOrThrow({ where: { id: s.sellerId } });
     expect(user.withdrawalDueAt!.getTime()).toBeGreaterThan(s.afterEvent.getTime() + 23 * 3600_000);
-    expect(await prisma.sellerWithdrawal.findFirstOrThrow({ where: { userId: s.sellerId } })).toMatchObject({ status: "FALHOU" });
+    expect(await prisma.withdrawal.findFirstOrThrow({ where: { userId: s.sellerId } })).toMatchObject({ status: "FALHOU" });
     expect(await prisma.emailLog.count({ where: { kind: "SAQUE_FALHOU" } })).toBe(1);
     expect(await provider.getAccountBalance(s.apiKey)).toBe(s.sellerNet); // Dinheiro continua na conta dele.
 
@@ -322,7 +322,7 @@ describe("saque automático para a chave Pix CPF do vendedor", () => {
     provider.nextWithdrawalStatus = "AGUARDANDO_APROVACAO";
     await runRoutines(provider, s.afterEvent);
     provider.nextWithdrawalStatus = "CONCLUIDO";
-    expect(await prisma.sellerWithdrawal.findFirstOrThrow({ where: { userId: s.sellerId } })).toMatchObject({ status: "AGUARDANDO_APROVACAO" });
+    expect(await prisma.withdrawal.findFirstOrThrow({ where: { userId: s.sellerId } })).toMatchObject({ status: "AGUARDANDO_APROVACAO" });
 
     // Mais saldo entra (outra venda), mas o saque aberto só é acompanhado.
     provider.accountBalances.set(s.apiKey, 5_000);
@@ -332,7 +332,7 @@ describe("saque automático para a chave Pix CPF do vendedor", () => {
     // Autorizado no painel: conclui e envia o saldo novo.
     provider.withdrawals.find((w) => w.apiKey === s.apiKey)!.status = "CONCLUIDO";
     await runRoutines(provider, addDays(s.afterEvent, 0.04));
-    const done = await prisma.sellerWithdrawal.findMany({ where: { userId: s.sellerId }, orderBy: { createdAt: "asc" } });
+    const done = await prisma.withdrawal.findMany({ where: { userId: s.sellerId }, orderBy: { createdAt: "asc" } });
     expect(done.map((w) => [w.status, w.cents])).toEqual([
       ["CONCLUIDO", s.sellerNet],
       ["CONCLUIDO", 5_000],

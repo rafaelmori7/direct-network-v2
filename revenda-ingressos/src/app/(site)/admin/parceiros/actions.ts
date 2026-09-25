@@ -5,6 +5,10 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdminAction } from "@/lib/auth/admin";
 import { prisma } from "@/lib/db";
+import { isValidCnpj } from "@/lib/auth/cpf";
+import { encrypt } from "@/lib/crypto";
+import { parseBRLToCents } from "@/lib/format";
+import { getPaymentProvider } from "@/lib/payments";
 import { isValidPartnerSlug } from "@/lib/partners/attribution";
 
 export type PartnerFormState = { errors: string[] };
@@ -37,6 +41,9 @@ export async function savePartner(partnerId: string | null, _prev: PartnerFormSt
   if (errors.length > 0) return { errors };
 
   const data = { name, slug, couponCode, color, logoUrl, gatewayWalletId, commissionShareBps, discountBps, active: form.get("ativo") === "on" };
+  // Com conta de recebimento criada por nós, a carteira é a dela e não se edita à mão.
+  const current = partnerId ? await prisma.partner.findUnique({ where: { id: partnerId }, select: { gatewayAccountId: true } }) : null;
+  if (current?.gatewayAccountId) delete (data as Partial<typeof data>).gatewayWalletId;
   try {
     if (partnerId) await prisma.partner.update({ where: { id: partnerId }, data });
     else await prisma.partner.create({ data });
@@ -66,5 +73,74 @@ export async function addPartnerMember(partnerId: string, form: FormData): Promi
 export async function removePartnerMember(partnerId: string, memberId: string): Promise<void> {
   await requireAdminAction();
   await prisma.partnerMember.deleteMany({ where: { id: memberId, partnerId } });
+  revalidatePath(`/admin/parceiros/${partnerId}`);
+}
+
+const COMPANY_TYPES = ["MEI", "LIMITED", "INDIVIDUAL", "ASSOCIATION"] as const;
+
+/**
+ * Cria a conta de recebimento da agência (subconta CNPJ no Asaas). A comissão
+ * cai nela no repasse e sai sozinha por Pix para a chave CNPJ da agência.
+ */
+export async function createPartnerPayoutAccount(partnerId: string, _prev: PartnerFormState, form: FormData): Promise<PartnerFormState> {
+  await requireAdminAction();
+  const partner = await prisma.partner.findUniqueOrThrow({ where: { id: partnerId } });
+  if (partner.gatewayAccountId) return { errors: ["Esta agência já tem conta de recebimento."] };
+
+  const field = (name: string) => String(form.get(name) ?? "").trim();
+  const cnpj = field("cnpj").replace(/\D/g, "");
+  const email = field("email").toLowerCase();
+  const phone = field("celular").replace(/\D/g, "");
+  const postalCode = field("cep").replace(/\D/g, "");
+  const companyType = field("tipo") as (typeof COMPANY_TYPES)[number];
+  const incomeCents = parseBRLToCents(field("faturamento"));
+  const errors: string[] = [];
+  if (!field("razao")) errors.push("Informe a razão social.");
+  if (!isValidCnpj(cnpj)) errors.push("CNPJ inválido.");
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.push("E-mail inválido.");
+  if (phone.length < 10 || phone.length > 11) errors.push("Celular inválido (com DDD).");
+  if (!COMPANY_TYPES.includes(companyType)) errors.push("Escolha o tipo de empresa.");
+  if (!Number.isFinite(incomeCents) || incomeCents <= 0) errors.push("Informe o faturamento mensal aproximado.");
+  if (postalCode.length !== 8) errors.push("CEP inválido.");
+  if (!field("endereco") || !field("numero") || !field("bairro")) errors.push("Preencha endereço, número e bairro.");
+  if (errors.length > 0) return { errors };
+
+  const provider = getPaymentProvider();
+  try {
+    const account = await provider.createSellerAccount({
+      name: field("razao"),
+      email,
+      cpfCnpj: cnpj,
+      companyType,
+      mobilePhone: phone,
+      incomeCents,
+      address: field("endereco"),
+      addressNumber: field("numero"),
+      complement: field("complemento") || undefined,
+      province: field("bairro"),
+      postalCode,
+    });
+    await prisma.partner.update({
+      where: { id: partnerId },
+      data: {
+        cnpj,
+        payoutEmail: email,
+        gatewayAccountId: account.accountId,
+        gatewayWalletId: account.walletId,
+        gatewayApiKeyEnc: account.apiKey && provider.kind === "asaas" ? encrypt(account.apiKey) : null,
+        gatewayAccountStatus: "EM_ANALISE",
+      },
+    });
+  } catch (error) {
+    return { errors: [`Não foi possível criar a conta agora. ${error instanceof Error ? error.message : ""}`.trim()] };
+  }
+  revalidatePath(`/admin/parceiros/${partnerId}`);
+  return { errors: [] };
+}
+
+/** Aprovação manual da conta da agência (quando o aviso do gateway não chegar). */
+export async function approvePartnerPayoutAccount(partnerId: string): Promise<void> {
+  await requireAdminAction();
+  await prisma.partner.updateMany({ where: { id: partnerId, gatewayAccountId: { not: null } }, data: { gatewayAccountStatus: "APROVADA" } });
   revalidatePath(`/admin/parceiros/${partnerId}`);
 }

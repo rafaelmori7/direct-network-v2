@@ -27,3 +27,21 @@ export function ageAt(birthDate: Date, now: Date): number {
   if (m < 0 || (m === 0 && now.getUTCDate() < birthDate.getUTCDate())) age--;
   return age;
 }
+
+/** CNPJ com dígitos verificadores válidos (só números, 14 dígitos). */
+export function isValidCnpj(value: string): boolean {
+  const d = value.replace(/\D/g, "");
+  if (d.length !== 14 || /^(\d)\1{13}$/.test(d)) return false;
+  const digit = (len: number) => {
+    const weights = len === 12 ? [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2] : [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+    const sum = weights.reduce((acc, w, i) => acc + w * Number(d[i]), 0);
+    const r = sum % 11;
+    return r < 2 ? 0 : 11 - r;
+  };
+  return digit(12) === Number(d[12]) && digit(13) === Number(d[13]);
+}
+
+export function formatCnpj(value: string): string {
+  const d = value.replace(/\D/g, "");
+  return d.length === 14 ? `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8, 12)}-${d.slice(12)}` : value;
+}

@@ -100,7 +100,7 @@ export class AsaasPaymentProvider implements PaymentProvider {
   }
 
   // Saque automático: a subconta (BaaS, sem acesso ao painel) envia o saldo por Pix
-  // para a chave CPF do próprio vendedor. Feito com a chave da subconta.
+  // para a chave CPF do vendedor ou CNPJ da agência. Feito com a chave da subconta.
   // Ainda não testado no sandbox (precisa de chave Pix CPF de destino válida).
   async getAccountBalance(accountApiKey: string): Promise<number> {
     const body = await this.request<{ balance?: number }>("GET", "/finance/balance", undefined, accountApiKey);
@@ -114,8 +114,8 @@ export class AsaasPaymentProvider implements PaymentProvider {
       {
         value: req.cents / 100,
         operationType: "PIX",
-        pixAddressKey: onlyDigits(req.cpf),
-        pixAddressKeyType: "CPF",
+        pixAddressKey: onlyDigits(req.pixKey),
+        pixAddressKeyType: req.pixKeyType,
         externalReference: req.externalReference,
         description: req.description,
       },
@@ -165,8 +165,9 @@ export class AsaasPaymentProvider implements PaymentProvider {
     const account = await this.request<{ id: string; walletId: string; apiKey?: string }>("POST", "/accounts", {
       name: req.name,
       email: req.email,
-      cpfCnpj: onlyDigits(req.cpf),
-      birthDate: req.birthDate.toISOString().slice(0, 10),
+      cpfCnpj: onlyDigits(req.cpfCnpj),
+      ...(req.birthDate && { birthDate: req.birthDate.toISOString().slice(0, 10) }),
+      ...(req.companyType && { companyType: req.companyType }),
       mobilePhone: onlyDigits(req.mobilePhone),
       incomeValue: req.incomeCents / 100,
       address: req.address,

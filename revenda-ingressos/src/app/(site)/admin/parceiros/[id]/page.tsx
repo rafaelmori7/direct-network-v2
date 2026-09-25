@@ -2,17 +2,40 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireAdminPage } from "@/lib/auth/admin";
 import { prisma } from "@/lib/db";
-import { addPartnerMember, removePartnerMember, savePartner } from "../actions";
+import { formatCnpj } from "@/lib/auth/cpf";
+import { formatDateTime } from "@/lib/format";
+import { formatBRL } from "@/lib/money/fees";
+import { decrypt } from "@/lib/crypto";
+import { getPaymentProvider } from "@/lib/payments";
+import { addPartnerMember, approvePartnerPayoutAccount, createPartnerPayoutAccount, removePartnerMember, savePartner } from "../actions";
 import { PartnerForm } from "../partner-form";
+import { PartnerPayoutAccountForm } from "../payout-account-form";
+
+const ACCOUNT_STATUS = { NENHUM: "Sem conta", EM_ANALISE: "Em análise", APROVADA: "Aprovada", REPROVADA: "Reprovada" } as const;
+const WITHDRAWAL_STATUS = { SOLICITADO: "Enviando", AGUARDANDO_APROVACAO: "Aguardando autorização", CONCLUIDO: "Pix enviado", FALHOU: "Não enviado" } as const;
+
+/** Link para a agência enviar os documentos da conta (só com a chave da subconta). */
+async function onboardingUrl(p: { gatewayAccountId: string | null; gatewayWalletId: string | null; gatewayApiKeyEnc: string | null }) {
+  if (!p.gatewayAccountId || !p.gatewayWalletId || !p.gatewayApiKeyEnc) return null;
+  try {
+    return await getPaymentProvider().getOnboardingUrl({ accountId: p.gatewayAccountId, walletId: p.gatewayWalletId, apiKey: decrypt(p.gatewayApiKeyEnc) });
+  } catch {
+    return null;
+  }
+}
 
 export default async function EditPartner({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   await requireAdminPage(`/admin/parceiros/${id}`);
   const p = await prisma.partner.findUnique({
     where: { id },
-    include: { members: { include: { user: { select: { name: true, email: true } } } } },
+    include: {
+      members: { include: { user: { select: { name: true, email: true } } } },
+      withdrawals: { orderBy: { createdAt: "desc" }, take: 5 },
+    },
   });
   if (!p) notFound();
+  const docsUrl = p.gatewayAccountStatus === "EM_ANALISE" ? await onboardingUrl(p) : null;
   const site = (process.env.SITE_URL ?? "http://localhost:3000").replace(/\/$/, "");
   return (
     <main className="form-page">
@@ -61,6 +84,67 @@ export default async function EditPartner({ params }: { params: Promise<{ id: st
           </form>
         </div>
       </div>
+      <div className="aside-card" style={{ marginBottom: 20 }}>
+        <div className="aside-head">Conta de recebimento (Pix automático para o CNPJ)</div>
+        <div className="aside-body">
+          {p.gatewayAccountId ? (
+            <>
+              <div className="summary">
+                <div className="summary-row">
+                  <span className="offer-sub">Situação</span>
+                  <b>{ACCOUNT_STATUS[p.gatewayAccountStatus]}</b>
+                </div>
+                <div className="summary-row">
+                  <span className="offer-sub">Pix automático para</span>
+                  <span>CNPJ {formatCnpj(p.cnpj ?? "")} · avisos em {p.payoutEmail}</span>
+                </div>
+              </div>
+              {p.gatewayAccountStatus === "EM_ANALISE" && (
+                <p className="hint" style={{ margin: "10px 0 0" }}>
+                  {docsUrl ? (
+                    <>
+                      Envie este link para a agência mandar os documentos:{" "}
+                      <a href={docsUrl} target="_blank" rel="noopener" style={{ color: "var(--brand)", fontWeight: 700 }}>
+                        abrir envio de documentos
+                      </a>
+                      .{" "}
+                    </>
+                  ) : (
+                    "O Asaas avisa quando a análise terminar. "
+                  )}
+                  Enquanto isso, a comissão fica esperando e é repassada depois da aprovação.
+                </p>
+              )}
+              {p.gatewayAccountStatus !== "APROVADA" && (
+                <form action={approvePartnerPayoutAccount.bind(null, p.id)} style={{ marginTop: 10 }}>
+                  <button className="btn btn-outline">Marcar como aprovada (manual)</button>
+                </form>
+              )}
+              {p.withdrawals.length > 0 && (
+                <div style={{ marginTop: 12 }}>
+                  {p.withdrawals.map((w) => (
+                    <div className="wanted-item" key={w.id}>
+                      <span>
+                        {WITHDRAWAL_STATUS[w.status]} · {formatBRL(w.cents)}
+                        {w.error && <span className="offer-sub"> · {w.error}</span>}
+                      </span>
+                      <span className="offer-sub">{formatDateTime(w.createdAt)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              <p className="offer-sub" style={{ marginTop: 0 }}>
+                Para agências sem conta no Asaas. A comissão cai nesta conta depois de cada evento e sai sozinha por Pix para a chave CNPJ
+                da agência.
+              </p>
+              <PartnerPayoutAccountForm action={createPartnerPayoutAccount.bind(null, p.id)} />
+            </>
+          )}
+        </div>
+      </div>
       <PartnerForm
         action={savePartner.bind(null, p.id)}
         siteUrl={site}
@@ -71,6 +155,7 @@ export default async function EditPartner({ params }: { params: Promise<{ id: st
           cor: p.color,
           logo: p.logoUrl ?? "",
           wallet: p.gatewayWalletId ?? "",
+          walletLocked: Boolean(p.gatewayAccountId),
           participacao: String(p.commissionShareBps / 100),
           desconto: String(p.discountBps / 100),
           ativo: p.active,

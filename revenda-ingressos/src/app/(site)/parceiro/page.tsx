@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { requirePartnerPage } from "@/lib/auth/admin";
+import { formatCnpj } from "@/lib/auth/cpf";
 import { prisma } from "@/lib/db";
 import { formatDateTime } from "@/lib/format";
 import { formatBRL } from "@/lib/money/fees";
@@ -62,7 +63,13 @@ export default async function PartnerDashboard() {
         <div className="aside-card" style={{ padding: 18, marginTop: 0 }}>
           <div className="offer-sub">Comissão liberada</div>
           <div style={{ fontSize: "2rem", fontWeight: 900 }}>{formatBRL(released._sum.partnerFeeCents ?? 0)}</div>
-          <div className="offer-sub">{partner.gatewayWalletId ? "Na sua conta Asaas" : "Repasse feito pela plataforma"}</div>
+          <div className="offer-sub">
+            {partner.gatewayApiKeyEnc || (partner.gatewayAccountId && partner.cnpj)
+              ? `Por Pix automático no CNPJ ${formatCnpj(partner.cnpj ?? "")}`
+              : partner.gatewayWalletId
+                ? "Na sua conta Asaas"
+                : "Repasse feito pela plataforma"}
+          </div>
         </div>
       </div>
 

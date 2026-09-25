@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ageAt, formatCpf, isValidCpf } from "@/lib/auth/cpf";
+import { ageAt, formatCpf, isValidCnpj, isValidCpf } from "@/lib/auth/cpf";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
 
 describe("CPF", () => {
@@ -32,5 +32,15 @@ describe("senha", () => {
     expect(await verifyPassword("segredo123", hash)).toBe(true);
     expect(await verifyPassword("segredo124", hash)).toBe(false);
     expect(await verifyPassword("segredo123", "lixo")).toBe(false);
+  });
+});
+
+describe("CNPJ", () => {
+  it("aceita CNPJs válidos e recusa dígitos errados", () => {
+    expect(isValidCnpj("11.222.333/0001-81")).toBe(true);
+    expect(isValidCnpj("46181529000150")).toBe(true);
+    expect(isValidCnpj("11222333000182")).toBe(false);
+    expect(isValidCnpj("11111111111111")).toBe(false);
+    expect(isValidCnpj("123")).toBe(false);
   });
 });

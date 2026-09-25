@@ -274,6 +274,12 @@ No modelo BaaS o vendedor não entra no Asaas. Quando o repasse para a subconta 
 
 Como o saque usa o saldo real da subconta, uma chamada interrompida não paga duas vezes.
 
+**Agências:** o mesmo saque automático vale para a comissão, para a **chave CNPJ** da agência.
+- No admin (`/admin/parceiros/<id>`), a seção "Conta de recebimento" cria a subconta CNPJ da agência (razão social, CNPJ, e-mail financeiro, tipo de empresa, faturamento e endereço) e mostra o link de envio de documentos enquanto está em análise. Também dá para marcar como aprovada manualmente.
+- Agência que já tem conta Asaas própria: continua com o `walletId` digitado no formulário. A comissão cai direto na conta dela, sem saque.
+- Conta da agência ainda em análise quando o evento acaba: o vendedor recebe normalmente e a comissão fica esperando (`Order.partnerPayoutWaiting`). A rotina transfere quando a conta for aprovada (webhook ou botão manual) e aí faz o Pix para o CNPJ.
+- Os saques ficam na tabela `Withdrawal`, com `userId` (vendedor) ou `partnerId` (agência).
+
 ### Política de reembolso (decidida)
 
 - **Valor:** o comprador recebe sempre o **valor integral**, e a taxa do Pix sai do saldo da plataforma. Mantenha saldo de reserva no Asaas.

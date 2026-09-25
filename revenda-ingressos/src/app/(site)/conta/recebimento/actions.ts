@@ -35,7 +35,7 @@ export async function createPayoutAccount(_prev: PayoutFormState, form: FormData
     const account = await provider.createSellerAccount({
       name: user.name,
       email: user.email,
-      cpf: user.cpf,
+      cpfCnpj: user.cpf,
       birthDate: user.birthDate,
       mobilePhone: user.phone,
       incomeCents,

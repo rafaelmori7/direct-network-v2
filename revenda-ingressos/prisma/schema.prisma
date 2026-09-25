@@ -45,7 +45,7 @@ model User {
   createdAt         DateTime  @default(now())
 
   listings    Listing[]
-  withdrawals SellerWithdrawal[]
+  withdrawals Withdrawal[]
   orders      Order[]      @relation("BuyerOrders")
   wantedPosts WantedPost[]
   messages    Message[]
@@ -111,14 +111,27 @@ model Partner {
   commissionShareBps Int    @default(5000)
   /** Desconto ao comprador quando chega pelo link/cupom, em pontos-base do valor (100 = 1%). Sai da comissão. */
   discountBps      Int      @default(0)
-  /** Subconta do parceiro no gateway, para receber a parte dele no split. */
+  /**
+   * Carteira do parceiro no gateway, para onde vai a comissão. Pode ser a conta
+   * Asaas da própria agência (digitada no admin) ou uma subconta criada por nós.
+   */
   gatewayWalletId  String?
+  /** Subconta criada por nós (CNPJ da agência): com a chave, o saldo sai por Pix automático. */
+  cnpj             String?
+  /** E-mail financeiro da agência (avisos de Pix enviado ou com falha). */
+  payoutEmail      String?
+  gatewayAccountId String?  @unique
+  gatewayApiKeyEnc String?
+  gatewayAccountStatus GatewayAccountStatus @default(NENHUM)
+  /** Saque automático pendente (mesma lógica do vendedor). */
+  withdrawalDueAt  DateTime?
   active           Boolean  @default(true)
   createdAt        DateTime @default(now())
 
   events  Event[]
   orders  Order[]
   members PartnerMember[]
+  withdrawals Withdrawal[]
 }
 
 /** Pessoas da agência com acesso ao painel do parceiro (/parceiro). */
@@ -286,6 +299,11 @@ model Order {
   sellerTransferId   String?
   /** Transferência já feita ao parceiro (só quando ele tem subconta). */
   partnerTransferId  String?
+  /**
+   * Comissão da agência esperando a aprovação da conta de recebimento dela. O
+   * vendedor já recebeu; a rotina transfere a comissão quando a conta for aprovada.
+   */
+  partnerPayoutWaiting Boolean @default(false)
   paymentExpiresAt   DateTime
   paidAt             DateTime?
   transferDeadlineAt DateTime?
@@ -410,14 +428,17 @@ enum WithdrawalStatus {
   FALHOU
 }
 
-/** Saque automático da conta de recebimento do vendedor para a chave Pix CPF dele. */
-model SellerWithdrawal {
+/** Saque automático da conta de recebimento (vendedor ou agência) para a chave Pix CPF/CNPJ do titular. */
+model Withdrawal {
   id         String           @id @default(cuid())
-  userId     String
-  user       User             @relation(fields: [userId], references: [id])
+  userId     String?
+  user       User?            @relation(fields: [userId], references: [id])
+  partnerId  String?
+  partner    Partner?         @relation(fields: [partnerId], references: [id])
   cents      Int
-  /** Chave Pix de destino: sempre o CPF do próprio vendedor (mesma titularidade). */
+  /** Chave Pix de destino: sempre o CPF/CNPJ do próprio titular (mesma titularidade). */
   pixKey     String
+  pixKeyType String
   transferId String?
   status     WithdrawalStatus
   error      String?
@@ -425,4 +446,5 @@ model SellerWithdrawal {
   updatedAt  DateTime         @updatedAt
 
   @@index([userId, status])
+  @@index([partnerId, status])
 }

@@ -30,7 +30,7 @@ export default async function AccountPage() {
 
   const [contact, withdrawals] = await Promise.all([
     prisma.user.findUniqueOrThrow({ where: { id: user.id }, select: { phone: true, whatsappOptIn: true } }),
-    prisma.sellerWithdrawal.findMany({ where: { userId: user.id }, orderBy: { createdAt: "desc" }, take: 5 }),
+    prisma.withdrawal.findMany({ where: { userId: user.id }, orderBy: { createdAt: "desc" }, take: 5 }),
   ]);
 
   return (

@@ -12,7 +12,7 @@ let eventId: string;
 let buyer: { id: string; name: string; cpf: string; email: string; canBuy: boolean };
 
 beforeEach(async () => {
-  for (const t of ["emailLog", "message", "orderLog", "dispute", "order", "listing", "wantedPost", "event", "partner", "session", "sellerWithdrawal", "user", "platform"] as const) {
+  for (const t of ["emailLog", "message", "orderLog", "dispute", "order", "listing", "wantedPost", "event", "partner", "session", "withdrawal", "user", "platform"] as const) {
     // @ts-expect-error acesso dinâmico aos delegates do Prisma
     await prisma[t].deleteMany();
   }
@@ -169,5 +169,88 @@ describe("parceiros", () => {
     await prisma.partner.update({ where: { slug: "timelapse" }, data: { active: false } });
     const r = await buy({ refSlug: "timelapse" });
     expect(r.ok && r.order).toMatchObject({ partnerId: null, partnerFeeCents: 0 });
+  });
+});
+
+describe("Pix automático da comissão para o CNPJ da agência", () => {
+  it("com conta de recebimento criada por nós: a comissão sai por Pix para a chave CNPJ", async () => {
+    process.env.ENCRYPTION_KEY = "chave-de-teste-com-mais-de-32-caracteres!!";
+    const { encrypt } = await import("@/lib/crypto");
+    const { processDueWithdrawals } = await import("@/lib/sellers/withdrawals");
+    const account = await provider.createSellerAccount({
+      name: "Outra Eventos Ltda", email: "fin@outra.local", cpfCnpj: "11222333000181", companyType: "LIMITED",
+      mobilePhone: "11999999999", incomeCents: 1_000_000, address: "Rua A", addressNumber: "1", province: "Centro", postalCode: "01000000",
+    });
+    const partner = await prisma.partner.update({
+      where: { slug: "outra" },
+      data: {
+        cnpj: "11222333000181", payoutEmail: "fin@outra.local", gatewayAccountId: account.accountId, gatewayWalletId: account.walletId,
+        gatewayApiKeyEnc: encrypt(account.apiKey!), gatewayAccountStatus: "APROVADA",
+      },
+    });
+    const r = await buy({ refSlug: "outra" });
+    const id = r.ok ? r.order.id : "";
+    expect(await requestPayout(id, "NENHUM", provider)).toBe(true);
+    const order = await prisma.order.findUniqueOrThrow({ where: { id } });
+    expect(order.payoutStatus).toBe("CONCLUIDO");
+
+    expect(await processDueWithdrawals(provider)).toBe(1);
+    expect(provider.withdrawals.filter((w) => w.apiKey === account.apiKey)).toEqual([
+      expect.objectContaining({ cents: order.partnerFeeCents, pixKey: "11222333000181", pixKeyType: "CNPJ", description: "Comissões de parceiro" }),
+    ]);
+    expect(await prisma.withdrawal.findFirstOrThrow({ where: { partnerId: partner.id } })).toMatchObject({ status: "CONCLUIDO", pixKeyType: "CNPJ" });
+    expect(await prisma.partner.findUniqueOrThrow({ where: { id: partner.id } })).toMatchObject({ withdrawalDueAt: null });
+    expect(await prisma.emailLog.findFirst({ where: { to: "fin@outra.local", kind: "SAQUE_ENVIADO" } })).not.toBeNull();
+  });
+
+  it("agência com conta Asaas própria: recebe direto, sem saque", async () => {
+    const { processDueWithdrawals } = await import("@/lib/sellers/withdrawals");
+    const r = await buy({ refSlug: "timelapse" });
+    const id = r.ok ? r.order.id : "";
+    const before = provider.withdrawals.length;
+    await requestPayout(id, "NENHUM", provider);
+    await processDueWithdrawals(provider);
+    expect(provider.withdrawals.length).toBe(before);
+    expect(await prisma.withdrawal.count()).toBe(0);
+  });
+});
+
+describe("comissão de agência com conta em análise", () => {
+  it("o vendedor recebe na hora; a comissão espera a aprovação da conta da agência", async () => {
+    process.env.ENCRYPTION_KEY = "chave-de-teste-com-mais-de-32-caracteres!!";
+    const { encrypt } = await import("@/lib/crypto");
+    const { handleSellerAccountStatus } = await import("@/lib/sellers/service");
+    const account = await provider.createSellerAccount({
+      name: "Outra Eventos Ltda", email: "fin@outra.local", cpfCnpj: "11222333000181", companyType: "LIMITED",
+      mobilePhone: "11999999999", incomeCents: 1_000_000, address: "Rua A", addressNumber: "1", province: "Centro", postalCode: "01000000",
+    });
+    await prisma.partner.update({
+      where: { slug: "outra" },
+      data: {
+        cnpj: "11222333000181", payoutEmail: "fin@outra.local", gatewayAccountId: account.accountId, gatewayWalletId: account.walletId,
+        gatewayApiKeyEnc: encrypt(account.apiKey!), gatewayAccountStatus: "EM_ANALISE",
+      },
+    });
+    const r = await buy({ refSlug: "outra" });
+    const id = r.ok ? r.order.id : "";
+    const before = provider.transfers.length;
+    await requestPayout(id, "NENHUM", provider);
+    expect(provider.transfers.slice(before).map((t) => t.externalReference)).toEqual([`pedido-${id}-vendedor`]);
+    expect(await prisma.order.findUniqueOrThrow({ where: { id } })).toMatchObject({ payoutStatus: "CONCLUIDO", partnerPayoutWaiting: true, partnerTransferId: null });
+
+    // Ainda em análise: a rotina não transfere.
+    await runRoutines(provider, addDays(now, 20));
+    expect(provider.transfers.slice(before)).toHaveLength(1);
+
+    // Aprovada: a rotina transfere a comissão e manda o Pix para o CNPJ.
+    expect(await handleSellerAccountStatus(account.accountId, true)).toBe(true);
+    await runRoutines(provider, addDays(now, 20.01));
+    const order = await prisma.order.findUniqueOrThrow({ where: { id } });
+    expect(order).toMatchObject({ payoutStatus: "CONCLUIDO", partnerPayoutWaiting: false });
+    expect(provider.transfers.slice(before).map((t) => t.externalReference)).toEqual([`pedido-${id}-vendedor`, `pedido-${id}-parceiro`]);
+    await runRoutines(provider, addDays(now, 20.02));
+    expect(provider.withdrawals.filter((w) => w.apiKey === account.apiKey)).toEqual([
+      expect.objectContaining({ cents: order.partnerFeeCents, pixKeyType: "CNPJ" }),
+    ]);
   });
 });

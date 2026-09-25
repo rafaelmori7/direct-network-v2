@@ -17,12 +17,16 @@ export interface PixCharge {
   expiresAt: Date;
 }
 
-/** Dados para abrir a conta de recebimento (subconta) do vendedor no gateway. */
+/** Dados para abrir a conta de recebimento (subconta): vendedor (CPF) ou agência (CNPJ). */
 export interface SellerAccountRequest {
   name: string;
   email: string;
-  cpf: string;
-  birthDate: Date;
+  /** CPF do vendedor ou CNPJ da agência. */
+  cpfCnpj: string;
+  /** Obrigatório para CPF. */
+  birthDate?: Date;
+  /** Obrigatório para CNPJ. */
+  companyType?: "MEI" | "LIMITED" | "INDIVIDUAL" | "ASSOCIATION";
   mobilePhone: string;
   incomeCents: number;
   address: string;
@@ -62,11 +66,12 @@ export interface TransferResult {
   error?: string | null;
 }
 
-/** Saque da conta de recebimento do vendedor para uma chave Pix CPF (mesma titularidade). */
+/** Saque da conta de recebimento para a chave Pix CPF/CNPJ do próprio titular. */
 export interface WithdrawalRequest {
   cents: number;
-  /** CPF do próprio vendedor, só dígitos. */
-  cpf: string;
+  /** CPF do vendedor ou CNPJ da agência, só dígitos. */
+  pixKey: string;
+  pixKeyType: "CPF" | "CNPJ";
   externalReference: string;
   description: string;
 }
@@ -97,7 +102,7 @@ export interface PaymentProvider {
   createSellerAccount(req: SellerAccountRequest): Promise<SellerAccount>;
   /** Saldo disponível da subconta, em centavos (consultado com a chave da subconta). */
   getAccountBalance(accountApiKey: string): Promise<number>;
-  /** Envia o saldo da subconta por Pix para a chave CPF do titular (chave da subconta). */
+  /** Envia o saldo da subconta por Pix para a chave CPF/CNPJ do titular (chave da subconta). */
   withdrawToPix(accountApiKey: string, req: WithdrawalRequest): Promise<TransferResult>;
   /** Consulta um saque feito pela subconta. */
   getAccountTransfer(accountApiKey: string, transferId: string): Promise<TransferResult>;

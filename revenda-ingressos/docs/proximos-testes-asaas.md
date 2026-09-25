@@ -72,3 +72,4 @@ parceiro. Código, testes e README atualizados.
    criando uma nova se a chave se perdeu): `GET /finance/balance` e `POST /transfers` com `operationType: PIX`,
    `pixAddressKey` = CPF, `pixAddressKeyType: CPF`. Conferir: a chave da subconta tem permissão de saque? Pede autorização no
    painel? Qual tarifa cai na subconta (ajustar `WITHDRAWAL_FEE_CENTS`)? No sandbox, qual CPF de destino é aceito?
+6. Subconta CNPJ de agência pelo admin (`companyType` e sem `birthDate`): o Asaas aceita? Saque para chave CNPJ.
