@@ -76,7 +76,8 @@ tests/                testes do motor de regras, dos estados e do pagamento
 - **Painel admin (`/admin`, só para `isAdmin`):**
   - **eventos:** criar e editar, com ticketeira, transferência permitida, janela exata, prazo do vendedor, setores, esportivo e biometria;
   - **disputas:** a decisão fica na página do pedido. Se o vendedor tiver razão antes da data de liberação, o pedido volta a aguardar essa data;
-  - **reembolsos pendentes.**
+  - **reembolsos pendentes;**
+  - **repasses:** liberações com falha e transferências esperando autorização no painel do Asaas (em `/admin/disputas`);
   - **usuários:** busca por nome, e-mail ou CPF; verificar e remover a verificação de vendedor. **Bloquear** encerra as sessões, pausa os anúncios e desativa os COMPRO;
   - **anúncios:** pausados, ativos, encerrados e removidos; reativar (só se a venda do evento ainda estiver aberta) ou remover;
   - **pedidos:** busca por nº, cobrança, e-mail, CPF ou evento;
@@ -187,7 +188,7 @@ npm run test:db              # testes com banco (usa TEST_DATABASE_URL ou o banc
 - **Webhook:**
   - em Integrações > Webhooks, apontar para `https://<site>/api/webhooks/asaas`;
   - usar o token de autenticação igual a `ASAAS_WEBHOOK_TOKEN`;
-  - eventos `PAYMENT_RECEIVED`, `PAYMENT_CONFIRMED` e `PAYMENT_REFUNDED`.
+  - eventos `PAYMENT_RECEIVED`, `PAYMENT_CONFIRMED`, `PAYMENT_REFUNDED`, `TRANSFER_DONE`, `TRANSFER_FAILED` e `TRANSFER_CANCELLED`.
 - **O que o webhook faz:**
   - confirma o pedido;
   - devolve o Pix se ele foi pago por outro CPF;
@@ -238,13 +239,19 @@ Como o split não fica retido, o site passou a:
 - **Cobrar sem split:** o Pix cai todo na conta da plataforma.
 - **Liberar por transferência:** depois do evento, `requestPayout` faz `POST /transfers` (`walletId`, `value`, `externalReference` `pedido-<id>-vendedor` / `pedido-<id>-parceiro`) para a subconta do vendedor e, se houver, a do parceiro.
 - **Não pagar duas vezes:** o id de cada transferência feita fica no pedido (`sellerTransferId`, `partnerTransferId`). Se uma falhar, o pedido vai para `FALHOU` e "tentar de novo" só faz a que faltou.
+- **Autorização no painel:** transferência criada mas não autorizada deixa o repasse em `AGUARDANDO_APROVACAO` (como no reembolso). O webhook `TRANSFER_DONE` / `TRANSFER_FAILED` / `TRANSFER_CANCELLED` e a rotina periódica consultam `GET /transfers/{id}`: todas concluídas → `CONCLUIDO`; uma recusada ou cancelada → `FALHOU`, e o id dela sai do pedido para "tentar de novo" transferir outra vez. O admin vê as pendentes em `/admin/disputas` ("Repasses para aprovar").
 - **Reembolsar sem ninguém devolver nada:** o dinheiro ainda está todo na conta da plataforma.
 
 Testado no sandbox:
 
 - **Reembolso de Pix sem split** (`pay_ahx1nga5y1w10bfo`, R$ 115): aceito e aguardando autorização (`AWAITING_CRITICAL_ACTION_AUTHORIZATION`). Logo depois do pagamento, o Asaas respondeu "Não é possível solicitar estorno para essa cobrança no momento. Tente novamente em alguns instantes."; cerca de 20 s depois funcionou. O "tentar de novo" de `/admin/reembolsos` cobre esse caso.
 - **Reembolso aprovado no painel:** terminou **`CANCELLED`** (`PAYMENT_REVERSAL` -R$ 115 e depois `PAYMENT_REFUND_CANCELLED` +R$ 115), igual ao de `pay_njy75jq1nmjix4s4`. Ainda não se sabe se é limite do sandbox com Pix simulado ou se a autorização não foi concluída.
-- **Transferência:** a chave precisa da **permissão de saque via API** (sem ela: 403 `insufficient_permission`). Com a permissão, a transferência para a subconta 3 (ainda não aprovada, `general: PENDING`) foi recusada: 400 "Você poderá solicitar transferências quando a aprovação do cadastro da conta de destino for concluída." O repasse ao vendedor já espera a aprovação (`AGUARDANDO_CADASTRO`). Parceiro com subconta ainda não aprovada: a transferência dele falha, o pedido fica `FALHOU` e o admin tenta de novo depois. **Falta testar** com subconta aprovada: se exige autorização de ação crítica e o status devolvido.
+- **Transferência:** a chave precisa da **permissão de saque via API** (sem ela: 403 `insufficient_permission`). Com a permissão, a transferência para a subconta 3 (ainda não aprovada, `general: PENDING`) foi recusada: 400 "Você poderá solicitar transferências quando a aprovação do cadastro da conta de destino for concluída." O repasse ao vendedor já espera a aprovação (`AGUARDANDO_CADASTRO`). Parceiro com subconta ainda não aprovada: a transferência dele falha, o pedido fica `FALHOU` e o admin tenta de novo depois.
+
+Com a **aprovação automática de subcontas** ligada no sandbox e o modelo da operação em **BaaS** (25/09/2026):
+
+- **Subconta 4** (`edc47d61-a8cb-4471-bb71-e4ede29e4fc6`, wallet `f039cb95-37cd-4376-85e1-48c66feaeb09`): `GET /myAccount/status` com a chave dela logo após a criação: `commercialInfo`, `bankAccountInfo`, `documentation` e `general` todos `APPROVED`.
+- **Transferência de R$ 10 para ela** (`b590039a-4462-4983-be46-deceb5fd1452`): aceita (200), `status: PENDING`, `authorized: false`, `operationType: INTERNAL`, `transferFee: 0`. O saldo da conta principal caiu na hora (R$ 470,05 → R$ 460,05); a subconta ficou em R$ 0. Continuou assim até a autorização no painel; depois, `DONE` / `authorized: true`, com comprovante, e R$ 10 no saldo da subconta. Daí o estado `AGUARDANDO_APROVACAO` do repasse.
 
 Scripts:
 
@@ -265,7 +272,7 @@ Todos com `NODE_USE_ENV_PROXY=1` e `ASAAS_API_KEY`.
 
 ## Próximos passos
 
-1. Ligar a permissão de saque via API na chave do Asaas e testar `POST /transfers` para subconta em análise e aprovada (`scripts/asaas-sandbox-transfer.ts`).
+1. **Reembolso:** no sandbox os reembolsos aprovados terminam `CANCELLED`. Fica para testar **em produção, com valor baixo** (ex.: Pix de R$ 5 pago e reembolsado): conferir se termina `DONE`, se o webhook `PAYMENT_REFUNDED` chega e se o pedido vai para `CONCLUIDO`.
 2. Validar no sandbox o link de documentos (`onboardingUrl` veio `null`) e o webhook de aprovação da subconta.
 3. Configurar o Resend com domínio próprio (SPF/DKIM) para os e-mails não caírem no spam, e o WhatsApp Cloud API (número, token e modelos aprovados).
 4. Revisão jurídica dos termos e da política de privacidade; depois, `LEGAL_REVIEWED=1`.

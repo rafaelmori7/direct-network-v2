@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { AsaasPaymentProvider } from "@/lib/payments/asaas";
 import { orderAmounts, splitAmount } from "@/lib/money/fees";
 import { MockPaymentProvider } from "@/lib/payments/mock";
 import { payerMatchesBuyer } from "@/lib/payments/provider";
@@ -52,8 +53,9 @@ describe("gateway mock", () => {
     gateway.failNextTransfer = "saldo insuficiente";
     const req = { walletId: "w1", cents: 42_300, externalReference: "pedido-o1-vendedor", description: "Venda" };
     await expect(gateway.transferToWallet(req)).rejects.toThrow("saldo insuficiente");
-    const { transferId } = await gateway.transferToWallet(req);
-    expect(gateway.transfers).toEqual([{ ...req, transferId }]);
+    const { transferId, status } = await gateway.transferToWallet(req);
+    expect(status).toBe("CONCLUIDO");
+    expect(gateway.transfers).toEqual([{ ...req, transferId, status }]);
   });
 });
 
@@ -95,5 +97,25 @@ describe("divisão com taxa do comprador e parceiro", () => {
       const a = orderAmounts(cents, { buyerFeeBps: 1500, sellerFeeBps: 300 }, { commissionShareBps: 5000, discountBps: 700 }, true);
       expect(a.sellerNetCents + a.platformFeeCents + a.partnerFeeCents).toBe(a.totalCents);
     }
+  });
+});
+
+describe("transferências no Asaas", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  async function transferWith(body: object) {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify(body), { status: 200 })));
+    const gateway = new AsaasPaymentProvider("https://api-sandbox.asaas.com/v3", "chave");
+    return gateway.transferToWallet({ walletId: "w1", cents: 1_000, externalReference: "pedido-o1-vendedor", description: "Venda" });
+  }
+
+  it("PENDING sem autorização (resposta do sandbox em 25/09/2026) fica aguardando aprovação", async () => {
+    expect(await transferWith({ id: "t1", status: "PENDING", authorized: false, failReason: null })).toEqual({ transferId: "t1", status: "AGUARDANDO_APROVACAO", error: null });
+  });
+
+  it("DONE conclui, PENDING autorizada está em processamento e CANCELLED falha", async () => {
+    expect((await transferWith({ id: "t1", status: "DONE", authorized: true })).status).toBe("CONCLUIDO");
+    expect((await transferWith({ id: "t1", status: "PENDING", authorized: true })).status).toBe("SOLICITADO");
+    expect(await transferWith({ id: "t1", status: "CANCELLED", authorized: false, failReason: null })).toMatchObject({ status: "FALHOU", error: "Transferência CANCELLED" });
   });
 });

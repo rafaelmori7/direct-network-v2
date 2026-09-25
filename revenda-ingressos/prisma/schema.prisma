@@ -210,6 +210,8 @@ enum PayoutStatus {
   /** Pedido liberado, mas a conta de recebimento do vendedor ainda não foi aprovada. */
   AGUARDANDO_CADASTRO
   SOLICITADO
+  /** Transferência criada no Asaas, esperando a autorização no painel (ação crítica). */
+  AGUARDANDO_APROVACAO
   CONCLUIDO
   FALHOU
 }

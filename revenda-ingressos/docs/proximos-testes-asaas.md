@@ -52,11 +52,19 @@ parceiro. Código, testes e README atualizados.
   cancelamento do estorno +R$ 115), igual ao de `pay_njy75jq1nmjix4s4`.
 - Removida a trava de 45 dias; termos de uso ajustados.
 
+## Resultado dos testes (25/09/2026, aprovação automática de subcontas + modelo BaaS)
+
+- Subconta 4: id `edc47d61-a8cb-4471-bb71-e4ede29e4fc6`, wallet `f039cb95-37cd-4376-85e1-48c66feaeb09`
+  (chave só no scratchpad da sessão). Veio **aprovada** na criação (`/myAccount/status`: tudo `APPROVED`).
+- `POST /transfers` de R$ 10 para ela (`b590039a-4462-4983-be46-deceb5fd1452`): 200, `PENDING`, `authorized: false`;
+  o saldo sai da conta principal na hora. Depois da autorização no painel: `DONE`, R$ 10 na subconta.
+- Criado `AGUARDANDO_APROVACAO` no repasse (`payoutStatus`), concluído pelo webhook `TRANSFER_*` ou pela rotina.
+- Reembolso: fica para testar em produção com valor baixo (ver README, "Próximos passos").
+
 ## Ainda falta
 
-1. Transferência para subconta **aprovada** (nenhuma das 3 do sandbox está): aceita? exige autorização de ação
-   crítica? qual `status` volta? Se ficar aguardando autorização, criar `AGUARDANDO_APROVACAO` no repasse.
-2. Por que os reembolsos aprovados terminam `CANCELLED`: conferir no painel o motivo (sandbox com Pix simulado?
-   autorização expirada?). Com um reembolso `DONE`, conferir o webhook `PAYMENT_REFUNDED`.
+1. Reembolso em produção com valor baixo: termina `DONE`? chega o `PAYMENT_REFUNDED`?
+2. Cadastrar os eventos `TRANSFER_DONE`, `TRANSFER_FAILED` e `TRANSFER_CANCELLED` no webhook do painel e conferir o
+   formato do aviso (o código usa só `transfer.id` e consulta `GET /transfers/{id}`).
 3. `onboardingUrl`: consultar de novo depois de um tempo, ou ver se só vem em produção.
 4. Testar o fluxo inteiro pelo site (`PAYMENT_PROVIDER=asaas`).

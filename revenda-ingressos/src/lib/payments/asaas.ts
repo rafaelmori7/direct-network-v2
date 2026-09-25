@@ -7,7 +7,15 @@ import {
   type SellerAccount,
   type SellerAccountRequest,
   type TransferRequest,
+  type TransferResult,
 } from "./provider";
+
+interface AsaasTransfer {
+  id: string;
+  status?: string;
+  authorized?: boolean;
+  failReason?: string | null;
+}
 
 /**
  * Integração com o Asaas (Pix + repasse por transferência).
@@ -32,7 +40,11 @@ import {
  *   insufficient_permission). Com a permissão, subconta ainda não aprovada é
  *   recusada (400 "...quando a aprovação do cadastro da conta de destino for
  *   concluída"); por isso o repasse ao vendedor espera a aprovação
- *   (AGUARDANDO_CADASTRO). Falta testar com subconta aprovada.
+ *   (AGUARDANDO_CADASTRO);
+ * - com a subconta aprovada, POST /transfers é aceito e volta PENDING com
+ *   authorized: false (o saldo já sai da conta principal) até alguém autorizar
+ *   no painel: o repasse fica em AGUARDANDO_APROVACAO e é concluído pelo
+ *   webhook TRANSFER_DONE ou pela rotina, que consulta GET /transfers/{id}.
  */
 export class AsaasPaymentProvider implements PaymentProvider {
   readonly kind = "asaas" as const;
@@ -72,14 +84,18 @@ export class AsaasPaymentProvider implements PaymentProvider {
     };
   }
 
-  async transferToWallet(req: TransferRequest): Promise<{ transferId: string }> {
-    const transfer = await this.request<{ id: string }>("POST", "/transfers", {
+  async transferToWallet(req: TransferRequest): Promise<TransferResult> {
+    const transfer = await this.request<AsaasTransfer>("POST", "/transfers", {
       value: req.cents / 100,
       walletId: req.walletId,
       externalReference: req.externalReference,
       description: req.description,
     });
-    return { transferId: transfer.id };
+    return transferResult(transfer);
+  }
+
+  async getTransfer(transferId: string): Promise<TransferResult> {
+    return transferResult(await this.request<AsaasTransfer>("GET", `/transfers/${transferId}`));
   }
 
   // Testado no sandbox: com a autorização de ações críticas ligada, o reembolso
@@ -183,4 +199,13 @@ export class AsaasPaymentProvider implements PaymentProvider {
     }
     return (await res.json()) as T;
   }
+}
+
+// Status do Asaas: PENDING, BANK_PROCESSING, DONE, CANCELLED, FAILED (BLOCKED no webhook).
+function transferResult(t: AsaasTransfer): TransferResult {
+  const base = { transferId: t.id, error: t.failReason ?? null };
+  if (t.status === "DONE") return { ...base, status: "CONCLUIDO" };
+  if (t.status === "FAILED" || t.status === "CANCELLED") return { ...base, status: "FALHOU", error: t.failReason ?? `Transferência ${t.status}` };
+  if (t.status === "PENDING" && t.authorized === false) return { ...base, status: "AGUARDANDO_APROVACAO" };
+  return { ...base, status: "SOLICITADO" };
 }

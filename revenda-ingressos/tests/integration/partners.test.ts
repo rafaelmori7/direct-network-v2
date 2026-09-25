@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { prisma } from "@/lib/db";
-import { createOrder, requestPayout } from "@/lib/orders/service";
+import { createOrder, handleTransferUpdate, refreshPayout, requestPayout, runRoutines } from "@/lib/orders/service";
 import { MockPaymentProvider } from "@/lib/payments/mock";
 import { PLATFORMS } from "@/lib/platforms/profiles";
 import { addDays } from "@/lib/time";
@@ -92,6 +92,57 @@ describe("parceiros", () => {
       provider.transferToWallet = transferToWallet;
     }
     expect(provider.transfers.slice(before).map((t) => t.walletId)).toEqual(["wallet_vendedor", "wallet_timelapse"]);
+    expect(await prisma.order.findUniqueOrThrow({ where: { id } })).toMatchObject({ payoutStatus: "CONCLUIDO" });
+  });
+
+  it("transferência esperando autorização no painel: AGUARDANDO_APROVACAO até o Asaas concluir", async () => {
+    const r = await buy({ refSlug: "timelapse" });
+    const id = r.ok ? r.order.id : "";
+    const before = provider.transfers.length;
+    provider.nextTransferStatus = "AGUARDANDO_APROVACAO";
+    try {
+      await requestPayout(id, "NENHUM", provider);
+    } finally {
+      provider.nextTransferStatus = "CONCLUIDO";
+    }
+    const [seller, partner] = provider.transfers.slice(before);
+    expect(await prisma.order.findUniqueOrThrow({ where: { id } })).toMatchObject({
+      payoutStatus: "AGUARDANDO_APROVACAO", sellerTransferId: seller.transferId, partnerTransferId: partner.transferId,
+    });
+
+    // Só uma autorizada: continua esperando.
+    provider.setTransferStatus(seller.transferId, "CONCLUIDO");
+    expect(await handleTransferUpdate(seller.transferId, provider)).toBe(false);
+    expect(await prisma.order.findUniqueOrThrow({ where: { id } })).toMatchObject({ payoutStatus: "AGUARDANDO_APROVACAO" });
+
+    // A rotina conclui mesmo sem o webhook.
+    provider.setTransferStatus(partner.transferId, "CONCLUIDO");
+    await runRoutines(provider, now);
+    expect(await prisma.order.findUniqueOrThrow({ where: { id } })).toMatchObject({ payoutStatus: "CONCLUIDO" });
+    expect(await refreshPayout(id, provider)).toBe(false);
+    expect(provider.transfers.length - before).toBe(2);
+  });
+
+  it("transferência cancelada no painel: FALHOU e tentar de novo transfere só a que faltou", async () => {
+    const r = await buy({ refSlug: "timelapse" });
+    const id = r.ok ? r.order.id : "";
+    const before = provider.transfers.length;
+    provider.nextTransferStatus = "AGUARDANDO_APROVACAO";
+    try {
+      await requestPayout(id, "NENHUM", provider);
+    } finally {
+      provider.nextTransferStatus = "CONCLUIDO";
+    }
+    const [seller, partner] = provider.transfers.slice(before);
+    provider.setTransferStatus(seller.transferId, "CONCLUIDO");
+    provider.setTransferStatus(partner.transferId, "FALHOU");
+    expect(await handleTransferUpdate(partner.transferId, provider)).toBe(true);
+    expect(await prisma.order.findUniqueOrThrow({ where: { id } })).toMatchObject({
+      payoutStatus: "FALHOU", sellerTransferId: seller.transferId, partnerTransferId: null,
+    });
+
+    expect(await requestPayout(id, "FALHOU", provider)).toBe(true);
+    expect(provider.transfers.slice(before).map((t) => t.walletId)).toEqual(["wallet_vendedor", "wallet_timelapse", "wallet_timelapse"]);
     expect(await prisma.order.findUniqueOrThrow({ where: { id } })).toMatchObject({ payoutStatus: "CONCLUIDO" });
   });
 

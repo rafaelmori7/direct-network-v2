@@ -48,6 +48,20 @@ export interface TransferRequest {
   description: string;
 }
 
+/**
+ * Situação de uma transferência. AGUARDANDO_APROVACAO: criada, mas precisa ser
+ * autorizada no painel do gateway (ação crítica). SOLICITADO: autorizada e em
+ * processamento. FALHOU: recusada ou cancelada; o dinheiro não saiu.
+ */
+export type TransferStatus = "CONCLUIDO" | "AGUARDANDO_APROVACAO" | "SOLICITADO" | "FALHOU";
+
+export interface TransferResult {
+  transferId: string;
+  status: TransferStatus;
+  /** Motivo da falha informado pelo gateway, quando houver. */
+  error?: string | null;
+}
+
 /** CONCLUIDO: devolvido. AGUARDANDO_APROVACAO: precisa ser aprovado no painel do gateway. */
 export type RefundResult = { status: "CONCLUIDO" | "AGUARDANDO_APROVACAO" | "SOLICITADO" };
 
@@ -57,8 +71,10 @@ export interface PaymentProvider {
   /** Em produção toda venda exige a subconta do vendedor (para onde vai o repasse). */
   readonly requiresSellerWallet: boolean;
   createPixCharge(req: PixChargeRequest): Promise<PixCharge>;
-  /** Transfere da conta da plataforma para uma subconta. Devolve o id da transferência. */
-  transferToWallet(req: TransferRequest): Promise<{ transferId: string }>;
+  /** Transfere da conta da plataforma para uma subconta. */
+  transferToWallet(req: TransferRequest): Promise<TransferResult>;
+  /** Consulta uma transferência já feita (ex.: depois da aprovação no painel). */
+  getTransfer(transferId: string): Promise<TransferResult>;
   /**
    * Devolve o valor integral ao comprador. A taxa do gateway já descontada no
    * recebimento sai do saldo da plataforma.

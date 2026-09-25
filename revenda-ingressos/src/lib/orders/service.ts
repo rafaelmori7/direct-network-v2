@@ -5,7 +5,7 @@ import { prisma } from "@/lib/db";
 import { eventRuleInput, getEvent, rulesFor } from "@/lib/data/repo";
 import { orderAmounts, type FeeConfig } from "@/lib/money/fees";
 import { resolvePartner } from "@/lib/partners/attribution";
-import { payerMatchesBuyer, type PaymentProvider } from "@/lib/payments/provider";
+import { payerMatchesBuyer, type PaymentProvider, type TransferResult } from "@/lib/payments/provider";
 import { checkPurchase, disputeDeadline, isSaleClosed, releaseAt, transferDeadline, type Violation } from "@/lib/rules/engine";
 import type { BuyerIdentifier, TicketType } from "@/lib/rules/types";
 import { addMinutes } from "@/lib/time";
@@ -303,7 +303,8 @@ export async function requestRefund(
  * quando a conta for aprovada.
  *
  * Cada transferência feita é gravada no pedido na hora; se a outra falhar,
- * "tentar de novo" só faz a que faltou.
+ * "tentar de novo" só faz a que faltou. Transferência que precisa de
+ * autorização no painel do Asaas deixa o repasse em AGUARDANDO_APROVACAO.
  */
 export async function requestPayout(
   orderId: string,
@@ -339,17 +340,21 @@ export async function requestPayout(
       listing: { select: { event: { select: { name: true } }, seller: { select: { gatewayWalletId: true } } } },
     },
   });
+  const results: PayoutTransfer[] = [];
   try {
     const sellerWalletId = o.listing.seller.gatewayWalletId;
-    if (!o.sellerTransferId && o.sellerNetCents > 0) {
+    if (o.sellerTransferId) {
+      results.push({ field: "sellerTransferId", result: await provider.getTransfer(o.sellerTransferId) });
+    } else if (o.sellerNetCents > 0) {
       if (sellerWalletId) {
-        const { transferId } = await provider.transferToWallet({
+        const result = await provider.transferToWallet({
           walletId: sellerWalletId,
           cents: o.sellerNetCents,
           externalReference: `pedido-${orderId}-vendedor`,
           description: `Venda de ingresso - ${o.listing.event.name}`,
         });
-        await prisma.order.update({ where: { id: orderId }, data: { sellerTransferId: transferId } });
+        if (result.status !== "FALHOU") await prisma.order.update({ where: { id: orderId }, data: { sellerTransferId: result.transferId } });
+        results.push({ field: "sellerTransferId", result });
       } else if (provider.requiresSellerWallet) {
         throw new Error("Vendedor sem conta de recebimento");
       }
@@ -357,16 +362,19 @@ export async function requestPayout(
     }
     // Sem subconta do parceiro, a parte dele fica na conta da plataforma para repasse manual.
     const partnerWalletId = o.partner?.gatewayWalletId;
-    if (!o.partnerTransferId && o.partnerFeeCents > 0 && partnerWalletId) {
-      const { transferId } = await provider.transferToWallet({
+    if (o.partnerTransferId) {
+      results.push({ field: "partnerTransferId", result: await provider.getTransfer(o.partnerTransferId) });
+    } else if (o.partnerFeeCents > 0 && partnerWalletId) {
+      const result = await provider.transferToWallet({
         walletId: partnerWalletId,
         cents: o.partnerFeeCents,
         externalReference: `pedido-${orderId}-parceiro`,
         description: `Comissão de parceiro - ${o.listing.event.name}`,
       });
-      await prisma.order.update({ where: { id: orderId }, data: { partnerTransferId: transferId } });
+      if (result.status !== "FALHOU") await prisma.order.update({ where: { id: orderId }, data: { partnerTransferId: result.transferId } });
+      results.push({ field: "partnerTransferId", result });
     }
-    await prisma.order.update({ where: { id: orderId }, data: { payoutStatus: "CONCLUIDO", payoutUpdatedAt: new Date() } });
+    await settlePayout(orderId, "SOLICITADO", results);
   } catch (error) {
     await prisma.order.update({
       where: { id: orderId },
@@ -374,6 +382,54 @@ export async function requestPayout(
     });
   }
   return true;
+}
+
+type PayoutTransfer = { field: "sellerTransferId" | "partnerTransferId"; result: TransferResult };
+
+/**
+ * Grava a situação do repasse a partir das transferências: uma recusada ou
+ * cancelada deixa FALHOU e é apagada do pedido (o dinheiro não saiu, então
+ * "tentar de novo" transfere outra vez); uma esperando autorização deixa
+ * AGUARDANDO_APROVACAO; senão CONCLUIDO.
+ */
+async function settlePayout(orderId: string, from: "SOLICITADO" | "AGUARDANDO_APROVACAO", transfers: PayoutTransfer[]): Promise<boolean> {
+  const failed = transfers.filter((t) => t.result.status === "FALHOU");
+  const data: Prisma.OrderUpdateManyMutationInput = { payoutUpdatedAt: new Date() };
+  if (failed.length > 0) {
+    Object.assign(data, { payoutStatus: "FALHOU", payoutError: failed.map((t) => t.result.error ?? "Transferência recusada").join("; ").slice(0, 500) });
+    for (const t of failed) data[t.field] = null;
+  } else if (transfers.some((t) => t.result.status === "AGUARDANDO_APROVACAO")) {
+    data.payoutStatus = "AGUARDANDO_APROVACAO";
+  } else {
+    Object.assign(data, { payoutStatus: "CONCLUIDO", payoutError: null });
+  }
+  const updated = await prisma.order.updateMany({ where: { id: orderId, payoutStatus: from }, data });
+  return updated.count > 0 && data.payoutStatus !== from;
+}
+
+/**
+ * Repasse em AGUARDANDO_APROVACAO: consulta as transferências no gateway (depois
+ * do webhook TRANSFER_DONE/FAILED/CANCELLED ou pela rotina). true se mudou.
+ */
+export async function refreshPayout(orderId: string, provider: PaymentProvider): Promise<boolean> {
+  const o = await prisma.order.findUnique({
+    where: { id: orderId },
+    select: { payoutStatus: true, sellerTransferId: true, partnerTransferId: true },
+  });
+  if (!o || o.payoutStatus !== "AGUARDANDO_APROVACAO") return false;
+  const transfers: PayoutTransfer[] = [];
+  if (o.sellerTransferId) transfers.push({ field: "sellerTransferId", result: await provider.getTransfer(o.sellerTransferId) });
+  if (o.partnerTransferId) transfers.push({ field: "partnerTransferId", result: await provider.getTransfer(o.partnerTransferId) });
+  return settlePayout(orderId, "AGUARDANDO_APROVACAO", transfers);
+}
+
+/** Aviso do gateway sobre uma transferência de repasse (id devolvido por transferToWallet). */
+export async function handleTransferUpdate(transferId: string, provider: PaymentProvider): Promise<boolean> {
+  const order = await prisma.order.findFirst({
+    where: { OR: [{ sellerTransferId: transferId }, { partnerTransferId: transferId }] },
+    select: { id: true },
+  });
+  return order ? refreshPayout(order.id, provider) : false;
 }
 
 /** Aviso do gateway de que a devolução foi concluída (depois da aprovação manual). */
@@ -439,6 +495,16 @@ export async function runRoutines(provider: PaymentProvider, now = new Date()): 
   });
   for (const { id } of waiting) {
     if (await requestPayout(id, "AGUARDANDO_CADASTRO", provider, now)) pagamentosLiberados++;
+  }
+
+  // Repasses esperando a autorização no painel do Asaas (caso o webhook não chegue).
+  const awaiting = await prisma.order.findMany({ where: { payoutStatus: "AGUARDANDO_APROVACAO" }, select: { id: true } });
+  for (const { id } of awaiting) {
+    try {
+      await refreshPayout(id, provider);
+    } catch {
+      // Tenta de novo na próxima rodada.
+    }
   }
 
   const anunciosEncerrados = await closeFinishedListings(now);

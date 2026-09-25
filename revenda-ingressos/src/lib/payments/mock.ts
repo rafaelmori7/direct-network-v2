@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { PaymentProvider, PixCharge, PixChargeRequest, RefundResult, SellerAccount, SellerAccountRequest, TransferRequest } from "./provider";
+import type { PaymentProvider, PixCharge, PixChargeRequest, RefundResult, SellerAccount, SellerAccountRequest, TransferRequest, TransferResult, TransferStatus } from "./provider";
 
 type MockChargeState = "PENDENTE" | "RETIDO" | "REEMBOLSADO" | "CANCELADA";
 
@@ -58,20 +58,36 @@ export class MockPaymentProvider implements PaymentProvider {
     return this.charges.get(chargeId)?.payerCpf ?? null;
   }
 
-  readonly transfers: (TransferRequest & { transferId: string })[] = [];
+  readonly transfers: (TransferRequest & { transferId: string; status: TransferStatus })[] = [];
+
+  /** Situação das próximas transferências (para simular a autorização no painel do Asaas). */
+  nextTransferStatus: TransferStatus = "CONCLUIDO";
 
   /** Faz a próxima transferência falhar (ex.: saldo insuficiente). */
   failNextTransfer: string | null = null;
 
-  async transferToWallet(req: TransferRequest): Promise<{ transferId: string }> {
+  async transferToWallet(req: TransferRequest): Promise<TransferResult> {
     if (this.failNextTransfer) {
       const message = this.failNextTransfer;
       this.failNextTransfer = null;
       throw new Error(message);
     }
     const transferId = `mock_tra_${randomUUID()}`;
-    this.transfers.push({ ...req, transferId });
-    return { transferId };
+    this.transfers.push({ ...req, transferId, status: this.nextTransferStatus });
+    return { transferId, status: this.nextTransferStatus };
+  }
+
+  async getTransfer(transferId: string): Promise<TransferResult> {
+    const t = this.transfers.find((t) => t.transferId === transferId);
+    if (!t) throw new Error(`Transferência ${transferId} não existe`);
+    return { transferId, status: t.status };
+  }
+
+  /** Simula a autorização (ou o cancelamento) de uma transferência no painel. */
+  setTransferStatus(transferId: string, status: TransferStatus): void {
+    const t = this.transfers.find((t) => t.transferId === transferId);
+    if (!t) throw new Error(`Transferência ${transferId} não existe`);
+    t.status = status;
   }
 
   /** Resultado do próximo reembolso (para simular a aprovação manual do Asaas). */
