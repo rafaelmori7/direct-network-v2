@@ -22,7 +22,7 @@ export default function TermsPage() {
 
       <h2>1. Quem somos e o que fazemos</h2>
       <p>
-        O {BRAND.name} é operado por {COMPANY.legalName}, CNPJ {COMPANY.cnpj}. Somos uma plataforma que aproxima pessoas que querem revender
+        O {BRAND.name} é operado por {COMPANY.legalName}, CNPJ {COMPANY.cnpj}, com sede em {COMPANY.address}. Somos uma plataforma que aproxima pessoas que querem revender
         ingressos que compraram e pessoas que querem comprá-los. <b>Não vendemos ingressos, não somos a produtora do evento e não somos
         parceiros das ticketeiras</b> citadas. O vendedor é o responsável pelo ingresso; nós guardamos o pagamento e só o liberamos quando
         as condições destes termos forem cumpridas.

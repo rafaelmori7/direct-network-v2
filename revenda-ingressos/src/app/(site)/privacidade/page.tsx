@@ -14,7 +14,7 @@ export default function PrivacyPage() {
 
       <h2>1. Controlador</h2>
       <p>
-        {COMPANY.legalName}, CNPJ {COMPANY.cnpj}, responsável pelo {BRAND.name}. Encarregado de dados: {COMPANY.privacyEmail}.
+        {COMPANY.legalName}, CNPJ {COMPANY.cnpj}, {COMPANY.address}, responsável pelo {BRAND.name}. Encarregado de dados: {COMPANY.privacyEmail}.
       </p>
 
       <h2>2. Dados que coletamos e para quê</h2>

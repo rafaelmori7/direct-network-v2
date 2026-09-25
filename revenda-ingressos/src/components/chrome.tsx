@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { COMPANY } from "@/components/legal";
 import { BRAND } from "@/lib/brand";
 import { signOut } from "@/app/auth-actions";
 import { getCurrentUser } from "@/lib/auth/session";
@@ -75,6 +76,8 @@ export function SiteFooter() {
         </nav>
         {BRAND.name} é um intermediador independente de revenda entre pessoas. Não somos parceiros das ticketeiras
         citadas; os ingressos são transferidos pelos apps oficiais delas.
+        <br />
+        {COMPANY.legalName} · CNPJ {COMPANY.cnpj} · {COMPANY.address}
       </div>
     </footer>
   );

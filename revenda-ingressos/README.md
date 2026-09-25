@@ -92,7 +92,7 @@ tests/                testes do motor de regras, dos estados e do pagamento
   - só os avisos que pedem ação ou envolvem dinheiro: pagamento confirmado, "transfira até…", lembrete de prazo, transferido, reembolso, pagamento liberado e disputa. O chat fica só no e-mail;
   - a Meta só entrega mensagem iniciada pela empresa com **modelo aprovado**. Os textos estão em `src/lib/notify/whatsapp.ts` (`WHATSAPP_TEMPLATES`): cadastre cada um no WhatsApp Manager com o mesmo nome, idioma Português (BR) e categoria Utilidade;
   - sem `WHATSAPP_TOKEN` e `WHATSAPP_PHONE_NUMBER_ID`, as mensagens só ficam registradas (mesma tabela dos e-mails, canal WHATSAPP).
-- **Como funciona, termos e privacidade (`/como-funciona`, `/termos`, `/privacidade`):** textos montados a partir das regras reais (taxas, prazos, limites). Razão social, CNPJ e e-mails vêm de `COMPANY_*`, `CONTACT_EMAIL` e `PRIVACY_EMAIL`. O aviso "versão preliminar" some com `LEGAL_REVIEWED=1`, depois da revisão do advogado.
+- **Como funciona, termos e privacidade (`/como-funciona`, `/termos`, `/privacidade`):** textos montados a partir das regras reais (taxas, prazos, limites). Razão social, CNPJ e endereço (do cartão CNPJ) ficam em `src/components/legal.tsx` e aparecem também no rodapé (Decreto 7.962/2013); podem ser trocados por `COMPANY_*`. Os e-mails vêm de `CONTACT_EMAIL` e `PRIVACY_EMAIL`. O aviso "versão preliminar" some com `LEGAL_REVIEWED=1`, depois da revisão do advogado.
 - **Minha conta (`/conta`):** compras, vendas (com data de liberação), anúncios e avisos pelo WhatsApp.
 - **Rotinas (`/api/cron/rotinas`):** chamar a cada ~5 min com `Authorization: Bearer $CRON_SECRET`. A cada chamada:
   - cancela Pix vencidos e devolve a reserva;
