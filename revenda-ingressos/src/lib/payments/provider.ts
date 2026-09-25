@@ -106,6 +106,8 @@ export interface PaymentProvider {
   withdrawToPix(accountApiKey: string, req: WithdrawalRequest): Promise<TransferResult>;
   /** Consulta um saque feito pela subconta. */
   getAccountTransfer(accountApiKey: string, transferId: string): Promise<TransferResult>;
+  /** Cancela um saque ainda pendente da subconta; o valor volta ao saldo dela. */
+  cancelAccountTransfer(accountApiKey: string, transferId: string): Promise<TransferResult>;
   /** Link onde o vendedor envia documento e selfie; null se não houver pendência. */
   getOnboardingUrl(account: SellerAccount): Promise<string | null>;
   /** Só em ambiente de testes: simula o pagamento do Pix. */

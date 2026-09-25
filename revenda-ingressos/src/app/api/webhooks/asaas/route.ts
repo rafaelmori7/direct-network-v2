@@ -1,7 +1,7 @@
-import { timingSafeEqual } from "node:crypto";
 import { handlePaymentReceived, handleRefundCompleted, handleTransferUpdate } from "@/lib/orders/service";
 import { handleSellerAccountStatus } from "@/lib/sellers/service";
 import { getPaymentProvider } from "@/lib/payments";
+import { tokenMatches } from "@/lib/payments/webhook-auth";
 
 // Configurado no painel do Asaas (Integrações > Webhooks) apontando para
 // https://<site>/api/webhooks/asaas, com o "Token de autenticação" igual a ASAAS_WEBHOOK_TOKEN.
@@ -11,13 +11,6 @@ import { getPaymentProvider } from "@/lib/payments";
 
 const PAYMENT_EVENTS = new Set(["PAYMENT_RECEIVED", "PAYMENT_CONFIRMED"]);
 const TRANSFER_EVENTS = new Set(["TRANSFER_DONE", "TRANSFER_FAILED", "TRANSFER_CANCELLED"]);
-
-function tokenMatches(received: string | null, expected: string): boolean {
-  if (!received) return false;
-  const a = Buffer.from(received);
-  const b = Buffer.from(expected);
-  return a.length === b.length && timingSafeEqual(a, b);
-}
 
 export async function POST(request: Request) {
   const expected = process.env.ASAAS_WEBHOOK_TOKEN;

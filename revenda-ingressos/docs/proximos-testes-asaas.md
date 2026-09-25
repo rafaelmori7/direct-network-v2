@@ -68,8 +68,17 @@ parceiro. Código, testes e README atualizados.
    formato do aviso (o código usa só `transfer.id` e consulta `GET /transfers/{id}`).
 3. `onboardingUrl`: consultar de novo depois de um tempo, ou ver se só vem em produção.
 4. Testar o fluxo inteiro pelo site (`PAYMENT_PROVIDER=asaas`).
-5. Saque automático (`src/lib/sellers/withdrawals.ts`), com a chave de uma subconta aprovada e com saldo (ex.: a subconta 4,
-   criando uma nova se a chave se perdeu): `GET /finance/balance` e `POST /transfers` com `operationType: PIX`,
-   `pixAddressKey` = CPF, `pixAddressKeyType: CPF`. Conferir: a chave da subconta tem permissão de saque? Pede autorização no
-   painel? Qual tarifa cai na subconta (ajustar `WITHDRAWAL_FEE_CENTS`)? No sandbox, qual CPF de destino é aceito?
-6. Subconta CNPJ de agência pelo admin (`companyType` e sem `birthDate`): o Asaas aceita? Saque para chave CNPJ.
+5. Saque automático: ver "Resultado do saque" abaixo. Falta, com o suporte do Asaas: ligar a validação de saque por
+   webhook (`/api/webhooks/asaas/saques`) e conferir se, com ela, o saque da subconta sai sem o token SMS e se o
+   webhook traz `externalReference` e `bankAccount.pixAddressKey` como a resposta da criação.
+6. Subconta CNPJ de agência pelo admin (`companyType` e sem `birthDate`): o Asaas aceita? Saque para chave CNPJ
+   (deve ter o mesmo token SMS do saque CPF).
+
+## Resultado do saque (25/09/2026, subconta 4, chave da subconta)
+
+- `GET /finance/balance`: 200 (R$ 10, do repasse de teste).
+- `POST /transfers` Pix para CPF: a chave da subconta pode sacar. CPF do próprio titular (fictício): 400 "A chave informada
+  não foi encontrada.". Chave de teste do BACEN `99991111140`: aceito (`6e5319ab-...`), `PENDING`, `authorized: false`
+  (token SMS da subconta), `transferFee: 0`, saldo debitado na hora; ficou parado. `99992222263` não é chave.
+- `POST /transfers/{id}/cancel`: `CANCELLED`, valor de volta ao saldo.
+- Código: saque parado 1h é cancelado (admin vê, titular não é avisado); rota de validação de saque por webhook pronta.

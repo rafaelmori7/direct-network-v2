@@ -107,6 +107,15 @@ export class AsaasPaymentProvider implements PaymentProvider {
     return Math.round((body.balance ?? 0) * 100);
   }
 
+  // Testado no sandbox (25/09/2026, subconta BaaS aprovada, chave da subconta):
+  // - GET /finance/balance e POST /transfers funcionam com a chave da subconta;
+  // - chave Pix que não existe: 400 "A chave informada não foi encontrada." (no
+  //   sandbox só valem as chaves de teste do BACEN, ex.: CPF 99991111140);
+  // - aceito: PENDING, authorized: false ("aguarda autorização através do Token
+  //   SMS", enviado ao celular da SUBCONTA), transferFee 0, e o saldo sai na hora.
+  //   Não há API para autorizar: no BaaS isso exige a validação de saque por
+  //   webhook (ver transfer-validation.ts);
+  // - POST /transfers/{id}/cancel: CANCELLED e o valor volta ao saldo.
   async withdrawToPix(accountApiKey: string, req: WithdrawalRequest): Promise<TransferResult> {
     const transfer = await this.request<AsaasTransfer>(
       "POST",
@@ -126,6 +135,10 @@ export class AsaasPaymentProvider implements PaymentProvider {
 
   async getAccountTransfer(accountApiKey: string, transferId: string): Promise<TransferResult> {
     return transferResult(await this.request<AsaasTransfer>("GET", `/transfers/${transferId}`, undefined, accountApiKey));
+  }
+
+  async cancelAccountTransfer(accountApiKey: string, transferId: string): Promise<TransferResult> {
+    return transferResult(await this.request<AsaasTransfer>("POST", `/transfers/${transferId}/cancel`, undefined, accountApiKey));
   }
 
   // Testado no sandbox: com a autorização de ações críticas ligada, o reembolso

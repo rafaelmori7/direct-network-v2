@@ -12,6 +12,12 @@ import type { PaymentProvider, TransferResult } from "@/lib/payments/provider";
  *
  * `withdrawalDueAt` (em User e Partner) marca que há saque a fazer e serve de
  * trava: a rotina só pega quem está com a data vencida e empurra a data ao pegar.
+ *
+ * Testado no sandbox (25/09/2026): a chave da subconta pode sacar, mas o saque
+ * fica PENDING / authorized: false esperando o token SMS enviado ao celular da
+ * subconta (o do titular). Para o saque sair sozinho, o Asaas precisa ligar a
+ * validação de saque por webhook (`/api/webhooks/asaas/saques`). Sem ela, o saque
+ * parado é cancelado depois de AUTHORIZATION_TIMEOUT_MS e o admin vê a falha.
  */
 
 export type WithdrawalOwner = { kind: "user"; id: string } | { kind: "partner"; id: string };
@@ -20,6 +26,13 @@ export type WithdrawalOwner = { kind: "user"; id: string } | { kind: "partner"; 
 const RECHECK_MS = 15 * 60_000;
 /** Depois de uma falha (ex.: CPF/CNPJ sem chave Pix), tenta de novo no dia seguinte. */
 const RETRY_AFTER_FAILURE_MS = 24 * 3600_000;
+/**
+ * Saque esperando autorização além disso é cancelado (o valor volta à subconta).
+ * Com a validação por webhook o Asaas decide em segundos; sem ela, ninguém autoriza.
+ */
+const AUTHORIZATION_TIMEOUT_MS = 60 * 60_000;
+const AUTHORIZATION_ERROR =
+  "Cancelado: o saque esperava a autorização por token SMS da conta de recebimento. Peça ao Asaas para ligar a validação de saque por webhook.";
 /** Tarifa do Pix de saída cobrada da subconta, se houver (centavos). */
 function withdrawalFeeCents(): number {
   const n = Number(process.env.WITHDRAWAL_FEE_CENTS);
@@ -96,10 +109,12 @@ export async function processWithdrawal(owner: WithdrawalOwner, provider: Paymen
     if (now.getTime() - open.createdAt.getTime() < RECHECK_MS) return "AGUARDANDO";
     await prisma.withdrawal.update({ where: { id: open.id }, data: { status: "FALHOU", error: "Interrompido antes da resposta do gateway" } });
   } else if (open?.transferId) {
-    const result = await provider.getAccountTransfer(apiKey, open.transferId);
+    let result = await provider.getAccountTransfer(apiKey, open.transferId);
+    const unauthorized = result.status === "AGUARDANDO_APROVACAO" && now.getTime() - open.createdAt.getTime() >= AUTHORIZATION_TIMEOUT_MS;
+    if (unauthorized) result = { ...(await provider.cancelAccountTransfer(apiKey, open.transferId)), error: AUTHORIZATION_ERROR };
     await saveResult(open.id, result);
     if (result.status === "SOLICITADO" || result.status === "AGUARDANDO_APROVACAO") return "AGUARDANDO";
-    if (result.status === "FALHOU") return failed(owner, holder, result.error ?? "Transferência recusada", now);
+    if (result.status === "FALHOU") return failed(owner, holder, result.error ?? "Transferência recusada", now, { notify: !unauthorized });
     await notifySent(holder, open.cents);
     // Concluído: segue para ver se entrou mais saldo enquanto isso.
   }
@@ -112,7 +127,7 @@ export async function processWithdrawal(owner: WithdrawalOwner, provider: Paymen
   }
 
   const withdrawal = await prisma.withdrawal.create({
-    data: { ...ownerWhere(owner), cents, pixKey: holder.pixKey, pixKeyType: holder.pixKeyType, status: "SOLICITADO" },
+    data: { ...ownerWhere(owner), cents, pixKey: holder.pixKey, pixKeyType: holder.pixKeyType, status: "SOLICITADO", createdAt: now },
   });
   let result: TransferResult;
   try {
@@ -161,12 +176,13 @@ async function saveResult(id: string, result: TransferResult) {
   });
 }
 
-async function failed(owner: WithdrawalOwner, holder: Holder, reason: string, now: Date): Promise<WithdrawalOutcome> {
+async function failed(owner: WithdrawalOwner, holder: Holder, reason: string, now: Date, opts = { notify: true }): Promise<WithdrawalOutcome> {
   // Avisa só na primeira falha seguida; depois tenta todo dia em silêncio.
+  // Falha de autorização não é culpa do titular: só o admin vê.
   const recent = await prisma.withdrawal.count({
     where: { ...ownerWhere(owner), status: "FALHOU", createdAt: { gte: new Date(now.getTime() - RETRY_AFTER_FAILURE_MS * 1.5) } },
   });
-  if (recent <= 1 && holder.email) {
+  if (opts.notify && recent <= 1 && holder.email) {
     await sendEmail({
       to: holder.email,
       kind: "SAQUE_FALHOU",

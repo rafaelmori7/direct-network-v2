@@ -132,6 +132,15 @@ export class MockPaymentProvider implements PaymentProvider {
     return { transferId, status: w.status };
   }
 
+  async cancelAccountTransfer(apiKey: string, transferId: string): Promise<TransferResult> {
+    const w = this.withdrawals.find((w) => w.transferId === transferId);
+    if (!w) throw new Error(`Saque ${transferId} não existe`);
+    if (w.status === "CONCLUIDO" || w.status === "FALHOU") throw new Error(`Saque ${transferId} não pode ser cancelado`);
+    w.status = "FALHOU";
+    this.accountBalances.set(apiKey, (this.accountBalances.get(apiKey) ?? 0) + w.cents);
+    return { transferId, status: "FALHOU", error: "Transferência CANCELLED" };
+  }
+
   /** Resultado do próximo reembolso (para simular a aprovação manual do Asaas). */
   nextRefundStatus: RefundResult["status"] = "CONCLUIDO";
 

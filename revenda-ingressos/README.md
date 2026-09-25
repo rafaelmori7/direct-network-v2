@@ -268,7 +268,7 @@ No modelo BaaS o vendedor não entra no Asaas. Quando o repasse para a subconta 
 - consulta o saldo da subconta (`GET /finance/balance`, com a chave da subconta);
 - envia **todo o saldo** por Pix para a **chave CPF do próprio vendedor** (`POST /transfers` com `pixAddressKeyType: CPF`, chave da subconta). Só CPF garante a mesma titularidade;
 - grava cada saque em `SellerWithdrawal` e avisa o vendedor por e-mail;
-- saque esperando autorização: só acompanha (`GET /transfers/{id}`), não abre outro;
+- saque esperando autorização: só acompanha (`GET /transfers/{id}`), não abre outro. Se passar de 1h sem autorização, cancela (`POST /transfers/{id}/cancel`, o valor volta à subconta), registra a falha para o admin sem avisar o vendedor e tenta de novo em 24h;
 - falha (ex.: CPF sem chave Pix): o dinheiro fica na subconta, o vendedor recebe um aviso e a rotina tenta de novo a cada 24h. O admin vê em "Pix para vendedor com falha";
 - `WITHDRAWAL_FEE_CENTS` desconta a tarifa do Pix de saída, se o Asaas cobrar da subconta.
 
@@ -279,6 +279,18 @@ Como o saque usa o saldo real da subconta, uma chamada interrompida não paga du
 - Agência que já tem conta Asaas própria: continua com o `walletId` digitado no formulário. A comissão cai direto na conta dela, sem saque.
 - Conta da agência ainda em análise quando o evento acaba: o vendedor recebe normalmente e a comissão fica esperando (`Order.partnerPayoutWaiting`). A rotina transfere quando a conta for aprovada (webhook ou botão manual) e aí faz o Pix para o CNPJ.
 - Os saques ficam na tabela `Withdrawal`, com `userId` (vendedor) ou `partnerId` (agência).
+
+Testado no sandbox (25/09/2026, subconta 4, aprovada, com a chave dela):
+
+- **A chave da subconta pode sacar:** `GET /finance/balance` e `POST /transfers` (`operationType: PIX`, `pixAddressKeyType: CPF`) funcionam, sem ligar nenhuma permissão na subconta.
+- **Destino no sandbox:** CPF qualquer volta 400 "A chave informada não foi encontrada." (o site trata como falha e avisa o vendedor para cadastrar o CPF como chave Pix). Só valem as chaves de teste do BACEN (o CPF `99991111140` funcionou; `99992222263` não) ou chaves de outras contas sandbox.
+- **Autorização:** o saque volta `PENDING` com `authorized: false`, que a API descreve como "aguarda autorização através do Token SMS". O SMS vai para o celular **da subconta** (o do vendedor), e não há endpoint para autorizar. O saldo sai na hora.
+- **Tarifa:** `transferFee: 0` e `netValue` igual ao valor; nenhum lançamento de tarifa no extrato da subconta. Por isso `WITHDRAWAL_FEE_CENTS=0`. Conferir em produção.
+- **Cancelar:** `POST /transfers/{id}/cancel` → `CANCELLED`, e o valor volta ao saldo (`PIX_TRANSACTION_DEBIT_REFUND`).
+
+**Para o saque sair sozinho em produção**, pedir ao suporte do Asaas a **validação de saque por webhook** (recomendada para BaaS), com a URL `https://<site>/api/webhooks/asaas/saques` e o authToken igual a `ASAAS_WEBHOOK_TOKEN`. O Asaas manda cada transferência 5 s depois de criada e o site responde `APPROVED` só para o que ele mesmo pediu e ainda está em andamento (`src/lib/payments/transfer-validation.ts`): saque `saque-<id>` com o mesmo valor e a chave do titular (CPF do vendedor ou CNPJ da agência), ou repasse `pedido-<id>-vendedor|parceiro` com o mesmo valor e a mesma carteira. Atenção: ligada, vale para a conta principal e todas as subcontas, e **toda transferência passa a ter de sair pela API** (transferência manual no painel é recusada). Alternativa: pedir ao suporte para dispensar o token SMS nas subcontas.
+
+`scripts/asaas-sandbox-withdraw.ts <arquivo-da-chave> [cpf] [centavos] [--cancelar]` repete o teste.
 
 ### Política de reembolso (decidida)
 

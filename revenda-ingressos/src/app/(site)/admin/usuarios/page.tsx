@@ -3,6 +3,7 @@ import Link from "next/link";
 import { requireAdminPage } from "@/lib/auth/admin";
 import { formatCpf } from "@/lib/auth/cpf";
 import { prisma } from "@/lib/db";
+import { formatBRL } from "@/lib/money/fees";
 import { formatDateTime } from "@/lib/format";
 import { blockUser, setVerified, unblockUser } from "./actions";
 
@@ -26,7 +27,10 @@ export default async function AdminUsers({ searchParams }: { searchParams: Promi
   };
   const users = await prisma.user.findMany({
     where,
-    include: { _count: { select: { listings: true, orders: true } } },
+    include: {
+      _count: { select: { listings: true, orders: true } },
+      withdrawals: { orderBy: { createdAt: "desc" }, take: 1, select: { status: true, error: true, cents: true, createdAt: true } },
+    },
     orderBy: { createdAt: "desc" },
     take: 50,
   });
@@ -81,6 +85,12 @@ export default async function AdminUsers({ searchParams }: { searchParams: Promi
                 {u._count.listings} anúncios · {u._count.orders} compras
                 {u.blockedReason && ` · bloqueio: ${u.blockedReason}`}
               </div>
+              {u.withdrawals[0]?.status === "FALHOU" && (
+                <div className="offer-sub">
+                  Último Pix automático ({formatBRL(u.withdrawals[0].cents)}, {formatDateTime(u.withdrawals[0].createdAt)}) falhou:{" "}
+                  {u.withdrawals[0].error ?? "sem detalhe"}
+                </div>
+              )}
             </div>
             <div className="offer-side" style={{ gap: 6 }}>
               {!u.blockedAt && (

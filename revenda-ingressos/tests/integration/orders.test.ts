@@ -316,6 +316,59 @@ describe("saque automático para a chave Pix CPF do vendedor", () => {
     expect(await provider.getAccountBalance(s.apiKey)).toBe(0);
   });
 
+  it("saque parado esperando o token SMS é cancelado depois de 1h, sem culpar o vendedor", async () => {
+    const { runRoutines } = await import("@/lib/orders/service");
+    const s = await sellWithPayoutAccount();
+    provider.nextWithdrawalStatus = "AGUARDANDO_APROVACAO";
+    await runRoutines(provider, s.afterEvent);
+    provider.nextWithdrawalStatus = "CONCLUIDO";
+    expect(await provider.getAccountBalance(s.apiKey)).toBe(0); // O Asaas debita na hora.
+
+    await runRoutines(provider, addDays(s.afterEvent, 0.5 / 24));
+    expect(await prisma.withdrawal.findFirstOrThrow({ where: { userId: s.sellerId } })).toMatchObject({ status: "AGUARDANDO_APROVACAO" });
+
+    const later = addDays(s.afterEvent, 1.1 / 24);
+    await runRoutines(provider, later);
+    const w = await prisma.withdrawal.findFirstOrThrow({ where: { userId: s.sellerId } });
+    expect(w).toMatchObject({ status: "FALHOU" });
+    expect(w.error).toMatch(/token SMS/);
+    expect(provider.withdrawals.find((x) => x.transferId === w.transferId)?.status).toBe("FALHOU");
+    expect(await provider.getAccountBalance(s.apiKey)).toBe(s.sellerNet); // Voltou para a conta dele.
+    expect(await prisma.emailLog.count({ where: { kind: "SAQUE_FALHOU" } })).toBe(0);
+    const user = await prisma.user.findUniqueOrThrow({ where: { id: s.sellerId } });
+    expect(user.withdrawalDueAt!.getTime()).toBeGreaterThan(later.getTime() + 23 * 3600_000);
+  });
+
+  it("validação de saque por webhook: aprova só o que o site pediu", async () => {
+    const { runRoutines } = await import("@/lib/orders/service");
+    const { validateTransfer } = await import("@/lib/payments/transfer-validation");
+    const s = await sellWithPayoutAccount();
+    provider.nextWithdrawalStatus = "AGUARDANDO_APROVACAO";
+    await runRoutines(provider, s.afterEvent);
+    provider.nextWithdrawalStatus = "CONCLUIDO";
+    const w = await prisma.withdrawal.findFirstOrThrow({ where: { userId: s.sellerId } });
+    const pix = { id: w.transferId!, value: s.sellerNet / 100, externalReference: `saque-${w.id}`, operationType: "PIX", bankAccount: { pixAddressKey: "52998224725" } };
+
+    expect(await validateTransfer(pix)).toEqual({ status: "APPROVED" });
+    expect(await validateTransfer({ ...pix, externalReference: null })).toEqual({ status: "APPROVED" });
+    expect(await validateTransfer({ ...pix, value: pix.value + 1 })).toMatchObject({ status: "REFUSED" });
+    expect(await validateTransfer({ ...pix, bankAccount: { pixAddressKey: "99991111140" } })).toMatchObject({ status: "REFUSED" });
+    expect(await validateTransfer({ ...pix, id: "outra" })).toMatchObject({ status: "REFUSED" });
+    expect(await validateTransfer({ ...pix, id: "outra", externalReference: "manual" })).toMatchObject({ status: "REFUSED" });
+
+    // Repasse da conta principal para o vendedor, já concluído: não aprova de novo.
+    const order = await prisma.order.findUniqueOrThrow({ where: { id: s.id } });
+    const payout = { id: order.sellerTransferId!, value: order.sellerNetCents / 100, externalReference: `pedido-${s.id}-vendedor`, walletId: "wallet_saque" };
+    expect(await validateTransfer(payout)).toMatchObject({ status: "REFUSED" });
+    await prisma.order.update({ where: { id: s.id }, data: { payoutStatus: "SOLICITADO" } });
+    expect(await validateTransfer(payout)).toEqual({ status: "APPROVED" });
+    expect(await validateTransfer({ ...payout, walletId: "wallet_outra" })).toMatchObject({ status: "REFUSED" });
+
+    // Saque já concluído não é aprovado de novo.
+    await prisma.withdrawal.update({ where: { id: w.id }, data: { status: "CONCLUIDO" } });
+    expect(await validateTransfer(pix)).toMatchObject({ status: "REFUSED" });
+  });
+
   it("saque esperando autorização não é repetido", async () => {
     const { runRoutines } = await import("@/lib/orders/service");
     const s = await sellWithPayoutAccount();

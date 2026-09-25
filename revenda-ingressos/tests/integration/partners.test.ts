@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { prisma } from "@/lib/db";
 import { createOrder, handleTransferUpdate, refreshPayout, requestPayout, runRoutines } from "@/lib/orders/service";
 import { MockPaymentProvider } from "@/lib/payments/mock";
+import { validateTransfer, type TransferValidation } from "@/lib/payments/transfer-validation";
 import { PLATFORMS } from "@/lib/platforms/profiles";
 import { addDays } from "@/lib/time";
 
@@ -242,9 +243,26 @@ describe("comissão de agência com conta em análise", () => {
     await runRoutines(provider, addDays(now, 20));
     expect(provider.transfers.slice(before)).toHaveLength(1);
 
-    // Aprovada: a rotina transfere a comissão e manda o Pix para o CNPJ.
+    // Validação de saque por webhook: enquanto espera, uma transferência da comissão é recusada.
+    const commission = { id: "tra_x", value: r.ok ? r.order.partnerFeeCents / 100 : 0, externalReference: `pedido-${id}-parceiro`, walletId: account.walletId };
+    expect(await validateTransfer(commission)).toMatchObject({ status: "REFUSED" });
+
+    // Aprovada: a rotina transfere a comissão e manda o Pix para o CNPJ. O webhook de
+    // validação chega enquanto a transferência está sendo criada: aprova.
     expect(await handleSellerAccountStatus(account.accountId, true)).toBe(true);
-    await runRoutines(provider, addDays(now, 20.01));
+    const transferToWallet = provider.transferToWallet.bind(provider);
+    let validation: TransferValidation | null = null;
+    provider.transferToWallet = async (req) => {
+      const result = await transferToWallet(req);
+      validation = await validateTransfer({ ...commission, id: result.transferId });
+      return result;
+    };
+    try {
+      await runRoutines(provider, addDays(now, 20.01));
+    } finally {
+      provider.transferToWallet = transferToWallet;
+    }
+    expect(validation).toEqual({ status: "APPROVED" });
     const order = await prisma.order.findUniqueOrThrow({ where: { id } });
     expect(order).toMatchObject({ payoutStatus: "CONCLUIDO", partnerPayoutWaiting: false });
     expect(provider.transfers.slice(before).map((t) => t.externalReference)).toEqual([`pedido-${id}-vendedor`, `pedido-${id}-parceiro`]);
