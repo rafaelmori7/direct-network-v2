@@ -178,9 +178,15 @@ async function saveResult(id: string, result: TransferResult) {
 
 async function failed(owner: WithdrawalOwner, holder: Holder, reason: string, now: Date, opts = { notify: true }): Promise<WithdrawalOutcome> {
   // Avisa só na primeira falha seguida; depois tenta todo dia em silêncio.
-  // Falha de autorização não é culpa do titular: só o admin vê.
+  // Falha de autorização não é culpa do titular: só o admin vê, e ela não conta
+  // como aviso já dado (senão a primeira falha de chave Pix passaria em silêncio).
   const recent = await prisma.withdrawal.count({
-    where: { ...ownerWhere(owner), status: "FALHOU", createdAt: { gte: new Date(now.getTime() - RETRY_AFTER_FAILURE_MS * 1.5) } },
+    where: {
+      ...ownerWhere(owner),
+      status: "FALHOU",
+      createdAt: { gte: new Date(now.getTime() - RETRY_AFTER_FAILURE_MS * 1.5) },
+      OR: [{ error: null }, { NOT: { error: AUTHORIZATION_ERROR } }],
+    },
   });
   if (opts.notify && recent <= 1 && holder.email) {
     await sendEmail({
@@ -190,7 +196,7 @@ async function failed(owner: WithdrawalOwner, holder: Holder, reason: string, no
       text:
         `Oi, ${holder.firstName}! Tentamos enviar o seu saldo por Pix para a chave ${holder.pixKeyType} ${maskKey(holder)}, mas não deu certo.\n` +
         `Confira se o ${holder.pixKeyType} está cadastrado como chave Pix no seu banco. Tentamos de novo automaticamente a cada 24 horas; o dinheiro continua guardado na sua conta de recebimento.\n\n` +
-        `Detalhe: ${reason.slice(0, 200)}`,
+        `Detalhe: ${gatewayMessage(reason).slice(0, 200)}`,
     });
   }
   await setDue(owner, new Date(now.getTime() + RETRY_AFTER_FAILURE_MS));
@@ -205,6 +211,12 @@ async function notifySent(holder: Holder, cents: number) {
     subject: `Pix de ${formatBRL(cents)} enviado`,
     text: `Oi, ${holder.firstName}! Enviamos ${formatBRL(cents)} por Pix para a chave ${holder.pixKeyType} ${maskKey(holder)}.`,
   });
+}
+
+/** "Asaas POST /transfers falhou: 400 {...\"description\":\"A chave informada não foi encontrada.\"}" → só a descrição. */
+function gatewayMessage(reason: string): string {
+  const m = /"description"\s*:\s*"([^"]+)"/.exec(reason);
+  return m ? m[1] : reason;
 }
 
 function maskKey(holder: Holder): string {

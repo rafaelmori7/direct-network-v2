@@ -6,6 +6,7 @@ import { encrypt } from "@/lib/crypto";
 import { prisma } from "@/lib/db";
 import { parseBRLToCents } from "@/lib/format";
 import { getPaymentProvider } from "@/lib/payments";
+import { syncAccountApproval } from "@/lib/sellers/service";
 
 export type PayoutFormState = { errors: string[] };
 
@@ -55,6 +56,7 @@ export async function createPayoutAccount(_prev: PayoutFormState, form: FormData
         gatewayAccountStatus: "EM_ANALISE",
       },
     });
+    await syncAccountApproval(account.accountId, account.apiKey, provider);
   } catch (error) {
     return { errors: [`Não foi possível criar a conta de recebimento agora. ${error instanceof Error ? error.message : ""}`.trim()] };
   }

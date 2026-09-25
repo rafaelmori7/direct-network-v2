@@ -51,6 +51,13 @@ export class MockPaymentProvider implements PaymentProvider {
     return account;
   }
 
+  /** Situação da próxima consulta de análise (a aprovação automática do sandbox devolve APROVADA). */
+  nextAccountApproval: "APROVADA" | "EM_ANALISE" | "REPROVADA" = "EM_ANALISE";
+
+  async getAccountApproval(): Promise<"APROVADA" | "EM_ANALISE" | "REPROVADA"> {
+    return this.nextAccountApproval;
+  }
+
   async getOnboardingUrl(): Promise<string | null> {
     return null; // Em testes a aprovação é feita pelo admin ou pelo botão de simulação.
   }

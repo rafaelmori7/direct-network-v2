@@ -10,6 +10,7 @@ import { encrypt } from "@/lib/crypto";
 import { parseBRLToCents } from "@/lib/format";
 import { getPaymentProvider } from "@/lib/payments";
 import { isValidPartnerSlug } from "@/lib/partners/attribution";
+import { syncAccountApproval } from "@/lib/sellers/service";
 
 export type PartnerFormState = { errors: string[] };
 
@@ -131,6 +132,7 @@ export async function createPartnerPayoutAccount(partnerId: string, _prev: Partn
         gatewayAccountStatus: "EM_ANALISE",
       },
     });
+    await syncAccountApproval(account.accountId, account.apiKey, provider);
   } catch (error) {
     return { errors: [`Não foi possível criar a conta agora. ${error instanceof Error ? error.message : ""}`.trim()] };
   }

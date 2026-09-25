@@ -337,6 +337,13 @@ describe("saque automático para a chave Pix CPF do vendedor", () => {
     expect(await prisma.emailLog.count({ where: { kind: "SAQUE_FALHOU" } })).toBe(0);
     const user = await prisma.user.findUniqueOrThrow({ where: { id: s.sellerId } });
     expect(user.withdrawalDueAt!.getTime()).toBeGreaterThan(later.getTime() + 23 * 3600_000);
+
+    // No dia seguinte a chave CPF não existe: é a primeira falha do vendedor, então ele é avisado.
+    provider.failNextWithdrawal =
+      'Asaas POST /transfers falhou: 400 {"errors":[{"code":"invalid_action","description":"A chave informada não foi encontrada."}]}';
+    await runRoutines(provider, addDays(later, 1.01));
+    const mail = await prisma.emailLog.findFirstOrThrow({ where: { kind: "SAQUE_FALHOU" } });
+    expect(mail.body).toContain("Detalhe: A chave informada não foi encontrada.");
   });
 
   it("validação de saque por webhook: aprova só o que o site pediu", async () => {

@@ -217,6 +217,26 @@ describe("Pix automático da comissão para o CNPJ da agência", () => {
 });
 
 describe("comissão de agência com conta em análise", () => {
+  it("subconta já aprovada na criação (aprovação automática): libera na hora", async () => {
+    const { syncAccountApproval } = await import("@/lib/sellers/service");
+    const account = await provider.createSellerAccount({
+      name: "Outra Eventos Ltda", email: "fin@outra.local", cpfCnpj: "11222333000181", companyType: "LIMITED",
+      mobilePhone: "11999999999", incomeCents: 1_000_000, address: "Rua A", addressNumber: "1", province: "Centro", postalCode: "01000000",
+    });
+    await prisma.partner.update({ where: { slug: "outra" }, data: { gatewayAccountId: account.accountId, gatewayAccountStatus: "EM_ANALISE" } });
+
+    expect(await syncAccountApproval(account.accountId, account.apiKey, provider)).toBe(false);
+    expect(await prisma.partner.findUniqueOrThrow({ where: { slug: "outra" } })).toMatchObject({ gatewayAccountStatus: "EM_ANALISE" });
+
+    provider.nextAccountApproval = "APROVADA";
+    try {
+      expect(await syncAccountApproval(account.accountId, account.apiKey, provider)).toBe(true);
+    } finally {
+      provider.nextAccountApproval = "EM_ANALISE";
+    }
+    expect(await prisma.partner.findUniqueOrThrow({ where: { slug: "outra" } })).toMatchObject({ gatewayAccountStatus: "APROVADA" });
+  });
+
   it("o vendedor recebe na hora; a comissão espera a aprovação da conta da agência", async () => {
     process.env.ENCRYPTION_KEY = "chave-de-teste-com-mais-de-32-caracteres!!";
     const { encrypt } = await import("@/lib/crypto");

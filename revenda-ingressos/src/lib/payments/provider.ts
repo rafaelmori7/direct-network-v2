@@ -110,6 +110,8 @@ export interface PaymentProvider {
   cancelAccountTransfer(accountApiKey: string, transferId: string): Promise<TransferResult>;
   /** Link onde o vendedor envia documento e selfie; null se não houver pendência. */
   getOnboardingUrl(account: SellerAccount): Promise<string | null>;
+  /** Situação da análise da subconta, consultada com a chave dela. */
+  getAccountApproval(accountApiKey: string): Promise<"APROVADA" | "EM_ANALISE" | "REPROVADA">;
   /** Só em ambiente de testes: simula o pagamento do Pix. */
   simulatePayment?(chargeId: string): Promise<void>;
 }

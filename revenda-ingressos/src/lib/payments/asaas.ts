@@ -208,6 +208,16 @@ export class AsaasPaymentProvider implements PaymentProvider {
     return { accountId: account.id, walletId: account.walletId, apiKey: account.apiKey ?? null };
   }
 
+  // Testado no sandbox (25/09/2026) com a aprovação automática de subcontas ligada:
+  // CPF e CNPJ (MEI, LIMITED, INDIVIDUAL, ASSOCIATION) voltam general: APPROVED logo
+  // depois do POST /accounts. Sem aprovação automática: AWAITING_APPROVAL/PENDING.
+  async getAccountApproval(accountApiKey: string): Promise<"APROVADA" | "EM_ANALISE" | "REPROVADA"> {
+    const status = await this.request<{ general?: string }>("GET", "/myAccount/status", undefined, accountApiKey);
+    if (status.general === "APPROVED") return "APROVADA";
+    if (status.general === "REJECTED") return "REPROVADA";
+    return "EM_ANALISE";
+  }
+
   // Documentos pendentes da subconta; o link é consultado com a chave da própria subconta.
   async getOnboardingUrl(account: SellerAccount): Promise<string | null> {
     if (!account.apiKey) return null;

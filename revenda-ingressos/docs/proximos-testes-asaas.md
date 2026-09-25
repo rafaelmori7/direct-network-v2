@@ -71,8 +71,8 @@ parceiro. Código, testes e README atualizados.
 5. Saque automático: ver "Resultado do saque" abaixo. Falta, com o suporte do Asaas: ligar a validação de saque por
    webhook (`/api/webhooks/asaas/saques`) e conferir se, com ela, o saque da subconta sai sem o token SMS e se o
    webhook traz `externalReference` e `bankAccount.pixAddressKey` como a resposta da criação.
-6. Subconta CNPJ de agência pelo admin (`companyType` e sem `birthDate`): o Asaas aceita? Saque para chave CNPJ
-   (deve ter o mesmo token SMS do saque CPF).
+6. Subconta CNPJ: feito (ver "Resultado da subconta CNPJ"). Falta só o Pix para chave CNPJ com crédito, em produção
+   (no sandbox não existe chave CNPJ).
 
 ## Resultado do saque (25/09/2026, subconta 4, chave da subconta)
 
@@ -82,3 +82,18 @@ parceiro. Código, testes e README atualizados.
   (token SMS da subconta), `transferFee: 0`, saldo debitado na hora; ficou parado. `99992222263` não é chave.
 - `POST /transfers/{id}/cancel`: `CANCELLED`, valor de volta ao saldo.
 - Código: saque parado 1h é cancelado (admin vê, titular não é avisado); rota de validação de saque por webhook pronta.
+
+Revalidado no mesmo dia (subconta 4): saque de R$ 2 para `99991111140` de novo `PENDING` / `authorized: false`, cancelado.
+
+## Resultado da subconta CNPJ (25/09/2026)
+
+- `POST /accounts` com CNPJ, `companyType` e sem `birthDate`: aceito para `LIMITED` (`2422437e-...`), `MEI`, `INDIVIDUAL`
+  e `ASSOCIATION`; todas `JURIDICA` e `general: APPROVED` na hora. Sem `companyType`: 400 "É necessário informar o tipo
+  de empresa.". Chaves só no scratchpad da sessão.
+- Saldo na agência por cobrança Pix criada com a chave dela e paga com `/sandbox/payment/{id}/confirm`: R$ 50 − R$ 0,99 de
+  taxa = R$ 49,01.
+- Saque da subconta CNPJ para `99991111140`: `PENDING` / `authorized: false`, `transferFee: 0` (igual ao da CPF).
+- Chave CNPJ de destino: `pixAddressKeyType: CNPJ` aceito, mas nenhuma conta do sandbox tem chave CNPJ (a API só cria
+  EVP) → 400 "A chave informada não foi encontrada.".
+- `processWithdrawal` real contra o sandbox: cancelou o saque parado e registrou a falha da chave CNPJ; achou o bug do
+  aviso suprimido (corrigido). O site agora consulta a aprovação logo após criar a subconta.

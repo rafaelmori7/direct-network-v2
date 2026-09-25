@@ -255,7 +255,7 @@ Com a **aprovação automática de subcontas** ligada no sandbox e o modelo da o
 
 Scripts:
 
-- `scripts/asaas-sandbox-flow.ts <arquivo>` cria a subconta e grava a chave dela no arquivo (permissão 600);
+- `scripts/asaas-sandbox-flow.ts <arquivo> [--cnpj [MEI|LIMITED|INDIVIDUAL|ASSOCIATION]]` cria a subconta (CPF, ou CNPJ de agência) e grava a chave dela no arquivo (permissão 600);
 - `scripts/asaas-sandbox-pay.ts` cria um Pix sem split e paga na hora;
 - `scripts/asaas-sandbox-transfer.ts <walletId> [centavos]` testa o repasse.
 
@@ -290,7 +290,15 @@ Testado no sandbox (25/09/2026, subconta 4, aprovada, com a chave dela):
 
 **Para o saque sair sozinho em produção**, pedir ao suporte do Asaas a **validação de saque por webhook** (recomendada para BaaS), com a URL `https://<site>/api/webhooks/asaas/saques` e o authToken igual a `ASAAS_WEBHOOK_TOKEN`. O Asaas manda cada transferência 5 s depois de criada e o site responde `APPROVED` só para o que ele mesmo pediu e ainda está em andamento (`src/lib/payments/transfer-validation.ts`): saque `saque-<id>` com o mesmo valor e a chave do titular (CPF do vendedor ou CNPJ da agência), ou repasse `pedido-<id>-vendedor|parceiro` com o mesmo valor e a mesma carteira. Atenção: ligada, vale para a conta principal e todas as subcontas, e **toda transferência passa a ter de sair pela API** (transferência manual no painel é recusada). Alternativa: pedir ao suporte para dispensar o token SMS nas subcontas.
 
-`scripts/asaas-sandbox-withdraw.ts <arquivo-da-chave> [cpf] [centavos] [--cancelar]` repete o teste.
+Subconta CNPJ de agência e saque para CNPJ, testados no sandbox (25/09/2026):
+
+- **Criação:** `POST /accounts` com CNPJ, `companyType` e sem `birthDate` funciona para `MEI`, `LIMITED`, `INDIVIDUAL` e `ASSOCIATION` (`personType: JURIDICA`). Sem `companyType`: 400 "É necessário informar o tipo de empresa." (o formulário do admin já exige).
+- **Aprovação:** com a aprovação automática ligada, CPF e CNPJ vêm `general: APPROVED` logo na criação. O site consulta `GET /myAccount/status` com a chave da subconta logo depois de criá-la (`syncAccountApproval`) e, se já estiver aprovada, libera na hora; senão, fica `EM_ANALISE` até o webhook ou o admin.
+- **Saque da subconta CNPJ:** igual ao da CPF — `PENDING` / `authorized: false` (token SMS), `transferFee: 0`, saldo debitado na hora; o cancelamento devolve o valor.
+- **Chave CNPJ de destino:** `pixAddressKeyType: CNPJ` é aceito, mas no sandbox não existe chave CNPJ (a API só cadastra chave aleatória: `POST /pix/addressKeys` com `CNPJ` dá 400 "O tipo de chave informado não é suportada"), então o CNPJ da própria agência volta 400 "A chave informada não foi encontrada.". O Pix para chave CNPJ com crédito só dá para conferir em produção.
+- **Código contra o sandbox:** `processWithdrawal` com uma agência real do sandbox cancelou o saque parado há 2h (saldo voltou) e registrou a falha da chave CNPJ. Isso mostrou um bug, corrigido: a falha por falta de autorização contava como aviso já dado e a agência não era avisada da chave inexistente. O aviso agora mostra só a mensagem do Asaas.
+
+`scripts/asaas-sandbox-withdraw.ts <arquivo-da-chave> [cpf-ou-cnpj] [centavos] [--cancelar]` repete o teste.
 
 ### Política de reembolso (decidida)
 

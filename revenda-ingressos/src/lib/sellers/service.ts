@@ -1,4 +1,21 @@
 import { prisma } from "@/lib/db";
+import type { PaymentProvider } from "@/lib/payments/provider";
+
+/**
+ * Logo depois de criar a subconta: se o gateway já a aprovou (aprovação
+ * automática), aplica na hora o mesmo que o aviso de aprovação faria. Falha
+ * aqui não atrapalha: o webhook ou o admin aprovam depois.
+ */
+export async function syncAccountApproval(accountId: string, apiKey: string | null, provider: PaymentProvider): Promise<boolean> {
+  if (!apiKey) return false;
+  try {
+    const approval = await provider.getAccountApproval(apiKey);
+    if (approval === "EM_ANALISE") return false;
+    return handleSellerAccountStatus(accountId, approval === "APROVADA");
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Aviso do gateway sobre a análise da conta de recebimento do vendedor (ou da agência).
