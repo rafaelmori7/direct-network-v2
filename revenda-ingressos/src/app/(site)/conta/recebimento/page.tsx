@@ -43,7 +43,8 @@ export default async function PayoutAccountPage({ searchParams }: { searchParams
         <>
           <p className="page-sub">
             Para anunciar, crie sua conta de recebimento. Leva 2 minutos. Você anuncia na hora e recebe depois da aprovação
-            dos seus documentos, sempre após o evento.
+            dos seus documentos, sempre após o evento, direto por Pix na chave CPF do seu cadastro (cadastre seu CPF como chave Pix no seu
+            banco, se ainda não fez).
           </p>
           <PayoutForm returnTo={voltar} />
         </>

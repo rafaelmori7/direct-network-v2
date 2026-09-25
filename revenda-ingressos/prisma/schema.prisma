@@ -37,9 +37,15 @@ model User {
   /** Conta bloqueada pelo admin (ex.: fraude): não entra, não compra, não vende. */
   blockedAt         DateTime?
   blockedReason     String?
+  /**
+   * Saque automático: quando há saldo a enviar da conta de recebimento para a
+   * chave Pix CPF do vendedor. Também serve de trava (a rotina adia ao pegar).
+   */
+  withdrawalDueAt   DateTime?
   createdAt         DateTime  @default(now())
 
   listings    Listing[]
+  withdrawals SellerWithdrawal[]
   orders      Order[]      @relation("BuyerOrders")
   wantedPosts WantedPost[]
   messages    Message[]
@@ -394,4 +400,29 @@ model EmailLog {
   createdAt DateTime    @default(now())
 
   @@index([orderId, kind, to])
+}
+
+enum WithdrawalStatus {
+  SOLICITADO
+  /** Esperando autorização no painel do gateway. */
+  AGUARDANDO_APROVACAO
+  CONCLUIDO
+  FALHOU
+}
+
+/** Saque automático da conta de recebimento do vendedor para a chave Pix CPF dele. */
+model SellerWithdrawal {
+  id         String           @id @default(cuid())
+  userId     String
+  user       User             @relation(fields: [userId], references: [id])
+  cents      Int
+  /** Chave Pix de destino: sempre o CPF do próprio vendedor (mesma titularidade). */
+  pixKey     String
+  transferId String?
+  status     WithdrawalStatus
+  error      String?
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  @@index([userId, status])
 }

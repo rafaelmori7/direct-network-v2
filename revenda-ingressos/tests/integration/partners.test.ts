@@ -12,7 +12,7 @@ let eventId: string;
 let buyer: { id: string; name: string; cpf: string; email: string; canBuy: boolean };
 
 beforeEach(async () => {
-  for (const t of ["emailLog", "message", "orderLog", "dispute", "order", "listing", "wantedPost", "event", "partner", "session", "user", "platform"] as const) {
+  for (const t of ["emailLog", "message", "orderLog", "dispute", "order", "listing", "wantedPost", "event", "partner", "session", "sellerWithdrawal", "user", "platform"] as const) {
     // @ts-expect-error acesso dinâmico aos delegates do Prisma
     await prisma[t].deleteMany();
   }

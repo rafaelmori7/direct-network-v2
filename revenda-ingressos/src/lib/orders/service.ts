@@ -2,6 +2,7 @@ import type { Prisma } from "@prisma/client";
 import { SYSTEM_MESSAGES } from "@/lib/chat/policy";
 import { notifyStatusChange, sendTransferReminders } from "@/lib/notify/order-emails";
 import { prisma } from "@/lib/db";
+import { processDueWithdrawals, scheduleWithdrawal } from "@/lib/sellers/withdrawals";
 import { eventRuleInput, getEvent, rulesFor } from "@/lib/data/repo";
 import { orderAmounts, type FeeConfig } from "@/lib/money/fees";
 import { resolvePartner } from "@/lib/partners/attribution";
@@ -404,6 +405,11 @@ async function settlePayout(orderId: string, from: "SOLICITADO" | "AGUARDANDO_AP
     Object.assign(data, { payoutStatus: "CONCLUIDO", payoutError: null });
   }
   const updated = await prisma.order.updateMany({ where: { id: orderId, payoutStatus: from }, data });
+  if (updated.count > 0 && data.payoutStatus === "CONCLUIDO") {
+    // O dinheiro chegou na conta de recebimento: agenda o Pix automático para o vendedor.
+    const o = await prisma.order.findUnique({ where: { id: orderId }, select: { listing: { select: { sellerId: true } } } });
+    if (o) await scheduleWithdrawal(o.listing.sellerId);
+  }
   return updated.count > 0 && data.payoutStatus !== from;
 }
 
@@ -461,6 +467,7 @@ export interface RoutineReport {
   prazosDeTransferenciaEsgotados: number;
   pagamentosLiberados: number;
   anunciosEncerrados: number;
+  saquesEnviados: number;
 }
 
 /**
@@ -508,7 +515,8 @@ export async function runRoutines(provider: PaymentProvider, now = new Date()): 
   }
 
   const anunciosEncerrados = await closeFinishedListings(now);
-  return { pixVencidos, lembretesDeTransferencia, prazosDeTransferenciaEsgotados, pagamentosLiberados, anunciosEncerrados };
+  const saquesEnviados = await processDueWithdrawals(provider, now);
+  return { pixVencidos, lembretesDeTransferencia, prazosDeTransferenciaEsgotados, pagamentosLiberados, anunciosEncerrados, saquesEnviados };
 }
 
 /** Anúncios de eventos cuja venda fechou (prazo de transferência) saem do ar. */

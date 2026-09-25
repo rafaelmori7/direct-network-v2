@@ -86,7 +86,9 @@ export default function TermsPage() {
       <h2>6. Liberação ao vendedor</h2>
       <p>
         O valor é liberado ao vendedor {rules.releaseBusinessDaysAfterEvent} dias úteis depois do fim do evento, e nunca antes de{" "}
-        {rules.disputeWindowHoursAfterEvent} horas depois dele, desde que não haja disputa aberta e a conta de recebimento esteja aprovada.
+        {rules.disputeWindowHoursAfterEvent} horas depois dele, desde que não haja disputa aberta e a conta de recebimento esteja aprovada. Em seguida, o valor é enviado automaticamente por Pix
+        para a chave CPF do próprio vendedor; se o CPF não estiver cadastrado como chave Pix, o valor fica guardado na conta de recebimento e
+        tentamos de novo a cada 24 horas.
       </p>
 
       <h2>7. Disputas e reembolsos</h2>

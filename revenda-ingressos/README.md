@@ -261,6 +261,19 @@ Scripts:
 
 Todos com `NODE_USE_ENV_PROXY=1` e `ASAAS_API_KEY`.
 
+### Saque automático para o vendedor (decidido em 25/09/2026)
+
+No modelo BaaS o vendedor não entra no Asaas. Quando o repasse para a subconta dele conclui, o site marca `User.withdrawalDueAt`, e a rotina (`processDueWithdrawals`, em `src/lib/sellers/withdrawals.ts`):
+
+- consulta o saldo da subconta (`GET /finance/balance`, com a chave da subconta);
+- envia **todo o saldo** por Pix para a **chave CPF do próprio vendedor** (`POST /transfers` com `pixAddressKeyType: CPF`, chave da subconta). Só CPF garante a mesma titularidade;
+- grava cada saque em `SellerWithdrawal` e avisa o vendedor por e-mail;
+- saque esperando autorização: só acompanha (`GET /transfers/{id}`), não abre outro;
+- falha (ex.: CPF sem chave Pix): o dinheiro fica na subconta, o vendedor recebe um aviso e a rotina tenta de novo a cada 24h. O admin vê em "Pix para vendedor com falha";
+- `WITHDRAWAL_FEE_CENTS` desconta a tarifa do Pix de saída, se o Asaas cobrar da subconta.
+
+Como o saque usa o saldo real da subconta, uma chamada interrompida não paga duas vezes.
+
 ### Política de reembolso (decidida)
 
 - **Valor:** o comprador recebe sempre o **valor integral**, e a taxa do Pix sai do saldo da plataforma. Mantenha saldo de reserva no Asaas.

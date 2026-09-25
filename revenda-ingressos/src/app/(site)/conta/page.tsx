@@ -28,7 +28,10 @@ export default async function AccountPage() {
     }),
   ]);
 
-  const contact = await prisma.user.findUniqueOrThrow({ where: { id: user.id }, select: { phone: true, whatsappOptIn: true } });
+  const [contact, withdrawals] = await Promise.all([
+    prisma.user.findUniqueOrThrow({ where: { id: user.id }, select: { phone: true, whatsappOptIn: true } }),
+    prisma.sellerWithdrawal.findMany({ where: { userId: user.id }, orderBy: { createdAt: "desc" }, take: 5 }),
+  ]);
 
   return (
     <main className="form-page">
@@ -40,7 +43,8 @@ export default async function AccountPage() {
       {user.payoutApproved ? (
         <div className="notice notice-safe">
           <div>
-            <b>Conta de recebimento aprovada</b>Você pode comprar e vender, e recebe após cada evento.
+            <b>Conta de recebimento aprovada</b>Depois de cada evento, o dinheiro das suas vendas vai automaticamente por Pix para a chave
+            CPF {formatCpf(user.cpf)}. Confira se o seu CPF está cadastrado como chave Pix no seu banco.
           </div>
         </div>
       ) : user.hasPayoutAccount ? (
@@ -66,6 +70,23 @@ export default async function AccountPage() {
         </div>
         <button className="btn btn-outline">{contact.whatsappOptIn ? "Desligar" : "Ligar"}</button>
       </form>
+
+      {withdrawals.length > 0 && (
+        <Section title="Pix recebidos" empty="">
+          {withdrawals.map((w) => (
+            <div key={w.id} className="offer">
+              <div>
+                <span className="type-badge">{WITHDRAWAL_STATUS[w.status]}</span>
+                <div className="offer-sub" style={{ marginTop: 6 }}>
+                  {formatDateTime(w.createdAt)} · chave CPF
+                  {w.status === "FALHOU" && " · confira se o seu CPF é chave Pix no seu banco; tentamos de novo em 24h"}
+                </div>
+              </div>
+              <div className="offer-price">{formatBRL(w.cents)}</div>
+            </div>
+          ))}
+        </Section>
+      )}
 
       <Section title="Minhas compras" empty="Você ainda não comprou nada.">
         {purchases.map((o) => (
@@ -108,6 +129,8 @@ function Section({ title, empty, children }: { title: string; empty: string; chi
     </section>
   );
 }
+
+const WITHDRAWAL_STATUS = { SOLICITADO: "Enviando", AGUARDANDO_APROVACAO: "Enviando", CONCLUIDO: "Pix enviado", FALHOU: "Não enviado" } as const;
 
 const STATUS_SHORT: Record<string, string> = {
   AGUARDANDO_PAGAMENTO: "Aguardando Pix",

@@ -18,6 +18,7 @@ async function reset() {
   await prisma.wantedPost.deleteMany();
   await prisma.event.deleteMany();
   await prisma.session.deleteMany();
+  await prisma.sellerWithdrawal.deleteMany();
   await prisma.user.deleteMany();
   await prisma.platform.deleteMany();
 }
@@ -255,6 +256,86 @@ describe("vendedor com cadastro em análise", () => {
     expect(await prisma.order.findUniqueOrThrow({ where: { id } })).toMatchObject({ payoutStatus: "CONCLUIDO" });
     expect(provider.transfers.filter((t) => t.externalReference === `pedido-${id}-vendedor`)).toEqual([
       expect.objectContaining({ walletId: "wallet_teste", cents: o.sellerNetCents }),
+    ]);
+  });
+});
+
+describe("saque automático para a chave Pix CPF do vendedor", () => {
+  async function sellWithPayoutAccount() {
+    process.env.ENCRYPTION_KEY = "chave-de-teste-com-mais-de-32-caracteres!!";
+    const { encrypt } = await import("@/lib/crypto");
+    const listing = await prisma.listing.findUniqueOrThrow({ where: { id: listingId } });
+    const apiKey = `key_${listing.sellerId}`;
+    await prisma.user.update({
+      where: { id: listing.sellerId },
+      data: { gatewayAccountId: "acc_saque", gatewayWalletId: "wallet_saque", gatewayApiKeyEnc: encrypt(apiKey), gatewayAccountStatus: "APROVADA" },
+    });
+    provider.walletKeys.set("wallet_saque", apiKey);
+    const r = await orderFor(buyers[0]);
+    const id = r.ok ? r.orderId : "";
+    const o = await prisma.order.findUniqueOrThrow({ where: { id } });
+    provider.markPaid(o.chargeId!);
+    await applyAction(id, { type: "PAGAMENTO_CONFIRMADO" }, "SISTEMA", null, provider, { now });
+    await applyAction(id, { type: "VENDEDOR_TRANSFERIU" }, "VENDEDOR", null, provider, { now });
+    return { id, sellerId: listing.sellerId, apiKey, sellerNet: o.sellerNetCents, afterEvent: addDays(o.releaseAt, 0.01) };
+  }
+
+  it("depois do repasse, envia o saldo por Pix para o CPF do vendedor", async () => {
+    const { runRoutines } = await import("@/lib/orders/service");
+    const s = await sellWithPayoutAccount();
+    const report = await runRoutines(provider, s.afterEvent);
+    expect(report.saquesEnviados).toBe(1);
+    expect(await prisma.order.findUniqueOrThrow({ where: { id: s.id } })).toMatchObject({ payoutStatus: "CONCLUIDO" });
+    expect(provider.withdrawals.filter((w) => w.apiKey === s.apiKey)).toEqual([
+      expect.objectContaining({ cents: s.sellerNet, cpf: "52998224725" }),
+    ]);
+    expect(await provider.getAccountBalance(s.apiKey)).toBe(0);
+    expect(await prisma.sellerWithdrawal.findFirstOrThrow({ where: { userId: s.sellerId } })).toMatchObject({ status: "CONCLUIDO", cents: s.sellerNet });
+    expect(await prisma.user.findUniqueOrThrow({ where: { id: s.sellerId } })).toMatchObject({ withdrawalDueAt: null });
+    expect(await prisma.emailLog.count({ where: { kind: "SAQUE_ENVIADO" } })).toBe(1);
+
+    // Rodar de novo não envia nada.
+    expect((await runRoutines(provider, addDays(s.afterEvent, 0.01))).saquesEnviados).toBe(0);
+    expect(provider.withdrawals.filter((w) => w.apiKey === s.apiKey)).toHaveLength(1);
+  });
+
+  it("CPF sem chave Pix: avisa o vendedor e tenta de novo 24h depois", async () => {
+    const { runRoutines } = await import("@/lib/orders/service");
+    const s = await sellWithPayoutAccount();
+    provider.failNextWithdrawal = "Chave Pix não encontrada";
+    await runRoutines(provider, s.afterEvent);
+    const user = await prisma.user.findUniqueOrThrow({ where: { id: s.sellerId } });
+    expect(user.withdrawalDueAt!.getTime()).toBeGreaterThan(s.afterEvent.getTime() + 23 * 3600_000);
+    expect(await prisma.sellerWithdrawal.findFirstOrThrow({ where: { userId: s.sellerId } })).toMatchObject({ status: "FALHOU" });
+    expect(await prisma.emailLog.count({ where: { kind: "SAQUE_FALHOU" } })).toBe(1);
+    expect(await provider.getAccountBalance(s.apiKey)).toBe(s.sellerNet); // Dinheiro continua na conta dele.
+
+    // Uma hora depois ainda não tenta; no dia seguinte, sim.
+    expect((await runRoutines(provider, addDays(s.afterEvent, 1 / 24))).saquesEnviados).toBe(0);
+    expect((await runRoutines(provider, addDays(s.afterEvent, 1.05))).saquesEnviados).toBe(1);
+    expect(await provider.getAccountBalance(s.apiKey)).toBe(0);
+  });
+
+  it("saque esperando autorização não é repetido", async () => {
+    const { runRoutines } = await import("@/lib/orders/service");
+    const s = await sellWithPayoutAccount();
+    provider.nextWithdrawalStatus = "AGUARDANDO_APROVACAO";
+    await runRoutines(provider, s.afterEvent);
+    provider.nextWithdrawalStatus = "CONCLUIDO";
+    expect(await prisma.sellerWithdrawal.findFirstOrThrow({ where: { userId: s.sellerId } })).toMatchObject({ status: "AGUARDANDO_APROVACAO" });
+
+    // Mais saldo entra (outra venda), mas o saque aberto só é acompanhado.
+    provider.accountBalances.set(s.apiKey, 5_000);
+    await runRoutines(provider, addDays(s.afterEvent, 0.02));
+    expect(provider.withdrawals.filter((w) => w.apiKey === s.apiKey)).toHaveLength(1);
+
+    // Autorizado no painel: conclui e envia o saldo novo.
+    provider.withdrawals.find((w) => w.apiKey === s.apiKey)!.status = "CONCLUIDO";
+    await runRoutines(provider, addDays(s.afterEvent, 0.04));
+    const done = await prisma.sellerWithdrawal.findMany({ where: { userId: s.sellerId }, orderBy: { createdAt: "asc" } });
+    expect(done.map((w) => [w.status, w.cents])).toEqual([
+      ["CONCLUIDO", s.sellerNet],
+      ["CONCLUIDO", 5_000],
     ]);
   });
 });

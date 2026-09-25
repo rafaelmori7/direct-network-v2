@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminHome() {
   await requireAdminPage("/admin");
-  const [events, unknownTransfer, disputes, refunds, payoutsFailed, payoutsAwaiting, pendingSellers, paused] = await Promise.all([
+  const [events, unknownTransfer, disputes, refunds, payoutsFailed, payoutsAwaiting, pendingSellers, paused, withdrawalsFailed] = await Promise.all([
     prisma.event.count({ where: { endsAt: { gt: new Date() } } }),
     prisma.event.count({ where: { endsAt: { gt: new Date() }, transferAllowed: "DESCONHECIDO" } }),
     prisma.order.count({ where: { status: "EM_DISPUTA" } }),
@@ -15,6 +15,8 @@ export default async function AdminHome() {
     prisma.order.count({ where: { payoutStatus: "AGUARDANDO_APROVACAO" } }),
     prisma.user.count({ where: { verifiedAt: null, blockedAt: null, gatewayAccountId: { not: null } } }),
     prisma.listing.count({ where: { status: "PAUSADO" } }),
+    // Vendedores cujo último saque automático falhou (ex.: CPF sem chave Pix).
+    prisma.user.count({ where: { withdrawals: { some: { status: "FALHOU" } }, withdrawalDueAt: { not: null } } }),
   ]);
   const cards = [
     { href: "/admin/eventos", title: "Eventos", value: events, note: unknownTransfer ? `${unknownTransfer} com transferência a confirmar` : "Todos confirmados" },
@@ -22,6 +24,7 @@ export default async function AdminHome() {
     { href: "/admin/reembolsos", title: "Reembolsos pendentes", value: refunds, note: "Aprovar no painel do Asaas" },
     { href: "/admin/disputas", title: "Liberações com falha", value: payoutsFailed, note: "Conferir no Asaas" },
     { href: "/admin/disputas", title: "Repasses para aprovar", value: payoutsAwaiting, note: "Autorizar no painel do Asaas" },
+    { href: "/admin/usuarios?filtro=saque", title: "Pix para vendedor com falha", value: withdrawalsFailed, note: "Tentamos de novo a cada 24h" },
     { href: "/admin/usuarios?filtro=pendentes", title: "Cadastros em análise", value: pendingSellers, note: "Vendedores que ainda não recebem" },
     { href: "/admin/anuncios?status=PAUSADO", title: "Anúncios pausados", value: paused, note: "Revisar e reativar ou remover" },
     { href: "/admin/pedidos", title: "Buscar pedidos", value: "→", note: "Por nº, cobrança, e-mail, CPF ou evento" },

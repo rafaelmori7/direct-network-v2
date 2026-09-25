@@ -62,6 +62,15 @@ export interface TransferResult {
   error?: string | null;
 }
 
+/** Saque da conta de recebimento do vendedor para uma chave Pix CPF (mesma titularidade). */
+export interface WithdrawalRequest {
+  cents: number;
+  /** CPF do próprio vendedor, só dígitos. */
+  cpf: string;
+  externalReference: string;
+  description: string;
+}
+
 /** CONCLUIDO: devolvido. AGUARDANDO_APROVACAO: precisa ser aprovado no painel do gateway. */
 export type RefundResult = { status: "CONCLUIDO" | "AGUARDANDO_APROVACAO" | "SOLICITADO" };
 
@@ -86,6 +95,12 @@ export interface PaymentProvider {
   getPayerCpf(chargeId: string): Promise<string | null>;
   /** Cria a subconta do vendedor. */
   createSellerAccount(req: SellerAccountRequest): Promise<SellerAccount>;
+  /** Saldo disponível da subconta, em centavos (consultado com a chave da subconta). */
+  getAccountBalance(accountApiKey: string): Promise<number>;
+  /** Envia o saldo da subconta por Pix para a chave CPF do titular (chave da subconta). */
+  withdrawToPix(accountApiKey: string, req: WithdrawalRequest): Promise<TransferResult>;
+  /** Consulta um saque feito pela subconta. */
+  getAccountTransfer(accountApiKey: string, transferId: string): Promise<TransferResult>;
   /** Link onde o vendedor envia documento e selfie; null se não houver pendência. */
   getOnboardingUrl(account: SellerAccount): Promise<string | null>;
   /** Só em ambiente de testes: simula o pagamento do Pix. */

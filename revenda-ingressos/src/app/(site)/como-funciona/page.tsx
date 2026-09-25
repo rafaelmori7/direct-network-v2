@@ -52,8 +52,8 @@ export default function HowItWorks() {
             </li>
             <li>
               <span>
-              Receba na sua conta {rules.releaseBusinessDaysAfterEvent} dias úteis depois do evento, se não houver disputa. Os pagamentos só são liberados
-              com o cadastro aprovado.
+              Receba por Pix, na chave CPF, {rules.releaseBusinessDaysAfterEvent} dias úteis depois do evento, se não houver disputa. Os pagamentos só
+              são liberados com o cadastro aprovado.
             </span>
             </li>
           </ol>

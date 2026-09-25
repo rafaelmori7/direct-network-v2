@@ -8,6 +8,7 @@ import {
   type SellerAccountRequest,
   type TransferRequest,
   type TransferResult,
+  type WithdrawalRequest,
 } from "./provider";
 
 interface AsaasTransfer {
@@ -98,6 +99,35 @@ export class AsaasPaymentProvider implements PaymentProvider {
     return transferResult(await this.request<AsaasTransfer>("GET", `/transfers/${transferId}`));
   }
 
+  // Saque automático: a subconta (BaaS, sem acesso ao painel) envia o saldo por Pix
+  // para a chave CPF do próprio vendedor. Feito com a chave da subconta.
+  // Ainda não testado no sandbox (precisa de chave Pix CPF de destino válida).
+  async getAccountBalance(accountApiKey: string): Promise<number> {
+    const body = await this.request<{ balance?: number }>("GET", "/finance/balance", undefined, accountApiKey);
+    return Math.round((body.balance ?? 0) * 100);
+  }
+
+  async withdrawToPix(accountApiKey: string, req: WithdrawalRequest): Promise<TransferResult> {
+    const transfer = await this.request<AsaasTransfer>(
+      "POST",
+      "/transfers",
+      {
+        value: req.cents / 100,
+        operationType: "PIX",
+        pixAddressKey: onlyDigits(req.cpf),
+        pixAddressKeyType: "CPF",
+        externalReference: req.externalReference,
+        description: req.description,
+      },
+      accountApiKey,
+    );
+    return transferResult(transfer);
+  }
+
+  async getAccountTransfer(accountApiKey: string, transferId: string): Promise<TransferResult> {
+    return transferResult(await this.request<AsaasTransfer>("GET", `/transfers/${transferId}`, undefined, accountApiKey));
+  }
+
   // Testado no sandbox: com a autorização de ações críticas ligada, o reembolso
   // volta como AWAITING_CRITICAL_ACTION_AUTHORIZATION até ser aprovado no painel.
   async refund(chargeId: string): Promise<RefundResult> {
@@ -184,13 +214,14 @@ export class AsaasPaymentProvider implements PaymentProvider {
     await this.request("POST", `/sandbox/payment/${chargeId}/confirm`);
   }
 
-  private async request<T = unknown>(method: "GET" | "POST" | "DELETE", path: string, body?: unknown): Promise<T> {
+  /** `apiKey` troca a chave da conta principal pela de uma subconta. */
+  private async request<T = unknown>(method: "GET" | "POST" | "DELETE", path: string, body?: unknown, apiKey = this.apiKey): Promise<T> {
     const res = await fetch(`${this.apiUrl}${path}`, {
       method,
       headers: {
         "Content-Type": "application/json",
         "User-Agent": "revenda-ingressos",
-        ...(this.apiKey && { access_token: this.apiKey }),
+        ...(apiKey && { access_token: apiKey }),
       },
       body: body === undefined ? undefined : JSON.stringify(body),
     });

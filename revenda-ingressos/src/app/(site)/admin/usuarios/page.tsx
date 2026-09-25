@@ -22,6 +22,7 @@ export default async function AdminUsers({ searchParams }: { searchParams: Promi
     }),
     ...(filtro === "pendentes" && { verifiedAt: null, blockedAt: null, gatewayAccountId: { not: null } }),
     ...(filtro === "bloqueados" && { blockedAt: { not: null } }),
+    ...(filtro === "saque" && { withdrawals: { some: { status: "FALHOU" } }, withdrawalDueAt: { not: null } }),
   };
   const users = await prisma.user.findMany({
     where,
@@ -47,6 +48,7 @@ export default async function AdminUsers({ searchParams }: { searchParams: Promi
           ["", "Todos"],
           ["pendentes", "Verificação pendente"],
           ["bloqueados", "Bloqueados"],
+          ["saque", "Pix com falha"],
         ].map(([value, label]) => (
           <Link key={value} href={`/admin/usuarios?${new URLSearchParams({ ...(q && { q }), ...(value && { filtro: value }) })}`} className={`chip ${filtro === value ? "chip-active" : ""}`}>
             {label}

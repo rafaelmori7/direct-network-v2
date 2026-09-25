@@ -68,3 +68,7 @@ parceiro. Código, testes e README atualizados.
    formato do aviso (o código usa só `transfer.id` e consulta `GET /transfers/{id}`).
 3. `onboardingUrl`: consultar de novo depois de um tempo, ou ver se só vem em produção.
 4. Testar o fluxo inteiro pelo site (`PAYMENT_PROVIDER=asaas`).
+5. Saque automático (`src/lib/sellers/withdrawals.ts`), com a chave de uma subconta aprovada e com saldo (ex.: a subconta 4,
+   criando uma nova se a chave se perdeu): `GET /finance/balance` e `POST /transfers` com `operationType: PIX`,
+   `pixAddressKey` = CPF, `pixAddressKeyType: CPF`. Conferir: a chave da subconta tem permissão de saque? Pede autorização no
+   painel? Qual tarifa cai na subconta (ajustar `WITHDRAWAL_FEE_CENTS`)? No sandbox, qual CPF de destino é aceito?

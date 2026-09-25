@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { PaymentProvider, PixCharge, PixChargeRequest, RefundResult, SellerAccount, SellerAccountRequest, TransferRequest, TransferResult, TransferStatus } from "./provider";
+import type { PaymentProvider, PixCharge, PixChargeRequest, RefundResult, SellerAccount, SellerAccountRequest, TransferRequest, TransferResult, TransferStatus, WithdrawalRequest } from "./provider";
 
 type MockChargeState = "PENDENTE" | "RETIDO" | "REEMBOLSADO" | "CANCELADA";
 
@@ -35,11 +35,20 @@ export class MockPaymentProvider implements PaymentProvider {
   }
 
   readonly sellerAccounts = new Map<string, SellerAccountRequest>();
+  /** walletId → chave da subconta, para creditar o saldo quando o repasse conclui. */
+  readonly walletKeys = new Map<string, string>();
+
+  private credit(walletId: string, cents: number): void {
+    const key = this.walletKeys.get(walletId);
+    if (key) this.accountBalances.set(key, (this.accountBalances.get(key) ?? 0) + cents);
+  }
 
   async createSellerAccount(req: SellerAccountRequest): Promise<SellerAccount> {
     const accountId = `mock_acc_${randomUUID()}`;
     this.sellerAccounts.set(accountId, req);
-    return { accountId, walletId: `mock_wallet_${randomUUID()}`, apiKey: `mock_key_${randomUUID()}` };
+    const account = { accountId, walletId: `mock_wallet_${randomUUID()}`, apiKey: `mock_key_${randomUUID()}` };
+    this.walletKeys.set(account.walletId, account.apiKey);
+    return account;
   }
 
   async getOnboardingUrl(): Promise<string | null> {
@@ -74,6 +83,7 @@ export class MockPaymentProvider implements PaymentProvider {
     }
     const transferId = `mock_tra_${randomUUID()}`;
     this.transfers.push({ ...req, transferId, status: this.nextTransferStatus });
+    if (this.nextTransferStatus === "CONCLUIDO") this.credit(req.walletId, req.cents);
     return { transferId, status: this.nextTransferStatus };
   }
 
@@ -87,7 +97,39 @@ export class MockPaymentProvider implements PaymentProvider {
   setTransferStatus(transferId: string, status: TransferStatus): void {
     const t = this.transfers.find((t) => t.transferId === transferId);
     if (!t) throw new Error(`Transferência ${transferId} não existe`);
+    if (status === "CONCLUIDO" && t.status !== "CONCLUIDO") this.credit(t.walletId, t.cents);
     t.status = status;
+  }
+
+  /** Saldo das subcontas por chave de API (em centavos). */
+  readonly accountBalances = new Map<string, number>();
+  readonly withdrawals: (WithdrawalRequest & { apiKey: string; transferId: string; status: TransferStatus })[] = [];
+  /** Situação dos próximos saques; failNextWithdrawal simula chave Pix inexistente. */
+  nextWithdrawalStatus: TransferStatus = "CONCLUIDO";
+  failNextWithdrawal: string | null = null;
+
+  async getAccountBalance(apiKey: string): Promise<number> {
+    return this.accountBalances.get(apiKey) ?? 0;
+  }
+
+  async withdrawToPix(apiKey: string, req: WithdrawalRequest): Promise<TransferResult> {
+    if (this.failNextWithdrawal) {
+      const message = this.failNextWithdrawal;
+      this.failNextWithdrawal = null;
+      throw new Error(message);
+    }
+    const balance = this.accountBalances.get(apiKey) ?? 0;
+    if (req.cents > balance) throw new Error("Saldo insuficiente");
+    this.accountBalances.set(apiKey, balance - req.cents);
+    const transferId = `mock_saq_${randomUUID()}`;
+    this.withdrawals.push({ ...req, apiKey, transferId, status: this.nextWithdrawalStatus });
+    return { transferId, status: this.nextWithdrawalStatus };
+  }
+
+  async getAccountTransfer(_apiKey: string, transferId: string): Promise<TransferResult> {
+    const w = this.withdrawals.find((w) => w.transferId === transferId);
+    if (!w) throw new Error(`Saque ${transferId} não existe`);
+    return { transferId, status: w.status };
   }
 
   /** Resultado do próximo reembolso (para simular a aprovação manual do Asaas). */
