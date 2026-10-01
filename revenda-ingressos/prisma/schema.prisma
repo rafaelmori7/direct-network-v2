@@ -289,6 +289,13 @@ model Order {
   refundError        String?
   refundUpdatedAt    DateTime?
   /**
+   * Devolução por Pix para a chave CPF do comprador, em vez de estorno: usada
+   * quando o pagamento passou do prazo de estorno do Pix (90 dias).
+   */
+  refundByPix        Boolean      @default(false)
+  /** Pix de devolução já enviado; evita devolver duas vezes ao tentar de novo. */
+  refundTransferId   String?
+  /**
    * Repasse depois do evento: o Pix fica todo na conta da plataforma e, na liberação,
    * transferimos (POST /transfers no Asaas) a parte do vendedor e a do parceiro.
    */

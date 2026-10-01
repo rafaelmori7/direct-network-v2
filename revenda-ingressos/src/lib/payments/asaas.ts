@@ -95,6 +95,12 @@ export class AsaasPaymentProvider implements PaymentProvider {
     return transferResult(transfer);
   }
 
+  // Mesmo POST /transfers do saque, mas com a chave da conta principal. Depende da
+  // mesma liberação (whitelist de IPs sem evento crítico, ou aprovação no painel).
+  async sendPix(req: WithdrawalRequest): Promise<TransferResult> {
+    return this.pixTransfer(req, this.apiKey);
+  }
+
   async getTransfer(transferId: string): Promise<TransferResult> {
     return transferResult(await this.request<AsaasTransfer>("GET", `/transfers/${transferId}`));
   }
@@ -113,10 +119,16 @@ export class AsaasPaymentProvider implements PaymentProvider {
   //   sandbox só valem as chaves de teste do BACEN, ex.: CPF 99991111140);
   // - aceito: PENDING, authorized: false ("aguarda autorização através do Token
   //   SMS", enviado ao celular da SUBCONTA), transferFee 0, e o saldo sai na hora.
-  //   Não há API para autorizar: no BaaS isso exige a validação de saque por
-  //   webhook (ver transfer-validation.ts);
+  //   Não há API para autorizar. Segundo o Asaas (30/09/2026), a saída é a
+  //   whitelist de IPs com o "evento crítico em requisições de saque" desligado,
+  //   herdada pelas subcontas; a validação por webhook (transfer-validation.ts)
+  //   fica como camada extra;
   // - POST /transfers/{id}/cancel: CANCELLED e o valor volta ao saldo.
   async withdrawToPix(accountApiKey: string, req: WithdrawalRequest): Promise<TransferResult> {
+    return this.pixTransfer(req, accountApiKey);
+  }
+
+  private async pixTransfer(req: WithdrawalRequest, apiKey: string | null): Promise<TransferResult> {
     const transfer = await this.request<AsaasTransfer>(
       "POST",
       "/transfers",
@@ -128,7 +140,7 @@ export class AsaasPaymentProvider implements PaymentProvider {
         externalReference: req.externalReference,
         description: req.description,
       },
-      accountApiKey,
+      apiKey,
     );
     return transferResult(transfer);
   }

@@ -166,3 +166,95 @@ describe("reembolso com aprovação manual", () => {
     spy.mockRestore();
   });
 });
+
+describe("devolução por Pix depois do prazo de estorno", () => {
+  async function paidLongAgo(days: number) {
+    const order = await newOrder();
+    provider.markPaid(order.chargeId!, "***.444.777-**");
+    await handlePaymentReceived(order.chargeId!, provider, now);
+    await prisma.order.update({ where: { id: order.id }, data: { paidAt: addDays(now, -days) } });
+    return prisma.order.findUniqueOrThrow({ where: { id: order.id } });
+  }
+
+  it("até 85 dias estorna a cobrança", async () => {
+    const { requestRefund } = await import("@/lib/orders/service");
+    const recent = await paidLongAgo(80);
+    const sentBefore = provider.pixSent.length;
+    expect(await requestRefund(recent.id, "NENHUM", provider, now)).toBe(true);
+    expect(provider.charges.get(recent.chargeId!)?.state).toBe("REEMBOLSADO");
+    expect(provider.pixSent).toHaveLength(sentBefore);
+    expect(await prisma.order.findUniqueOrThrow({ where: { id: recent.id } })).toMatchObject({ refundStatus: "CONCLUIDO", refundByPix: false });
+  });
+
+  it("depois de 85 dias envia Pix para a chave CPF do comprador", async () => {
+    const { requestRefund } = await import("@/lib/orders/service");
+    const sentBefore = provider.pixSent.length;
+    const old = await paidLongAgo(100);
+    expect(await requestRefund(old.id, "NENHUM", provider, now)).toBe(true);
+    expect(provider.charges.get(old.chargeId!)?.state).toBe("RETIDO"); // Sem estorno.
+    const [pix] = provider.pixSent.slice(sentBefore);
+    expect(pix).toMatchObject({ cents: old.totalCents, pixKey: BUYER_CPF, pixKeyType: "CPF", externalReference: `reembolso-${old.id}` });
+    expect(await prisma.order.findUniqueOrThrow({ where: { id: old.id } })).toMatchObject({
+      refundStatus: "CONCLUIDO", refundByPix: true, refundTransferId: pix.transferId,
+    });
+  });
+
+  it("Pix esperando autorização conclui pelo aviso TRANSFER_DONE; a validação por webhook aprova só ele", async () => {
+    const { requestRefund, handleTransferUpdate } = await import("@/lib/orders/service");
+    const { validateTransfer } = await import("@/lib/payments/transfer-validation");
+    const order = await paidLongAgo(100);
+    provider.nextPixStatus = "AGUARDANDO_APROVACAO";
+    try {
+      await requestRefund(order.id, "NENHUM", provider, now);
+    } finally {
+      provider.nextPixStatus = "CONCLUIDO";
+    }
+    const o = await prisma.order.findUniqueOrThrow({ where: { id: order.id } });
+    expect(o.refundStatus).toBe("AGUARDANDO_APROVACAO");
+
+    const payload = { id: o.refundTransferId!, value: o.totalCents / 100, externalReference: `reembolso-${o.id}`, operationType: "PIX", bankAccount: { pixAddressKey: BUYER_CPF } };
+    expect(await validateTransfer(payload)).toEqual({ status: "APPROVED" });
+    expect(await validateTransfer({ ...payload, bankAccount: { pixAddressKey: "52998224725" } })).toMatchObject({ status: "REFUSED" });
+    expect(await validateTransfer({ ...payload, id: "outro" })).toMatchObject({ status: "REFUSED" });
+
+    provider.setPixStatus(o.refundTransferId!, "CONCLUIDO");
+    expect(await handleTransferUpdate(o.refundTransferId!, provider)).toBe(true);
+    expect((await prisma.order.findUniqueOrThrow({ where: { id: o.id } })).refundStatus).toBe("CONCLUIDO");
+    expect(await validateTransfer(payload)).toMatchObject({ status: "REFUSED" }); // Já concluída.
+  });
+
+  it("CPF sem chave Pix: avisa o comprador uma vez e a rotina tenta de novo 24h depois", async () => {
+    const { requestRefund, runRoutines } = await import("@/lib/orders/service");
+    const order = await paidLongAgo(100);
+    provider.failNextPix = 'Asaas POST /transfers falhou: 400 {"errors":[{"code":"invalid_action","description":"A chave informada não foi encontrada."}]}';
+    await requestRefund(order.id, "NENHUM", provider, now);
+    expect(await prisma.order.findUniqueOrThrow({ where: { id: order.id } })).toMatchObject({ refundStatus: "FALHOU", refundByPix: true, refundTransferId: null });
+    expect(await prisma.emailLog.count({ where: { orderId: order.id, kind: "REEMBOLSO_PIX_FALHOU" } })).toBe(1);
+
+    // Uma hora depois ainda não tenta; no dia seguinte, sim.
+    const sentBefore = provider.pixSent.length;
+    await runRoutines(provider, addMinutes(now, 60));
+    expect(provider.pixSent).toHaveLength(sentBefore);
+    await runRoutines(provider, addDays(now, 1.05));
+    expect(provider.pixSent.slice(sentBefore)).toEqual([expect.objectContaining({ externalReference: `reembolso-${order.id}` })]);
+    expect((await prisma.order.findUniqueOrThrow({ where: { id: order.id } })).refundStatus).toBe("CONCLUIDO");
+    expect(await prisma.emailLog.count({ where: { orderId: order.id, kind: "REEMBOLSO_PIX_FALHOU" } })).toBe(1);
+  });
+
+  it("Pix cancelado no painel: volta para FALHOU sem o id, para enviar de novo", async () => {
+    const { requestRefund, handleTransferUpdate } = await import("@/lib/orders/service");
+    const order = await paidLongAgo(100);
+    provider.nextPixStatus = "AGUARDANDO_APROVACAO";
+    try {
+      await requestRefund(order.id, "NENHUM", provider, now);
+    } finally {
+      provider.nextPixStatus = "CONCLUIDO";
+    }
+    const { refundTransferId } = await prisma.order.findUniqueOrThrow({ where: { id: order.id } });
+    provider.setPixStatus(refundTransferId!, "FALHOU");
+    expect(await handleTransferUpdate(refundTransferId!, provider)).toBe(true);
+    expect(await prisma.order.findUniqueOrThrow({ where: { id: order.id } })).toMatchObject({ refundStatus: "FALHOU", refundTransferId: null });
+    expect(await requestRefund(order.id, "FALHOU", provider, now)).toBe(true);
+    expect((await prisma.order.findUniqueOrThrow({ where: { id: order.id } })).refundStatus).toBe("CONCLUIDO");
+  });
+});

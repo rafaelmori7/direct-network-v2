@@ -90,6 +90,11 @@ export interface PaymentProvider {
   /** Consulta uma transferência já feita (ex.: depois da aprovação no painel). */
   getTransfer(transferId: string): Promise<TransferResult>;
   /**
+   * Pix da conta da plataforma para uma chave (devolução ao comprador depois do
+   * prazo de estorno do Pix). Acompanhado com getTransfer.
+   */
+  sendPix(req: WithdrawalRequest): Promise<TransferResult>;
+  /**
    * Devolve o valor integral ao comprador. A taxa do gateway já descontada no
    * recebimento sai do saldo da plataforma.
    */

@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/db";
 import { formatDateTime } from "@/lib/format";
 import { formatBRL } from "@/lib/money/fees";
+import { PIX_REFUND_MAX_DAYS } from "@/lib/orders/service";
 import { retryRefund } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -31,6 +32,8 @@ export default async function RefundsAdminPage() {
           <b>Como aprovar</b>
           No painel do Asaas, aprove cada devolução pendente (ação crítica). A taxa do Pix já descontada sai do saldo da
           plataforma, então mantenha saldo suficiente. Quando o Asaas confirma a devolução, o pedido sai desta lista sozinho.
+          Pagamentos com mais de {PIX_REFUND_MAX_DAYS} dias são devolvidos por Pix para a chave CPF do comprador; se falhar (CPF sem
+          chave Pix), o comprador é avisado e tentamos de novo a cada 24 horas.
         </div>
       </div>
       {orders.length === 0 ? (
@@ -45,7 +48,8 @@ export default async function RefundsAdminPage() {
                   {o.listing.event.name} · {o.buyer.name}
                 </h3>
                 <div className="offer-sub">
-                  Cobrança {o.chargeId} · desde {o.refundUpdatedAt ? formatDateTime(o.refundUpdatedAt) : "—"}
+                  {o.refundByPix ? "Pix para o CPF do comprador" : `Estorno da cobrança ${o.chargeId}`} · desde{" "}
+                  {o.refundUpdatedAt ? formatDateTime(o.refundUpdatedAt) : "—"}
                 </div>
                 {o.refundError && <div className="offer-sub">Erro: {o.refundError}</div>}
               </div>

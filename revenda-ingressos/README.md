@@ -307,6 +307,7 @@ Subconta CNPJ de agência e saque para CNPJ, testados no sandbox (25/09/2026):
 - **Situação no pedido (`refundStatus`):** `SOLICITADO`, `AGUARDANDO_APROVACAO`, `CONCLUIDO` (pelo webhook `PAYMENT_REFUNDED`) ou `FALHOU` (com a mensagem do gateway).
 - **`/admin/reembolsos`:** lista os pendentes e permite "tentar de novo" os que falharam.
 - **Sem reembolso duplicado:** a troca para `SOLICITADO` é atômica, então avisos repetidos não geram dois reembolsos.
+- **Depois do prazo de estorno do Pix (90 dias):** pagamentos com mais de 85 dias (`PIX_REFUND_MAX_DAYS`) são devolvidos por **Pix da conta da plataforma para a chave CPF do comprador** (`Order.refundByPix`, `refundTransferId`, `externalReference` `reembolso-<id>`), que é o mesmo CPF que pagou. Acompanhado pelo webhook `TRANSFER_*` e pela rotina. Se o CPF não for chave Pix, o comprador é avisado uma vez e a rotina tenta de novo a cada 24h. No sandbox, o Pix da conta principal volta `AGUARDANDO_APROVACAO`, como o repasse: depende da mesma liberação (whitelist de IPs).
 - **Validade do QR Code:** o Pix vale até um ano. Por isso o site cancela a cobrança quando a reserva vence, e devolve se ela for paga mesmo assim.
 
 ## Próximos passos

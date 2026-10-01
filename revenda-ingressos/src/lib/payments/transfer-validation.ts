@@ -11,7 +11,8 @@ import { onlyDigits } from "./provider";
  * Só aprovamos o que o próprio site pediu e ainda está em andamento, com o
  * mesmo valor e destino:
  * - `saque-<id>`: Pix da subconta para a chave CPF do vendedor ou CNPJ da agência;
- * - `pedido-<id>-vendedor` / `pedido-<id>-parceiro`: repasse da conta principal.
+ * - `pedido-<id>-vendedor` / `pedido-<id>-parceiro`: repasse da conta principal;
+ * - `reembolso-<id>`: devolução por Pix ao CPF do comprador (depois do prazo de estorno).
  */
 export interface AsaasTransferPayload {
   id?: string;
@@ -42,6 +43,21 @@ export async function validateTransfer(t: AsaasTransferPayload): Promise<Transfe
     if (withdrawal.cents !== cents) return refuse("Valor diferente do saque pedido");
     if (t.operationType !== "PIX" || onlyDigits(t.bankAccount?.pixAddressKey ?? "") !== onlyDigits(withdrawal.pixKey)) {
       return refuse("Destino diferente da chave do titular");
+    }
+    return { status: "APPROVED" };
+  }
+
+  const refund = ref.startsWith("reembolso-")
+    ? await prisma.order.findUnique({ where: { id: ref.slice("reembolso-".length) }, include: { buyer: { select: { cpf: true } } } })
+    : !ref
+      ? await prisma.order.findFirst({ where: { refundTransferId: t.id }, include: { buyer: { select: { cpf: true } } } })
+      : null;
+  if (refund) {
+    if (!refund.refundByPix || !IN_PROGRESS.includes(refund.refundStatus as (typeof IN_PROGRESS)[number])) return refuse("Devolução não está em andamento");
+    if (refund.refundTransferId && refund.refundTransferId !== t.id) return refuse("Outra transferência já registrada para esta devolução");
+    if (refund.totalCents !== cents) return refuse("Valor diferente da devolução");
+    if (t.operationType !== "PIX" || onlyDigits(t.bankAccount?.pixAddressKey ?? "") !== onlyDigits(refund.buyer.cpf)) {
+      return refuse("Destino diferente da chave CPF do comprador");
     }
     return { status: "APPROVED" };
   }

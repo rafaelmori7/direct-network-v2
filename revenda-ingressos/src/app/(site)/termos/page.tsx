@@ -121,8 +121,9 @@ export default function TermsPage() {
           ser pela devolução ao comprador ou pela liberação ao vendedor.
         </li>
         <li>
-          Reembolsos devolvem o valor total pago, taxa de serviço incluída, para a conta que fez o Pix. Eventuais tarifas do reembolso ficam
-          por nossa conta.
+          Reembolsos devolvem o valor total pago, taxa de serviço incluída, para a conta que fez o Pix. Se o pagamento tiver mais de 90 dias
+          (prazo de estorno do Pix), a devolução é feita por Pix para a chave CPF do comprador; se o CPF não for chave Pix, avisamos e
+          tentamos de novo a cada 24 horas. Eventuais tarifas do reembolso ficam por nossa conta.
         </li>
         <li>Se o evento for cancelado ou adiado, siga as orientações do pedido; o valor retido não é liberado ao vendedor enquanto a situação não for resolvida.</li>
       </ul>

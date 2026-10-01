@@ -242,9 +242,13 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
           <div className={`notice ${order.refundStatus === "CONCLUIDO" ? "notice-safe" : "notice-warn"}`}>
             <div>
               <b>{order.refundStatus === "CONCLUIDO" ? "Dinheiro devolvido" : "Devolução em andamento"}</b>
-              {order.refundStatus === "CONCLUIDO"
-                ? `Devolvemos ${formatBRL(order.totalCents)} para a conta que fez o Pix.`
-                : `Vamos devolver ${formatBRL(order.totalCents)} para a conta que fez o Pix. Você será avisado quando o valor for devolvido.`}
+              {order.refundByPix
+                ? order.refundStatus === "CONCLUIDO"
+                  ? `Devolvemos ${formatBRL(order.totalCents)} por Pix para a chave CPF do seu cadastro.`
+                  : `Vamos devolver ${formatBRL(order.totalCents)} por Pix para a chave CPF do seu cadastro (o pagamento passou do prazo de estorno do Pix). Confira se o seu CPF está cadastrado como chave Pix no seu banco.`
+                : order.refundStatus === "CONCLUIDO"
+                  ? `Devolvemos ${formatBRL(order.totalCents)} para a conta que fez o Pix.`
+                  : `Vamos devolver ${formatBRL(order.totalCents)} para a conta que fez o Pix. Você será avisado quando o valor for devolvido.`}
             </div>
           </div>
         )}

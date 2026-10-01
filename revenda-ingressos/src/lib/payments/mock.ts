@@ -95,9 +95,32 @@ export class MockPaymentProvider implements PaymentProvider {
   }
 
   async getTransfer(transferId: string): Promise<TransferResult> {
-    const t = this.transfers.find((t) => t.transferId === transferId);
+    const t = this.transfers.find((t) => t.transferId === transferId) ?? this.pixSent.find((t) => t.transferId === transferId);
     if (!t) throw new Error(`Transferência ${transferId} não existe`);
     return { transferId, status: t.status };
+  }
+
+  /** Pix enviados pela conta da plataforma (devoluções depois do prazo de estorno). */
+  readonly pixSent: (WithdrawalRequest & { transferId: string; status: TransferStatus })[] = [];
+  nextPixStatus: TransferStatus = "CONCLUIDO";
+  /** Faz o próximo Pix falhar (ex.: "A chave informada não foi encontrada."). */
+  failNextPix: string | null = null;
+
+  async sendPix(req: WithdrawalRequest): Promise<TransferResult> {
+    if (this.failNextPix) {
+      const message = this.failNextPix;
+      this.failNextPix = null;
+      throw new Error(message);
+    }
+    const transferId = `mock_pix_${randomUUID()}`;
+    this.pixSent.push({ ...req, transferId, status: this.nextPixStatus });
+    return { transferId, status: this.nextPixStatus };
+  }
+
+  setPixStatus(transferId: string, status: TransferStatus): void {
+    const t = this.pixSent.find((t) => t.transferId === transferId);
+    if (!t) throw new Error(`Pix ${transferId} não existe`);
+    t.status = status;
   }
 
   /** Simula a autorização (ou o cancelamento) de uma transferência no painel. */

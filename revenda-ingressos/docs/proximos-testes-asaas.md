@@ -79,7 +79,8 @@ parceiro. Código, testes e README atualizados.
 ## Ainda falta
 
 0. Homologação BaaS: preencher o formulário do Asaas e responder às perguntas sobre o negócio; definir hospedagem com IP
-   de saída fixo para a whitelist; prever devolução por Pix para reembolsos depois de 90 dias.
+   de saída fixo para a whitelist. (Devolução por Pix depois de 90 dias: feita em 01/10/2026; no sandbox o Pix da
+   conta principal fica aguardando autorização, como o repasse.)
 
 1. Reembolso em produção com valor baixo: termina `DONE`? chega o `PAYMENT_REFUNDED`?
 2. Ao publicar o site: cadastrar os eventos `TRANSFER_DONE`, `TRANSFER_FAILED` e `TRANSFER_CANCELLED` no webhook do painel e conferir o

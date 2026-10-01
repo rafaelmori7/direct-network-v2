@@ -4,7 +4,8 @@ import { notifyStatusChange, sendTransferReminders } from "@/lib/notify/order-em
 import { prisma } from "@/lib/db";
 import { processDueWithdrawals, scheduleWithdrawal } from "@/lib/sellers/withdrawals";
 import { eventRuleInput, getEvent, rulesFor } from "@/lib/data/repo";
-import { orderAmounts, type FeeConfig } from "@/lib/money/fees";
+import { formatBRL, orderAmounts, type FeeConfig } from "@/lib/money/fees";
+import { sendEmail } from "@/lib/notify/email";
 import { resolvePartner } from "@/lib/partners/attribution";
 import { payerMatchesBuyer, type PaymentProvider, type TransferResult } from "@/lib/payments/provider";
 import { checkPurchase, disputeDeadline, isSaleClosed, releaseAt, transferDeadline, type Violation } from "@/lib/rules/engine";
@@ -268,7 +269,17 @@ export async function handlePaymentReceived(chargeId: string, provider: PaymentP
 }
 
 /**
- * Pede o reembolso integral ao gateway e registra a situação no pedido.
+ * O Pix só pode ser estornado até 90 dias depois do pagamento (regra do Banco
+ * Central). Com margem, depois disso a devolução vai por Pix para a chave CPF
+ * do comprador, que é o mesmo CPF que pagou (só aceitamos Pix do comprador).
+ */
+export const PIX_REFUND_MAX_DAYS = 85;
+/** Devolução por Pix que falhou (ex.: CPF sem chave Pix): a rotina tenta de novo depois disso. */
+const PIX_REFUND_RETRY_MS = 24 * 3600_000;
+
+/**
+ * Pede o reembolso integral e registra a situação no pedido: estorno da
+ * cobrança ou, passado o prazo de estorno, Pix para a chave CPF do comprador.
  * Só age se o pedido estiver no estado `from` (NENHUM ou FALHOU): a troca para
  * SOLICITADO é atômica, então avisos repetidos nunca geram dois reembolsos.
  * Retorna false se outro processo já tinha pedido.
@@ -284,17 +295,76 @@ export async function requestRefund(
     data: { refundStatus: "SOLICITADO", refundError: null, refundUpdatedAt: now },
   });
   if (claimed.count === 0) return false;
-  const { chargeId } = await prisma.order.findUniqueOrThrow({ where: { id: orderId }, select: { chargeId: true } });
+  const o = await prisma.order.findUniqueOrThrow({
+    where: { id: orderId },
+    select: { chargeId: true, paidAt: true, totalCents: true, refundByPix: true, buyer: { select: { cpf: true } }, listing: { select: { event: { select: { name: true } } } } },
+  });
+  const byPix = o.refundByPix || (o.paidAt !== null && now.getTime() - o.paidAt.getTime() > PIX_REFUND_MAX_DAYS * 24 * 3600_000);
   try {
-    const result = await provider.refund(chargeId!);
-    await prisma.order.update({ where: { id: orderId }, data: { refundStatus: result.status, refundUpdatedAt: new Date() } });
+    if (!byPix) {
+      const result = await provider.refund(o.chargeId!);
+      await prisma.order.update({ where: { id: orderId }, data: { refundStatus: result.status, refundUpdatedAt: new Date() } });
+    } else {
+      await prisma.order.update({ where: { id: orderId }, data: { refundByPix: true } });
+      const result = await provider.sendPix({
+        cents: o.totalCents,
+        pixKey: o.buyer.cpf,
+        pixKeyType: "CPF",
+        externalReference: `reembolso-${orderId}`,
+        description: `Devolução - ${o.listing.event.name}`,
+      });
+      if (result.status === "FALHOU") throw new Error(result.error ?? "Pix de devolução recusado");
+      await prisma.order.update({
+        where: { id: orderId },
+        data: { refundTransferId: result.transferId, refundStatus: result.status, refundUpdatedAt: new Date() },
+      });
+    }
   } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
     await prisma.order.update({
       where: { id: orderId },
-      data: { refundStatus: "FALHOU", refundError: error instanceof Error ? error.message.slice(0, 500) : String(error), refundUpdatedAt: new Date() },
+      data: { refundStatus: "FALHOU", refundError: message.slice(0, 500), refundUpdatedAt: new Date() },
     });
+    if (byPix) await notifyPixRefundFailed(orderId);
   }
   return true;
+}
+
+/**
+ * Devolução por Pix em andamento: consulta a transferência (depois do webhook
+ * TRANSFER_* ou pela rotina). Recusada ou cancelada: FALHOU e sai do pedido,
+ * para tentar de novo. true se mudou.
+ */
+export async function refreshPixRefund(orderId: string, provider: PaymentProvider): Promise<boolean> {
+  const o = await prisma.order.findUnique({ where: { id: orderId }, select: { refundStatus: true, refundTransferId: true } });
+  if (!o?.refundTransferId || (o.refundStatus !== "SOLICITADO" && o.refundStatus !== "AGUARDANDO_APROVACAO")) return false;
+  const result = await provider.getTransfer(o.refundTransferId);
+  if (result.status === o.refundStatus) return false;
+  const data: Prisma.OrderUpdateManyMutationInput =
+    result.status === "FALHOU"
+      ? { refundStatus: "FALHOU", refundTransferId: null, refundError: (result.error ?? "Pix de devolução recusado").slice(0, 500) }
+      : { refundStatus: result.status, refundError: null };
+  const updated = await prisma.order.updateMany({ where: { id: orderId, refundStatus: o.refundStatus, refundTransferId: o.refundTransferId }, data: { ...data, refundUpdatedAt: new Date() } });
+  if (updated.count > 0 && result.status === "FALHOU") await notifyPixRefundFailed(orderId);
+  return updated.count > 0;
+}
+
+/** Avisa o comprador uma vez: o CPF dele precisa ser chave Pix para receber a devolução. */
+async function notifyPixRefundFailed(orderId: string): Promise<void> {
+  if (await prisma.emailLog.findFirst({ where: { orderId, kind: "REEMBOLSO_PIX_FALHOU" } })) return;
+  const o = await prisma.order.findUniqueOrThrow({
+    where: { id: orderId },
+    select: { totalCents: true, buyer: { select: { name: true, email: true } }, listing: { select: { event: { select: { name: true } } } } },
+  });
+  await sendEmail({
+    to: o.buyer.email,
+    kind: "REEMBOLSO_PIX_FALHOU",
+    orderId,
+    subject: `Não conseguimos devolver o seu Pix: ${o.listing.event.name}`,
+    text:
+      `Oi, ${o.buyer.name.split(" ")[0]}! Vamos devolver ${formatBRL(o.totalCents)} por Pix para a chave CPF do seu cadastro, mas o envio não deu certo.\n` +
+      `Confira se o seu CPF está cadastrado como chave Pix no seu banco. Tentamos de novo automaticamente a cada 24 horas.`,
+  });
 }
 
 /**
@@ -479,8 +549,10 @@ export async function payWaitingPartnerCommission(orderId: string, provider: Pay
   return true;
 }
 
-/** Aviso do gateway sobre uma transferência de repasse (id devolvido por transferToWallet). */
+/** Aviso do gateway sobre uma transferência de repasse ou de devolução por Pix. */
 export async function handleTransferUpdate(transferId: string, provider: PaymentProvider): Promise<boolean> {
+  const refund = await prisma.order.findFirst({ where: { refundTransferId: transferId }, select: { id: true } });
+  if (refund) return refreshPixRefund(refund.id, provider);
   const order = await prisma.order.findFirst({
     where: { OR: [{ sellerTransferId: transferId }, { partnerTransferId: transferId }] },
     select: { id: true },
@@ -552,6 +624,27 @@ export async function runRoutines(provider: PaymentProvider, now = new Date()): 
   });
   for (const { id } of waiting) {
     if (await requestPayout(id, "AGUARDANDO_CADASTRO", provider, now)) pagamentosLiberados++;
+  }
+
+  // Devoluções por Pix: acompanha as em andamento e tenta de novo as que falharam há 24h
+  // (ex.: o comprador cadastrou o CPF como chave Pix depois do aviso).
+  const pixRefunds = await prisma.order.findMany({
+    where: {
+      refundByPix: true,
+      OR: [
+        { refundStatus: { in: ["SOLICITADO", "AGUARDANDO_APROVACAO"] }, refundTransferId: { not: null } },
+        { refundStatus: "FALHOU", refundUpdatedAt: { lte: new Date(now.getTime() - PIX_REFUND_RETRY_MS) } },
+      ],
+    },
+    select: { id: true, refundStatus: true },
+  });
+  for (const { id, refundStatus } of pixRefunds) {
+    try {
+      if (refundStatus === "FALHOU") await requestRefund(id, "FALHOU", provider, now);
+      else await refreshPixRefund(id, provider);
+    } catch {
+      // Tenta de novo na próxima rodada.
+    }
   }
 
   // Repasses esperando a autorização no painel do Asaas (caso o webhook não chegue).
