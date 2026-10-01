@@ -5,6 +5,7 @@ import { signOut } from "@/app/auth-actions";
 import { getCurrentUser } from "@/lib/auth/session";
 import { PLATFORMS } from "@/lib/platforms/profiles";
 import type { PlatformCode } from "@/lib/rules/types";
+import { AsaasDisclosure } from "./asaas";
 
 export function ShieldIcon({ size = 18 }: { size?: number }) {
   return (
@@ -78,6 +79,7 @@ export function SiteFooter() {
         citadas; os ingressos são transferidos pelos apps oficiais delas.
         <br />
         {COMPANY.legalName} · CNPJ {COMPANY.cnpj} · {COMPANY.address}
+        <AsaasDisclosure compact />
       </div>
     </footer>
   );

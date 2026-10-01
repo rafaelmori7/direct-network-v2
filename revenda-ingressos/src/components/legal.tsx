@@ -9,7 +9,7 @@ export const COMPANY = {
   privacyEmail: process.env.PRIVACY_EMAIL || process.env.CONTACT_EMAIL || "[e-mail do encarregado de dados]",
 };
 
-export const LEGAL_UPDATED_AT = "25 de setembro de 2026";
+export const LEGAL_UPDATED_AT = "1 de outubro de 2026";
 
 /** Aviso de rascunho: some quando LEGAL_REVIEWED=1 (depois da revisão do advogado). */
 export function DraftNotice() {

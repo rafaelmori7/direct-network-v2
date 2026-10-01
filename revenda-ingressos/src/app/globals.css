@@ -275,3 +275,21 @@ button, input, select { font: inherit; color: inherit; }
 .table th { background: var(--surface); }
 .footer-links { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-bottom: 10px; }
 .footer-links a { font-weight: 700; color: var(--fg); }
+
+/* Selo e aviso do Asaas (modelo BaaS). */
+.asaas-disclosure {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.asaas-disclosure .hint {
+  flex: 1 1 240px;
+}
+.asaas-seal {
+  display: inline-flex;
+  line-height: 0;
+}
+.site-footer .asaas-disclosure {
+  margin-top: 14px;
+}

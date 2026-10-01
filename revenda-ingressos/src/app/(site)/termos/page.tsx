@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ASAAS, AsaasSeal } from "@/components/asaas";
 import { COMPANY, DraftNotice, LEGAL_UPDATED_AT } from "@/components/legal";
 import { BRAND } from "@/lib/brand";
 import { feeConfig } from "@/lib/money/fees";
@@ -72,6 +73,24 @@ export default function TermsPage() {
           transferida para a conta de recebimento dele.
         </li>
       </ul>
+
+      <h3>Prestação de serviços financeiros</h3>
+      <p>
+        Os serviços financeiros e de pagamentos disponibilizados por meio da presente plataforma, incluindo abertura e manutenção de conta
+        de pagamento, processamento de transações, emissão de boletos, transferências, pagamentos e demais movimentações de valores, são
+        prestados pelo ASAAS GESTÃO FINANCEIRA INSTITUIÇÃO DE PAGAMENTOS S.A., instituição de pagamento autorizada a funcionar pelo Banco
+        Central do Brasil.
+      </p>
+      <p>
+        A {COMPANY.legalName} ({BRAND.name}) atua exclusivamente como integradora tecnológica e distribuidora da experiência do produto,
+        não sendo instituição financeira ou de pagamento, nem realizando intermediação financeira em nome próprio.
+      </p>
+      <p>
+        O cliente declara ciência de que o relacionamento financeiro/de pagamentos e a responsabilidade regulatória pelos serviços acima
+        descritos são do ASAAS GESTÃO FINANCEIRA S.A., nos termos da regulamentação vigente. Suporte do Asaas para essas operações:{" "}
+        {ASAAS.phone} · {ASAAS.email}.
+      </p>
+      <AsaasSeal />
 
       <h2>5. Transferência e confirmação</h2>
       <ul>

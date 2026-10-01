@@ -53,7 +53,8 @@ export function PayoutForm({ returnTo }: { returnTo: string }) {
         <input type="checkbox" name="termos" />
         <span>
           Entendo que posso anunciar agora, mas só recebo depois que meus documentos forem aprovados, e sempre após o evento.
-          O dinheiro cai numa conta de pagamento no meu CPF e é enviado automaticamente por Pix para a minha chave CPF.
+          O dinheiro cai numa conta de pagamento no meu CPF, aberta e mantida pelo Asaas (instituição de pagamento), e é enviado
+          automaticamente por Pix para a minha chave CPF.
         </span>
       </label>
       <button className="btn btn-primary btn-block" disabled={pending}>

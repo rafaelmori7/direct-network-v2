@@ -61,7 +61,25 @@ parceiro. Código, testes e README atualizados.
 - Criado `AGUARDANDO_APROVACAO` no repasse (`payoutStatus`), concluído pelo webhook `TRANSFER_*` ou pela rotina.
 - Reembolso: fica para testar em produção com valor baixo (ver README, "Próximos passos").
 
+## Resposta do Asaas (30/09/2026): homologação BaaS
+
+- A operação foi enquadrada como **BaaS**. Fluxo: playbook + selo no site → formulário + perguntas sobre o negócio →
+  análise (até 3 dias úteis) → contrato e checklist de Segurança da Informação → liberação técnica.
+- **Saque sem token:** a dispensa vem da **whitelist de IPs** (Integrações > Mecanismos de segurança): com o "Evento
+  crítico em requisições de saque" desativado, transferências Pix/TED e estornos Pix vindos dos IPs cadastrados saem sem
+  aprovação manual. A configuração da conta principal é **herdada pelas subcontas**. Exige IP de saída fixo (até 50
+  endereços por faixa). A validação de saque por webhook é opcional, como camada extra.
+- **Subconta só recebe transferência aprovada** (confirma o `AGUARDANDO_CADASTRO`).
+- **Estorno de Pix:** o Asaas não deu prazo; pela regra do Pix do Banco Central a devolução vale por até 90 dias depois do
+  pagamento. Como o dinheiro pode ficar retido mais que isso, falta prever devolução por transferência Pix ao comprador.
+- **Taxas:** ver no painel em Menu do usuário > Taxas; condição especial, com o time Comercial.
+- Feito no site: selo (`src/components/asaas.tsx`, id em `ASAAS_SEAL_ID`) no rodapé, na criação da conta de recebimento,
+  no Pix do pedido, em Minha conta e no painel do parceiro; cláusula-modelo do playbook nos termos; canais de suporte do Asaas.
+
 ## Ainda falta
+
+0. Homologação BaaS: preencher o formulário do Asaas e responder às perguntas sobre o negócio; definir hospedagem com IP
+   de saída fixo para a whitelist; prever devolução por Pix para reembolsos depois de 90 dias.
 
 1. Reembolso em produção com valor baixo: termina `DONE`? chega o `PAYMENT_REFUNDED`?
 2. Ao publicar o site: cadastrar os eventos `TRANSFER_DONE`, `TRANSFER_FAILED` e `TRANSFER_CANCELLED` no webhook do painel e conferir o

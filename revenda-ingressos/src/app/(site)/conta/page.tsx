@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/db";
 import { TICKET_TYPE_LABEL, formatDateLong, formatDateTime } from "@/lib/format";
 import { formatBRL } from "@/lib/money/fees";
+import { AsaasDisclosure } from "@/components/asaas";
 
 export const dynamic = "force-dynamic";
 
@@ -45,6 +46,7 @@ export default async function AccountPage() {
           <div>
             <b>Conta de recebimento aprovada</b>Depois de cada evento, o dinheiro das suas vendas vai automaticamente por Pix para a chave
             CPF {formatCpf(user.cpf)}. Confira se o seu CPF está cadastrado como chave Pix no seu banco.
+            <AsaasDisclosure compact />
           </div>
         </div>
       ) : user.hasPayoutAccount ? (

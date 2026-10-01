@@ -7,6 +7,7 @@ import { formatBRL } from "@/lib/money/fees";
 import { widgetSnippet } from "@/lib/partners/widget";
 import { updateBranding } from "./actions";
 import { CopyCode } from "./copy-code";
+import { AsaasDisclosure } from "@/components/asaas";
 
 export const dynamic = "force-dynamic";
 
@@ -71,6 +72,9 @@ export default async function PartnerDashboard() {
                 : "Repasse feito pela plataforma"}
           </div>
         </div>
+      </div>
+      <div style={{ marginTop: 14 }}>
+        <AsaasDisclosure compact />
       </div>
 
       <div className="aside-card">

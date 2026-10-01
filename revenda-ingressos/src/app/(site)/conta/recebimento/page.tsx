@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db";
 import { getPaymentProvider } from "@/lib/payments";
 import { NEW_SELLER_MAX_ACTIVE_TICKETS } from "@/lib/rules/engine";
 import { PayoutForm } from "./payout-form";
+import { AsaasDisclosure } from "@/components/asaas";
 
 export const dynamic = "force-dynamic";
 
@@ -47,6 +48,7 @@ export default async function PayoutAccountPage({ searchParams }: { searchParams
             banco, se ainda não fez).
           </p>
           <PayoutForm returnTo={voltar} />
+          <AsaasDisclosure />
         </>
       )}
 

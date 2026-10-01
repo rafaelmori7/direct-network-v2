@@ -14,6 +14,7 @@ import { DisputeDecisionForm, DisputeForm, ReceiptChecklist, SimpleActionButton 
 import { OrderChat } from "./chat";
 import { sendMessage } from "./chat-actions";
 import { QUICK_REPLIES, canReadChat, canSendMessage } from "@/lib/chat/policy";
+import { AsaasDisclosure } from "@/components/asaas";
 
 export const dynamic = "force-dynamic";
 
@@ -154,6 +155,7 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                 <div className="pix-code">{order.pixCopyPaste}</div>
               </div>
             )}
+            <AsaasDisclosure compact />
             {isMock && <SimpleActionButton action={simulatePayment.bind(null, order.id)} label="Simular pagamento (modo teste)" variant="outline" />}
           </>
         )}
