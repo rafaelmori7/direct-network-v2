@@ -28,11 +28,9 @@ export const metadata = {
   },
 }
 
-// Vendas abrem em 10/09. Quando o cupom/link de afiliado estiverem confirmados,
-// troque VENDAS_ABERTAS para true e preencha LINK_AFILIADO — é a única linha a mudar.
-const VENDAS_ABERTAS = false
+const VENDAS_ABERTAS = true
 const LINK_GRUPO_WHATSAPP = 'https://chat.whatsapp.com/DYcOSP7iF8U3OYgBHpU0tG' // TODO: trocar pelo link do grupo específico da Virada Estaiada (pendência Rafael)
-const LINK_AFILIADO = '#' // TODO: link de afiliado com cupom DIRECT aplicado (pendência Rafael)
+const LINK_AFILIADO = 'https://cart.ingresse.com/3d4b6ddf-c1ec-4d81-804c-cb89320d6795/tickets?coupon=DIRECT'
 
 const schema = {
   '@context': 'https://schema.org',
@@ -56,7 +54,13 @@ const schema = {
       addressCountry: 'BR',
     },
   },
-  // offers: pendência — a partir de 10/09, acrescentar { '@type': 'Offer', url: LINK_AFILIADO, price, priceCurrency: 'BRL', availability: 'https://schema.org/InStock', validFrom: '2026-09-10T00:00:00-03:00' }
+  offers: {
+    '@type': 'Offer',
+    url: LINK_AFILIADO,
+    priceCurrency: 'BRL',
+    availability: 'https://schema.org/InStock',
+    validFrom: '2026-09-10T00:00:00-03:00',
+  },
 }
 
 function ConversionBlock() {
