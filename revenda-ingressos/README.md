@@ -169,9 +169,12 @@ npm run test:db              # testes com banco (usa TEST_DATABASE_URL ou o banc
 2. **Projeto:** na Vercel, clique em **Add New → Project** e importe este repositório.
    - **Root Directory:** `revenda-ingressos`.
    - **Build Command:** `npm run vercel-build`. Ele aplica as migrações, cadastra as ticketeiras e faz o build.
-3. **Variáveis de ambiente:**
+3. **Variáveis de ambiente** (modelo em `.env.example`):
    - `DATABASE_URL`;
-   - `PAYMENT_PROVIDER`, `ASAAS_API_URL`, `ASAAS_API_KEY`, `ASAAS_WEBHOOK_TOKEN`;
+   - `SITE_URL`: o endereço do site (ex.: `https://<projeto>.vercel.app`; trocar quando o domínio próprio estiver ligado);
+   - `ENCRYPTION_KEY`: texto aleatório de 32+ caracteres. Guarda criptografadas as chaves das subcontas: **não troque depois**, senão as chaves salvas deixam de abrir;
+   - `PAYMENT_PROVIDER=asaas`, `ASAAS_API_URL`, `ASAAS_API_KEY`;
+   - `ASAAS_WEBHOOK_TOKEN`: 32+ caracteres (exigência do Asaas);
    - `CRON_SECRET`, `BUYER_FEE_BPS`, `SELLER_FEE_BPS`;
    - `SEED_DEMO=1`, só se quiser os eventos e usuários de exemplo.
 4. **Deploy:** faça o deploy do branch.
