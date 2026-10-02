@@ -1,5 +1,5 @@
-// Nome provisório: trocar aqui quando a marca for definida.
+// Marca: Desistência (domínio desistencia.com.br). O endereço do site vem de SITE_URL.
 export const BRAND = {
-  name: "Passe Adiante",
-  tagline: "Ingressos de quem não vai mais, com o seu dinheiro protegido até o fim do evento.",
+  name: "Desistência",
+  tagline: "Ingressos de quem desistiu de ir, com o seu dinheiro protegido até o fim do evento.",
 };
