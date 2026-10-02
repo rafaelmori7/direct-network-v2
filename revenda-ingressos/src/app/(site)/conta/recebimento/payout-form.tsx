@@ -3,7 +3,7 @@
 import { useActionState } from "react";
 import { createPayoutAccount, type PayoutFormState } from "./actions";
 
-export function PayoutForm({ returnTo }: { returnTo: string }) {
+export function PayoutForm({ returnTo, phone }: { returnTo: string; phone: string }) {
   const [state, action, pending] = useActionState<PayoutFormState, FormData>(createPayoutAccount, { errors: [] });
   return (
     <form action={action} className="form">
@@ -43,6 +43,11 @@ export function PayoutForm({ returnTo }: { returnTo: string }) {
           <label htmlFor="complemento">Complemento</label>
           <input id="complemento" name="complemento" className="input" />
         </div>
+      </div>
+      <div className="field">
+        <label htmlFor="celular">Celular</label>
+        <input id="celular" name="celular" className="input" inputMode="tel" autoComplete="tel" required defaultValue={phone} />
+        <span className="hint">Com DDD. A instituição de pagamento exige um celular válido para abrir a conta.</span>
       </div>
       <div className="field">
         <label htmlFor="renda">Renda mensal aproximada (R$)</label>

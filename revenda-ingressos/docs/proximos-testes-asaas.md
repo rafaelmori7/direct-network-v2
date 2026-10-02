@@ -86,7 +86,8 @@ parceiro. Código, testes e README atualizados.
 2. Ao publicar o site: cadastrar os eventos `TRANSFER_DONE`, `TRANSFER_FAILED` e `TRANSFER_CANCELLED` no webhook do painel e conferir o
    formato do aviso (o código usa só `transfer.id` e consulta `GET /transfers/{id}`).
 3. `onboardingUrl`: consultar de novo depois de um tempo, ou ver se só vem em produção.
-4. Testar o fluxo inteiro pelo site (`PAYMENT_PROVIDER=asaas`).
+4. Fluxo inteiro pelo site: feito em 02/10/2026 (ver "Fluxo completo pelo site"). Falta repetir com o site publicado
+   (webhooks chegando de verdade) e com a whitelist de IPs ligada (repasse, saque e devoluções saindo sozinhos).
 5. Saque automático: ver "Resultado do saque" abaixo. Falta, com o suporte do Asaas: ligar a validação de saque por
    webhook (`/api/webhooks/asaas/saques`) e conferir se, com ela, o saque da subconta sai sem o token SMS e se o
    webhook traz `externalReference` e `bankAccount.pixAddressKey` como a resposta da criação.
@@ -116,3 +117,29 @@ Revalidado no mesmo dia (subconta 4): saque de R$ 2 para `99991111140` de novo `
   EVP) → 400 "A chave informada não foi encontrada.".
 - `processWithdrawal` real contra o sandbox: cancelou o saque parado e registrou a falha da chave CNPJ; achou o bug do
   aviso suprimido (corrigido). O site agora consulta a aprovação logo após criar a subconta.
+
+## Fluxo completo pelo site (02/10/2026, local, `PAYMENT_PROVIDER=asaas`, sandbox)
+
+Site rodando localmente com o banco de demonstração, navegador automatizado (Playwright). Datas de liberação, prazo do
+vendedor e pagamento recuadas no banco para não esperar o calendário; a rotina chamada por `/api/cron/rotinas`.
+
+- Conta de recebimento pelo site: subconta real criada e **aprovada na hora** (consulta de status após criar).
+- Compra → cobrança Pix real → "Simular pagamento" → CPF do pagador conferido → pedido pago.
+- "Já transferi" → confirmação de recebimento → liberação: repasse de R$ 500 para a subconta, `AGUARDANDO_APROVACAO`
+  (listado em "Repasses para aprovar"; cancelado depois do teste).
+- Vendedor perde o prazo: pedido recente → estorno `AGUARDANDO_APROVACAO`; pedido pago há 100 dias → Pix para o CPF
+  da compradora → 400 "A chave informada não foi encontrada." → nova tentativa a cada 24h e um único aviso.
+
+Problemas achados e corrigidos:
+- O Asaas recusa celular inválido ("O celular informado é inválido.", ex.: 11999999999), e o cadastro aceitava fixo e
+  números assim, sem o vendedor ter onde corrigir: agora o cadastro valida celular (DDD existente, 9 na frente) e o
+  formulário da conta de recebimento tem o campo de celular.
+- Erros do Asaas apareciam como JSON para o vendedor e para o admin: agora só a mensagem.
+- **O Asaas exige token de webhook com pelo menos 32 caracteres** e endereço público; sem isso a subconta nem era
+  criada. Agora o webhook da subconta só é cadastrado com `SITE_URL` em https e token válido, e o `asaas:check` avisa.
+- E-mail de reembolso dizia "para a conta que fez o Pix" na devolução por Pix, e o aviso de falha chegava antes dele.
+
+Para perguntar ao Asaas: no sandbox, `POST /accounts` com o CPF 52998224725 deu "O CPF ... já está em uso" sem a
+subconta existir na nossa conta (CPF único entre todas as contas). Em produção, **vendedor que já tem conta própria no
+Asaas consegue abrir a conta de recebimento conosco?**
+

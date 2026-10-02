@@ -201,21 +201,22 @@ export class AsaasPaymentProvider implements PaymentProvider {
       province: req.province,
       postalCode: onlyDigits(req.postalCode),
       // Avisos da análise de documentos da subconta chegam no mesmo webhook do site.
-      ...(process.env.SITE_URL &&
-        process.env.ASAAS_WEBHOOK_TOKEN && {
-          webhooks: [
-            {
-              name: "Análise da conta",
-              url: `${process.env.SITE_URL.replace(/\/$/, "")}/api/webhooks/asaas`,
-              email: process.env.ASAAS_WEBHOOK_EMAIL ?? req.email,
-              sendType: "SEQUENTIALLY",
-              enabled: true,
-              interrupted: false,
-              authToken: process.env.ASAAS_WEBHOOK_TOKEN,
-              events: ["ACCOUNT_STATUS_GENERAL_APPROVAL_APPROVED", "ACCOUNT_STATUS_GENERAL_APPROVAL_REJECTED"],
-            },
-          ],
-        }),
+      // Sem um endereço que o Asaas aceite, a subconta é criada sem o aviso: a
+      // aprovação vem pela consulta logo após criar (syncAccountApproval) ou pelo admin.
+      ...(subaccountWebhookUrl() && {
+        webhooks: [
+          {
+            name: "Análise da conta",
+            url: subaccountWebhookUrl(),
+            email: process.env.ASAAS_WEBHOOK_EMAIL ?? req.email,
+            sendType: "SEQUENTIALLY",
+            enabled: true,
+            interrupted: false,
+            authToken: process.env.ASAAS_WEBHOOK_TOKEN,
+            events: ["ACCOUNT_STATUS_GENERAL_APPROVAL_APPROVED", "ACCOUNT_STATUS_GENERAL_APPROVAL_REJECTED"],
+          },
+        ],
+      }),
     });
     return { accountId: account.id, walletId: account.walletId, apiKey: account.apiKey ?? null };
   }
@@ -275,4 +276,19 @@ function transferResult(t: AsaasTransfer): TransferResult {
   if (t.status === "FAILED" || t.status === "CANCELLED") return { ...base, status: "FALHOU", error: t.failReason ?? `Transferência ${t.status}` };
   if (t.status === "PENDING" && t.authorized === false) return { ...base, status: "AGUARDANDO_APROVACAO" };
   return { ...base, status: "SOLICITADO" };
+}
+
+/** Mínimo exigido pelo Asaas para o token de autenticação de webhooks (testado no sandbox em 02/10/2026). */
+export const MIN_WEBHOOK_TOKEN_LENGTH = 32;
+
+/**
+ * URL do webhook cadastrado em cada subconta, ou null quando o Asaas recusaria:
+ * ele exige endereço público (http://localhost dá "A url informada é inválida.")
+ * e token de pelo menos 32 caracteres; qualquer recusa impede criar a subconta.
+ */
+function subaccountWebhookUrl(): string | null {
+  const site = process.env.SITE_URL?.replace(/\/$/, "");
+  const token = process.env.ASAAS_WEBHOOK_TOKEN ?? "";
+  if (!site?.startsWith("https://") || token.length < MIN_WEBHOOK_TOKEN_LENGTH) return null;
+  return `${site}/api/webhooks/asaas`;
 }

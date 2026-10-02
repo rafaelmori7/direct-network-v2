@@ -91,7 +91,10 @@ export async function notifyStatusChange(orderId: string, next: OrderStatus, act
             `O prazo para pagar terminou e a reserva foi liberada. Se ainda quiser, faça uma nova compra no site.`);
         } else {
           await send(buyer.email, "REEMBOLSO", `Devolução do seu pagamento: ${event}`,
-            `Vamos devolver ${formatBRL(order.totalCents)} para a conta que fez o Pix. Avisaremos quando concluir.`);
+            order.refundByPix
+              ? `Vamos devolver ${formatBRL(order.totalCents)} por Pix para a chave CPF do seu cadastro (o pagamento passou do prazo de estorno do Pix). ` +
+                  `Confira se o seu CPF está cadastrado como chave Pix no seu banco. Avisaremos quando concluir.`
+              : `Vamos devolver ${formatBRL(order.totalCents)} para a conta que fez o Pix. Avisaremos quando concluir.`);
           await whats(buyer, orderId, "REEMBOLSO", "reembolso", [formatBRL(order.totalCents), event, link]);
           if (action === "PRAZO_TRANSFERENCIA_ESGOTADO") {
             await send(seller.email, "PRAZO_PERDIDO", `Venda cancelada: ${event}`,

@@ -223,19 +223,26 @@ describe("devolução por Pix depois do prazo de estorno", () => {
     expect(await validateTransfer(payload)).toMatchObject({ status: "REFUSED" }); // Já concluída.
   });
 
-  it("CPF sem chave Pix: avisa o comprador uma vez e a rotina tenta de novo 24h depois", async () => {
+  it("CPF sem chave Pix: a rotina tenta de novo a cada 24h e avisa o comprador uma vez", async () => {
     const { requestRefund, runRoutines } = await import("@/lib/orders/service");
     const order = await paidLongAgo(100);
-    provider.failNextPix = 'Asaas POST /transfers falhou: 400 {"errors":[{"code":"invalid_action","description":"A chave informada não foi encontrada."}]}';
+    const noKey = 'Asaas POST /transfers falhou: 400 {"errors":[{"code":"invalid_action","description":"A chave informada não foi encontrada."}]}';
+    provider.failNextPix = noKey;
     await requestRefund(order.id, "NENHUM", provider, now);
     expect(await prisma.order.findUniqueOrThrow({ where: { id: order.id } })).toMatchObject({ refundStatus: "FALHOU", refundByPix: true, refundTransferId: null });
-    expect(await prisma.emailLog.count({ where: { orderId: order.id, kind: "REEMBOLSO_PIX_FALHOU" } })).toBe(1);
+    // Na primeira tentativa quem avisa é o e-mail de reembolso (mudança de status).
+    expect(await prisma.emailLog.count({ where: { orderId: order.id, kind: "REEMBOLSO_PIX_FALHOU" } })).toBe(0);
 
-    // Uma hora depois ainda não tenta; no dia seguinte, sim.
+    // Uma hora depois ainda não tenta; no dia seguinte, sim, e falha de novo: avisa.
     const sentBefore = provider.pixSent.length;
     await runRoutines(provider, addMinutes(now, 60));
     expect(provider.pixSent).toHaveLength(sentBefore);
+    provider.failNextPix = noKey;
     await runRoutines(provider, addDays(now, 1.05));
+    expect(await prisma.emailLog.count({ where: { orderId: order.id, kind: "REEMBOLSO_PIX_FALHOU" } })).toBe(1);
+
+    // O comprador cadastra a chave: a tentativa seguinte devolve, sem repetir o aviso.
+    await runRoutines(provider, addDays(now, 2.1));
     expect(provider.pixSent.slice(sentBefore)).toEqual([expect.objectContaining({ externalReference: `reembolso-${order.id}` })]);
     expect((await prisma.order.findUniqueOrThrow({ where: { id: order.id } })).refundStatus).toBe("CONCLUIDO");
     expect(await prisma.emailLog.count({ where: { orderId: order.id, kind: "REEMBOLSO_PIX_FALHOU" } })).toBe(1);

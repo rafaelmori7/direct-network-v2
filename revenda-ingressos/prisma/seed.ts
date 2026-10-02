@@ -31,14 +31,14 @@ async function seedDemo() {
   const platforms = Object.fromEntries((await prisma.platform.findMany()).map((p) => [p.code, p.id]));
 
   const people = [
-    ["Juan Pereira", "juan@demo.local", "52998224725"],
-    ["Isabela Costa", "isabela@demo.local", "11144477735"],
-    ["Diego Alves", "diego@demo.local", "39053344705"],
-    ["Marina Souza", "marina@demo.local", "15350946056"],
-    ["Admin Demo", "admin@demo.local", "71428793860"],
+    ["Juan Pereira", "juan@demo.local", "52998224725", "11987654321"],
+    ["Isabela Costa", "isabela@demo.local", "11144477735", "11987654322"],
+    ["Diego Alves", "diego@demo.local", "39053344705", "21987654323"],
+    ["Marina Souza", "marina@demo.local", "15350946056", "31987654324"],
+    ["Admin Demo", "admin@demo.local", "71428793860", "11987654325"],
   ] as const;
   const users: Record<string, string> = {};
-  for (const [name, email, cpf] of people) {
+  for (const [name, email, cpf, phone] of people) {
     const u = await prisma.user.upsert({
       where: { email },
       update: {},
@@ -46,7 +46,7 @@ async function seedDemo() {
         name,
         email,
         cpf,
-        phone: "11999999999",
+        phone,
         birthDate: new Date("1995-05-10"),
         passwordHash,
         cpfCheckedAt: now,

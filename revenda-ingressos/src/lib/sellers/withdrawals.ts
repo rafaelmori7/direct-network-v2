@@ -2,7 +2,7 @@ import { decrypt } from "@/lib/crypto";
 import { prisma } from "@/lib/db";
 import { formatBRL } from "@/lib/money/fees";
 import { sendEmail } from "@/lib/notify/email";
-import type { PaymentProvider, TransferResult } from "@/lib/payments/provider";
+import { gatewayErrorMessage, type PaymentProvider, type TransferResult } from "@/lib/payments/provider";
 
 /**
  * Saque automático: depois do repasse, o saldo da conta de recebimento (subconta
@@ -196,7 +196,7 @@ async function failed(owner: WithdrawalOwner, holder: Holder, reason: string, no
       text:
         `Oi, ${holder.firstName}! Tentamos enviar o seu saldo por Pix para a chave ${holder.pixKeyType} ${maskKey(holder)}, mas não deu certo.\n` +
         `Confira se o ${holder.pixKeyType} está cadastrado como chave Pix no seu banco. Tentamos de novo automaticamente a cada 24 horas; o dinheiro continua guardado na sua conta de recebimento.\n\n` +
-        `Detalhe: ${gatewayMessage(reason).slice(0, 200)}`,
+        `Detalhe: ${gatewayErrorMessage(reason).slice(0, 200)}`,
     });
   }
   await setDue(owner, new Date(now.getTime() + RETRY_AFTER_FAILURE_MS));
@@ -211,12 +211,6 @@ async function notifySent(holder: Holder, cents: number) {
     subject: `Pix de ${formatBRL(cents)} enviado`,
     text: `Oi, ${holder.firstName}! Enviamos ${formatBRL(cents)} por Pix para a chave ${holder.pixKeyType} ${maskKey(holder)}.`,
   });
-}
-
-/** "Asaas POST /transfers falhou: 400 {...\"description\":\"A chave informada não foi encontrada.\"}" → só a descrição. */
-function gatewayMessage(reason: string): string {
-  const m = /"description"\s*:\s*"([^"]+)"/.exec(reason);
-  return m ? m[1] : reason;
 }
 
 function maskKey(holder: Holder): string {

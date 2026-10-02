@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { formatDateTime } from "@/lib/format";
 import { formatBRL } from "@/lib/money/fees";
 import { PIX_REFUND_MAX_DAYS } from "@/lib/orders/service";
+import { gatewayErrorMessage } from "@/lib/payments/provider";
 import { retryRefund } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -51,7 +52,7 @@ export default async function RefundsAdminPage() {
                   {o.refundByPix ? "Pix para o CPF do comprador" : `Estorno da cobrança ${o.chargeId}`} · desde{" "}
                   {o.refundUpdatedAt ? formatDateTime(o.refundUpdatedAt) : "—"}
                 </div>
-                {o.refundError && <div className="offer-sub">Erro: {o.refundError}</div>}
+                {o.refundError && <div className="offer-sub">Erro: {gatewayErrorMessage(o.refundError)}</div>}
               </div>
               <div className="offer-side">
                 <div className="offer-price">{formatBRL(o.totalCents)}</div>

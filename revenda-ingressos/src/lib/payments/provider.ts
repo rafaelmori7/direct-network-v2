@@ -143,3 +143,14 @@ export function payerMatchesBuyer(payerCpf: string | null | undefined, buyerCpf:
 export function onlyDigits(value: string): string {
   return value.replace(/\D/g, "");
 }
+
+/**
+ * Mensagem de erro do gateway para mostrar a uma pessoa: de
+ * `Asaas POST /accounts falhou: 400 {"errors":[{"description":"O celular informado é inválido."}]}`
+ * fica só "O celular informado é inválido.".
+ */
+export function gatewayErrorMessage(error: unknown): string {
+  const raw = error instanceof Error ? error.message : String(error);
+  const descriptions = [...raw.matchAll(/"description"\s*:\s*"((?:[^"\\]|\\.)*)"/g)].map((m) => m[1]);
+  return descriptions.length > 0 ? descriptions.join(" ") : raw;
+}

@@ -6,11 +6,13 @@ import { redirect } from "next/navigation";
 import { requireAdminAction } from "@/lib/auth/admin";
 import { prisma } from "@/lib/db";
 import { isValidCnpj } from "@/lib/auth/cpf";
+import { isValidMobile } from "@/lib/auth/phone";
 import { encrypt } from "@/lib/crypto";
 import { parseBRLToCents } from "@/lib/format";
 import { getPaymentProvider } from "@/lib/payments";
 import { isValidPartnerSlug } from "@/lib/partners/attribution";
 import { syncAccountApproval } from "@/lib/sellers/service";
+import { gatewayErrorMessage } from "@/lib/payments/provider";
 
 export type PartnerFormState = { errors: string[] };
 
@@ -99,7 +101,7 @@ export async function createPartnerPayoutAccount(partnerId: string, _prev: Partn
   if (!field("razao")) errors.push("Informe a razão social.");
   if (!isValidCnpj(cnpj)) errors.push("CNPJ inválido.");
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.push("E-mail inválido.");
-  if (phone.length < 10 || phone.length > 11) errors.push("Celular inválido (com DDD).");
+  if (!isValidMobile(phone)) errors.push("Celular inválido: use um celular com DDD, ex.: (11) 98765-4321.");
   if (!COMPANY_TYPES.includes(companyType)) errors.push("Escolha o tipo de empresa.");
   if (!Number.isFinite(incomeCents) || incomeCents <= 0) errors.push("Informe o faturamento mensal aproximado.");
   if (postalCode.length !== 8) errors.push("CEP inválido.");
@@ -134,7 +136,7 @@ export async function createPartnerPayoutAccount(partnerId: string, _prev: Partn
     });
     await syncAccountApproval(account.accountId, account.apiKey, provider);
   } catch (error) {
-    return { errors: [`Não foi possível criar a conta agora. ${error instanceof Error ? error.message : ""}`.trim()] };
+    return { errors: [`Não foi possível criar a conta agora. ${gatewayErrorMessage(error)}`.trim()] };
   }
   revalidatePath(`/admin/parceiros/${partnerId}`);
   return { errors: [] };

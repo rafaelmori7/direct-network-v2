@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db";
 import { TICKET_TYPE_LABEL, formatDateLong, formatDateTime } from "@/lib/format";
 import { formatBRL } from "@/lib/money/fees";
 import { AsaasDisclosure } from "@/components/asaas";
+import { formatPhone } from "@/lib/auth/phone";
 
 export const dynamic = "force-dynamic";
 
@@ -158,7 +159,3 @@ function OrderRow({ id, title, sub, value, status }: { id: string; title: string
   );
 }
 
-function formatPhone(phone: string): string {
-  const d = phone.replace(/\D/g, "");
-  return d.length >= 10 ? `(${d.slice(0, 2)}) ${d.slice(2, -4)}-${d.slice(-4)}` : phone;
-}

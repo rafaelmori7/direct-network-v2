@@ -7,6 +7,8 @@ import { prisma } from "@/lib/db";
 import { parseBRLToCents } from "@/lib/format";
 import { getPaymentProvider } from "@/lib/payments";
 import { syncAccountApproval } from "@/lib/sellers/service";
+import { isValidMobile } from "@/lib/auth/phone";
+import { gatewayErrorMessage } from "@/lib/payments/provider";
 
 export type PayoutFormState = { errors: string[] };
 
@@ -24,7 +26,9 @@ export async function createPayoutAccount(_prev: PayoutFormState, form: FormData
   const field = (name: string) => String(form.get(name) ?? "").trim();
   const postalCode = field("cep").replace(/\D/g, "");
   const incomeCents = parseBRLToCents(field("renda"));
+  const phone = field("celular").replace(/\D/g, "");
   const errors: string[] = [];
+  if (!isValidMobile(phone)) errors.push("Informe um celular válido com DDD, ex.: (11) 98765-4321.");
   if (postalCode.length !== 8) errors.push("CEP inválido.");
   if (!field("endereco") || !field("numero") || !field("bairro")) errors.push("Preencha endereço, número e bairro.");
   if (!Number.isFinite(incomeCents) || incomeCents <= 0) errors.push("Informe a renda mensal aproximada (exigida pela instituição de pagamento).");
@@ -38,7 +42,7 @@ export async function createPayoutAccount(_prev: PayoutFormState, form: FormData
       email: user.email,
       cpfCnpj: user.cpf,
       birthDate: user.birthDate,
-      mobilePhone: user.phone,
+      mobilePhone: phone,
       incomeCents,
       address: field("endereco"),
       addressNumber: field("numero"),
@@ -49,6 +53,7 @@ export async function createPayoutAccount(_prev: PayoutFormState, form: FormData
     await prisma.user.update({
       where: { id: user.id },
       data: {
+        phone,
         gatewayAccountId: account.accountId,
         gatewayWalletId: account.walletId,
         // A chave da subconta real é sensível: só é guardada criptografada.
@@ -58,7 +63,7 @@ export async function createPayoutAccount(_prev: PayoutFormState, form: FormData
     });
     await syncAccountApproval(account.accountId, account.apiKey, provider);
   } catch (error) {
-    return { errors: [`Não foi possível criar a conta de recebimento agora. ${error instanceof Error ? error.message : ""}`.trim()] };
+    return { errors: [`Não foi possível criar a conta de recebimento agora. ${gatewayErrorMessage(error)}`.trim()] };
   }
   redirect(safeReturn(form.get("voltar")));
 }

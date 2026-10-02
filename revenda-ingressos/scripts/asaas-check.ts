@@ -13,6 +13,13 @@ async function main() {
   const body = await res.text();
   if (res.ok) {
     console.log("OK: o Asaas aceitou a chave.");
+    const token = process.env.ASAAS_WEBHOOK_TOKEN ?? "";
+    if (token.length < 32) {
+      console.log(`Atenção: ASAAS_WEBHOOK_TOKEN tem ${token.length} caracteres; o Asaas exige pelo menos 32 para o webhook.`);
+    }
+    if (!process.env.SITE_URL?.startsWith("https://")) {
+      console.log("Atenção: SITE_URL não é https; as subcontas serão criadas sem o webhook de aprovação.");
+    }
     return;
   }
   console.log(`Falhou (${res.status}): ${body.slice(0, 200)}`);

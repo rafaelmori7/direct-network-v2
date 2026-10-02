@@ -7,6 +7,7 @@ import { getPaymentProvider } from "@/lib/payments";
 import { NEW_SELLER_MAX_ACTIVE_TICKETS } from "@/lib/rules/engine";
 import { PayoutForm } from "./payout-form";
 import { AsaasDisclosure } from "@/components/asaas";
+import { formatPhone } from "@/lib/auth/phone";
 
 export const dynamic = "force-dynamic";
 
@@ -47,7 +48,7 @@ export default async function PayoutAccountPage({ searchParams }: { searchParams
             dos seus documentos, sempre após o evento, direto por Pix na chave CPF do seu cadastro (cadastre seu CPF como chave Pix no seu
             banco, se ainda não fez).
           </p>
-          <PayoutForm returnTo={voltar} />
+          <PayoutForm returnTo={voltar} phone={formatPhone(user.phone)} />
           <AsaasDisclosure />
         </>
       )}

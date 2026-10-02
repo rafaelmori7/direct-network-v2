@@ -3,6 +3,7 @@ import { requireAdminPage } from "@/lib/auth/admin";
 import { prisma } from "@/lib/db";
 import { formatDateTime } from "@/lib/format";
 import { formatBRL } from "@/lib/money/fees";
+import { gatewayErrorMessage } from "@/lib/payments/provider";
 import { retryPayout } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -74,7 +75,7 @@ export default async function AdminDisputes() {
                   <h3>
                     <Link href={`/pedidos/${o.id}`}>{o.listing.event.name}</Link>
                   </h3>
-                  <div className="offer-sub">Erro: {o.payoutError}</div>
+                  <div className="offer-sub">Erro: {o.payoutError && gatewayErrorMessage(o.payoutError)}</div>
                   <div className="offer-sub">Desde {o.payoutUpdatedAt ? formatDateTime(o.payoutUpdatedAt) : "—"}</div>
                 </div>
                 <div className="offer-side">

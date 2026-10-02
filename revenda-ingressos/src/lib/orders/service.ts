@@ -325,7 +325,9 @@ export async function requestRefund(
       where: { id: orderId },
       data: { refundStatus: "FALHOU", refundError: message.slice(0, 500), refundUpdatedAt: new Date() },
     });
-    if (byPix) await notifyPixRefundFailed(orderId);
+    // Na primeira tentativa o e-mail de reembolso (mudança de status) já pede o CPF
+    // como chave Pix; o aviso de falha fica para as novas tentativas.
+    if (byPix && from === "FALHOU") await notifyPixRefundFailed(orderId);
   }
   return true;
 }
