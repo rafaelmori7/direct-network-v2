@@ -26,10 +26,7 @@ export const metadata = {
   },
 }
 
-// TODO (pendência Rafael): foto de SP/réveillon (ex: fogos sobre o skyline) pra
-// usar de fundo da hero. Assim que vier, troque para o caminho em /public —
-// o degradê escuro por cima já está pronto pra manter o texto legível.
-const HERO_IMAGE = null
+const HERO_IMAGE = '/reveillon-sao-paulo-hero.jpg'
 
 const LINK_GRUPO_WHATSAPP = 'https://chat.whatsapp.com/DYcOSP7iF8U3OYgBHpU0tG'
 // Link genérico, sem id de afiliado — trocar se/quando tivermos um parceiro
@@ -56,7 +53,7 @@ const schema = {
 const PONTOS_TURISTICOS = [
   { foto: '/sp-masp.jpg', nome: 'MASP', desc: 'Museu de Arte de São Paulo, na Avenida Paulista — um dos cartões-postais da cidade.' },
   { foto: '/sp-ibirapuera.jpg', nome: 'Parque Ibirapuera', desc: 'O parque mais famoso de SP, ótimo pra caminhar, andar de bike e curtir o verão antes da virada.' },
-  { icone: '🏙️', nome: 'Avenida Paulista', desc: 'O coração da cidade, com museus, shoppings e o Parque Trianon por perto.' },
+  { foto: '/sp-avenida-paulista.jpg', nome: 'Avenida Paulista', desc: 'O coração da cidade, com museus, shoppings e o Parque Trianon por perto.' },
   { foto: '/sp-mercado-municipal.jpg', nome: 'Mercado Municipal (Mercadão)', desc: 'Parada clássica pra provar o famoso sanduíche de mortadela.' },
   { foto: '/sp-beco-do-batman.jpg', nome: 'Beco do Batman', desc: 'Point de arte urbana na Vila Madalena, ótimo pra fotos.' },
 ]
