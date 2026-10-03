@@ -3,12 +3,12 @@ import Nav from '../components/Nav'
 import Footer from '../components/Footer'
 import { REVEILLONS_SP } from '../../lib/reveillons-sp'
 
-const TITLE = 'Virada Estaiada 2027 | Ingressos com Desconto — Cupom DIRECT'
-const DESCRIPTION = 'Ingressos para a Virada Estaiada 2027 com desconto pelo cupom DIRECT. Open bar e open food premium no Varanda Estaiada, 31 de dezembro, das 20h às 3h.'
-const IMAGE_PATH = '/virada-estaiada-2027.jpg'
-const IMAGE_URL = `https://www.directnw.com.br${IMAGE_PATH}`
-const PAGE_PATH = '/virada-estaiada-2027'
+const TITLE = 'Réveillon Sampa Festival 2027 | Ingressos com Desconto — Direct Network'
+const DESCRIPTION = 'Réveillon Sampa Festival 2027 no Sonora Garden, em São Paulo. Open bar e open food a noite toda, show de fogos e line-up com Nuwance, Matheuzinho e mais. Ingressos com desconto Direct.'
+const PAGE_PATH = '/reveillon-sampa-2027'
 const PAGE_URL = `https://www.directnw.com.br${PAGE_PATH}`
+const IMAGE_PATH = '/reveillon-sampa-2027.jpg'
+const IMAGE_URL = `https://www.directnw.com.br${IMAGE_PATH}`
 
 export const metadata = {
   title: TITLE,
@@ -20,7 +20,7 @@ export const metadata = {
     type: 'website',
     siteName: 'Direct Network',
     url: PAGE_URL,
-    images: [{ url: IMAGE_PATH, width: 1200, height: 630, alt: 'Virada Estaiada' }],
+    images: [{ url: IMAGE_PATH, width: 1200, height: 630, alt: 'Réveillon Sampa Festival' }],
   },
   twitter: {
     card: 'summary_large_image',
@@ -30,57 +30,40 @@ export const metadata = {
   },
 }
 
-// Vendas abrem em 10/09. Quando o cupom/link de afiliado estiverem confirmados,
-// troque VENDAS_ABERTAS para true e preencha LINK_AFILIADO — é a única linha a mudar.
-const VENDAS_ABERTAS = false
-const LINK_GRUPO_WHATSAPP = 'https://chat.whatsapp.com/DYcOSP7iF8U3OYgBHpU0tG' // TODO: trocar pelo link do grupo específico da Virada Estaiada (pendência Rafael)
-const LINK_AFILIADO = '#' // TODO: link de afiliado com cupom DIRECT aplicado (pendência Rafael)
+const LINK_AFILIADO = 'https://www.ticket360.com.br/evento/32943/ingressos-para-reveillon-sampa-festival-2027?cp=Direct'
 
 const schema = {
   '@context': 'https://schema.org',
   '@type': 'Event',
-  name: 'Virada Estaiada 2027',
-  description: 'Réveillon 2027 no Varanda Estaiada, em São Paulo, com open bar premium, open food premium e atração musical ao vivo.',
-  startDate: '2026-12-31T20:00:00-03:00',
-  endDate: '2027-01-01T03:00:00-03:00',
+  name: 'Réveillon Sampa Festival 2027',
+  description: 'Réveillon 2027 no Sonora Garden, em São Paulo, com open bar e open food premium a noite toda, show de fogos e line-up de pagode, sertanejo e eletrônica.',
+  startDate: '2026-12-31T20:30:00-03:00',
+  endDate: '2027-01-01T05:30:00-03:00',
   eventStatus: 'https://schema.org/EventScheduled',
   eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
   image: [IMAGE_URL],
   location: {
     '@type': 'Place',
-    name: 'Varanda Estaiada',
+    name: 'Sonora Garden',
     address: {
       '@type': 'PostalAddress',
-      streetAddress: 'Av. Dr. Chucri Zaidan, 155',
+      streetAddress: 'R. Comendador Nestor Pereira, 33',
       addressLocality: 'São Paulo',
       addressRegion: 'SP',
-      postalCode: '04583-110',
+      postalCode: '03079-070',
       addressCountry: 'BR',
     },
   },
-  // offers: pendência — a partir de 10/09, acrescentar { '@type': 'Offer', url: LINK_AFILIADO, price, priceCurrency: 'BRL', availability: 'https://schema.org/InStock', validFrom: '2026-09-10T00:00:00-03:00' }
+  // offers: pendência — preço do lote ainda não confirmado (declarar preço
+  // inexistente gera erro no Search Console, então fica de fora até lá)
 }
 
 function ConversionBlock() {
-  if (!VENDAS_ABERTAS) {
-    return (
-      <div style={{background:'rgba(233,30,140,0.05)',border:'1px solid rgba(233,30,140,0.25)',borderRadius:'var(--radius)',padding:'24px',textAlign:'center'}}>
-        <div style={{fontFamily:'var(--font-display)',fontSize:'18px',fontWeight:700,marginBottom:'8px'}}>As vendas abrem em 10 de setembro — com desconto Direct</div>
-        <p style={{fontSize:'14px',color:'var(--text-muted)',lineHeight:1.7,marginBottom:'18px',maxWidth:'520px',marginLeft:'auto',marginRight:'auto'}}>
-          A pré-venda é o menor valor de toda a temporada e tem quantidade limitada. Entre no nosso grupo e receba o link com desconto assim que a venda abrir.
-        </p>
-        <a href={LINK_GRUPO_WHATSAPP} target="_blank" rel="noopener noreferrer" style={{display:'inline-flex',alignItems:'center',justifyContent:'center',background:'var(--pink)',color:'#fff',fontFamily:'var(--font-display)',fontSize:'15px',fontWeight:600,padding:'16px 28px',borderRadius:'8px'}}>
-          Quero o link com desconto
-        </a>
-      </div>
-    )
-  }
-
   return (
     <div style={{background:'rgba(233,30,140,0.05)',border:'1px solid rgba(233,30,140,0.25)',borderRadius:'var(--radius)',padding:'24px',textAlign:'center'}}>
       <div style={{fontFamily:'var(--font-display)',fontSize:'18px',fontWeight:700,marginBottom:'8px'}}>Ingressos à venda com desconto Direct</div>
       <p style={{fontSize:'14px',color:'var(--text-muted)',lineHeight:1.7,marginBottom:'18px',maxWidth:'520px',marginLeft:'auto',marginRight:'auto'}}>
-        Compre pelo nosso link e o cupom <strong>DIRECT</strong> já vem aplicado. Também funciona digitando <strong>DIRECT</strong> no checkout.
+        Compre pelo nosso link e o desconto Direct já vem aplicado. O Réveillon Sampa Festival esgota todo ano — antecipe-se às viradas de lote.
       </p>
       <a href={LINK_AFILIADO} target="_blank" rel="noopener noreferrer" style={{display:'inline-flex',alignItems:'center',justifyContent:'center',background:'var(--pink)',color:'#fff',fontFamily:'var(--font-display)',fontSize:'15px',fontWeight:600,padding:'16px 28px',borderRadius:'8px'}}>
         Comprar com desconto
@@ -90,30 +73,39 @@ function ConversionBlock() {
 }
 
 const FICHA = [
-  ['Evento', 'Virada Estaiada 2027'],
+  ['Evento', 'Réveillon Sampa Festival 2027'],
   ['Data', '31 de dezembro de 2026'],
-  ['Horário', 'Das 20h às 3h'],
-  ['Local', 'Varanda Estaiada — Av. Dr. Chucri Zaidan, 155, Vila Cordeiro, São Paulo/SP'],
+  ['Horário', 'Das 20h30 às 5h30'],
+  ['Local', 'Sonora Garden — R. Comendador Nestor Pereira, 33, Canindé, São Paulo/SP'],
   ['Open bar', 'Premium, durante toda a festa'],
-  ['Open food', 'Premium, incluso'],
-  ['Atração musical', 'Ao vivo, nome a ser anunciado'],
-  ['Vendas', 'A partir de 10 de setembro, começando pela pré-venda'],
-  ['Cupom de desconto', 'DIRECT'],
+  ['Open food', 'Finger food, durante toda a festa'],
+  ['Line-up', 'Nuwance, Matheuzinho, Vou de Taxi e DJs residentes'],
+  ['Classificação', '18 anos'],
+  ['Vendas', 'Ticket360 (site e aplicativo)'],
 ]
 
-const OUTROS = REVEILLONS_SP.filter(r => r.slug !== 'virada-estaiada-2027')
+const LINEUP = [
+  ['Nuwance', '28 anos de carreira, grupo de pagode do ABC paulista que mistura pagode, MPB e hits dos anos 90 e 2000.'],
+  ['Matheuzinho', 'Sertanejo em ascensão no Brasil, com parcerias como "Só de Sacanagem" (Israel & Rodolffo) e "Se Essa Boca Fosse Minha" (Alex & Medina).'],
+  ['Vou de Taxi', 'Bloco de carnaval de rua de São Paulo criado em 2014, famoso por arrastar multidões com hits nostálgicos dos anos 90 e 2000.'],
+  ['DJ Gabbo Venutti', 'Set de música eletrônica, residente de casas renomadas de São Paulo.'],
+  ['DJ Victor Bauer', 'Funk dos anos 2000 e open format, com shows em festivais pelo Brasil e exterior.'],
+  ['DJ Bruno', 'Open format, residente da festa, comanda a pista durante toda a virada.'],
+]
 
 const FAQ = [
-  ['Quando é a Virada Estaiada 2027?', 'Dia 31 de dezembro de 2026, das 20h às 3h.'],
-  ['Onde é a Virada Estaiada?', 'No Varanda Estaiada, na Av. Dr. Chucri Zaidan, 155, Vila Cordeiro, São Paulo.'],
-  ['Quando abrem as vendas?', 'Em 10 de setembro, começando pela pré-venda, que tem o menor valor da temporada e quantidade limitada.'],
-  ['Quanto custa o ingresso?', 'Os valores são divulgados na abertura das vendas. A pré-venda é sempre o lote mais barato do ano.'],
-  ['Tem open bar?', 'Sim, open bar premium durante toda a festa, além de open food premium incluso.'],
-  ['Qual é o line-up?', 'A produção confirmou uma atração musical ao vivo e ainda não divulgou o nome.'],
-  ['Tem cupom de desconto para a Virada Estaiada?', 'Sim. Comprando pelo link da Direct o cupom DIRECT já vem aplicado, e ele também funciona digitado no checkout.'],
+  ['Quando é o Réveillon Sampa Festival 2027?', 'Dia 31 de dezembro de 2026, das 20h30 às 5h30.'],
+  ['Onde é o Réveillon Sampa Festival?', 'No Sonora Garden, na R. Comendador Nestor Pereira, 33, Canindé, São Paulo.'],
+  ['Tem open bar e open food?', 'Sim, open bar premium e open food em formato finger food durante toda a festa, das 20h30 às 5h30.'],
+  ['Qual é o line-up?', 'Nuwance, Matheuzinho, Vou de Taxi e os DJs residentes Gabbo Venutti, Victor Bauer e Bruno.'],
+  ['Qual a classificação etária?', 'Evento 18+, não é permitida a entrada de menores de idade.'],
+  ['Tem dress code?', 'Sugestão de branco e esporte fino. Não é permitido camiseta de time, boné, corrente grossa ou regata.'],
+  ['Tem desconto Direct Network?', 'Sim. Comprando pelo nosso link, o desconto Direct Network já vem aplicado.'],
 ]
 
-export default function ViradaEstaiada2027Page() {
+const OUTROS = REVEILLONS_SP.filter(r => r.slug !== 'reveillon-sampa-2027')
+
+export default function ReveillonSampa2027Page() {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
@@ -125,16 +117,16 @@ export default function ViradaEstaiada2027Page() {
             🎆 Réveillon 2027 — São Paulo
           </div>
           <h1 style={{fontFamily:'var(--font-display)',fontSize:'clamp(28px,5vw,44px)',fontWeight:700,lineHeight:1.15,letterSpacing:'-0.02em',marginBottom:'20px'}}>
-            Virada Estaiada 2027: réveillon no Varanda Estaiada, em São Paulo
+            Réveillon Sampa Festival 2027: ingressos com desconto no Sonora Garden
           </h1>
           <div style={{width:'100%',borderRadius:'12px',overflow:'hidden',border:'1px solid var(--border)',marginBottom:'24px'}}>
-            <img src={IMAGE_PATH} alt="Virada Estaiada — réveillon no Varanda Estaiada, em São Paulo" style={{width:'100%',height:'auto',display:'block'}} />
+            <img src={IMAGE_PATH} alt="Réveillon Sampa Festival — pista no Sonora Garden, em São Paulo" style={{width:'100%',height:'auto',display:'block'}} />
           </div>
           <p style={{fontSize:'16px',color:'var(--text-muted)',lineHeight:1.75,marginBottom:'16px'}}>
-            A Virada Estaiada volta em 31 de dezembro de 2026 para receber 2027 do melhor ângulo da cidade, com a Ponte Estaiada de moldura. Open bar premium, open food premium e atração musical ao vivo, das 20h às 3h.
+            Há 8 anos no calendário de réveillons de São Paulo, o Sampa Festival chega em 2027 com a maior estrutura já montada: open bar e open food premium a noite toda, show da virada com fogos de artifício e um line-up que passa por pagode, sertanejo e música eletrônica.
           </p>
           <p style={{fontSize:'16px',color:'var(--text-muted)',lineHeight:1.75}}>
-            A Direct tem link com desconto para a festa. Abaixo você encontra tudo o que já foi confirmado e como garantir o seu ingresso pelo menor valor.
+            A Direct tem link com desconto para a festa. Abaixo você encontra tudo o que já foi confirmado e como garantir o seu ingresso.
           </p>
         </section>
 
@@ -162,29 +154,10 @@ export default function ViradaEstaiada2027Page() {
         {/* LOCALIZAÇÃO */}
         <section style={{maxWidth:'800px',margin:'0 auto',padding:'0 var(--px) 56px'}}>
           <h2 style={{fontFamily:'var(--font-display)',fontSize:'clamp(22px,4vw,28px)',fontWeight:700,letterSpacing:'-0.02em',marginBottom:'20px'}}>
-            Onde fica o Varanda Estaiada
+            Onde fica o Sonora Garden
           </h2>
-          <p style={{fontSize:'15px',color:'var(--text-muted)',lineHeight:1.8,marginBottom:'16px'}}>
-            O Varanda Estaiada fica na Av. Dr. Chucri Zaidan, 155, na Vila Cordeiro, zona sul de São Paulo, a poucos minutos do Morumbi, Brooklin e Berrini, com acesso pela Marginal Pinheiros.
-          </p>
           <p style={{fontSize:'15px',color:'var(--text-muted)',lineHeight:1.8}}>
-            É um dos endereços com a vista mais reconhecível da cidade: a Ponte Octávio Frias de Oliveira fica bem à frente, o que faz da casa um dos pontos mais procurados para ver a virada do ano em São Paulo.
-          </p>
-        </section>
-
-        {/* PREÇO */}
-        <section style={{maxWidth:'800px',margin:'0 auto',padding:'0 var(--px) 56px'}}>
-          <h2 style={{fontFamily:'var(--font-display)',fontSize:'clamp(22px,4vw,28px)',fontWeight:700,letterSpacing:'-0.02em',marginBottom:'20px'}}>
-            Quanto custa
-          </h2>
-          <p style={{fontSize:'15px',color:'var(--text-muted)',lineHeight:1.8,marginBottom:'16px'}}>
-            Os valores da Virada Estaiada 2027 são divulgados na abertura das vendas, em 10 de setembro.
-          </p>
-          <p style={{fontSize:'15px',color:'var(--text-muted)',lineHeight:1.8,marginBottom:'16px'}}>
-            A temporada começa pela pré-venda, que é o menor valor do ano e tem quantidade limitada. Em réveillon de São Paulo o preço sobe a cada lote, e quem compra depois da virada de lote paga mais pelo mesmo ingresso.
-          </p>
-          <p style={{fontSize:'15px',color:'var(--text-muted)',lineHeight:1.8}}>
-            Comprando pelo link da Direct, o cupom DIRECT aplica o desconto sobre o lote que estiver aberto.
+            O Sonora Garden fica no complexo do Estádio do Canindé, na zona norte de São Paulo, com fácil acesso pela Marginal Tietê. É um espaço contemporâneo com mais de 3.500 m², parte coberta e parte open air.
           </p>
         </section>
 
@@ -194,24 +167,42 @@ export default function ViradaEstaiada2027Page() {
             O que está incluso
           </h2>
           <p style={{fontSize:'15px',color:'var(--text-muted)',lineHeight:1.8,marginBottom:'16px'}}>
-            <strong style={{color:'var(--text)'}}>Open bar premium.</strong> Bebida liberada durante toda a festa, das 20h às 3h.
+            <strong style={{color:'var(--text)'}}>Open bar premium.</strong> Rótulos importados de gin, vodka, whisky e tequila, cerveja premium, espumante, energético e não alcoólicos, durante toda a festa (menu sujeito a confirmação final no Instagram oficial @reveillonsampa).
           </p>
           <p style={{fontSize:'15px',color:'var(--text-muted)',lineHeight:1.8,marginBottom:'16px'}}>
-            <strong style={{color:'var(--text)'}}>Open food premium.</strong> Comida inclusa no ingresso, sem consumação à parte.
+            <strong style={{color:'var(--text)'}}>Open food.</strong> Formato finger food/coquetel assinado pela chef Erika Meira, com estações de entrada, pratos quentes, sobremesa e café da manhã a partir das 4h30.
           </p>
           <p style={{fontSize:'15px',color:'var(--text-muted)',lineHeight:1.8}}>
-            <strong style={{color:'var(--text)'}}>Atração musical ao vivo.</strong> A produção confirmou que haverá show e anuncia o nome em breve. Esta página é atualizada no mesmo dia do anúncio.
+            <strong style={{color:'var(--text)'}}>Show da virada.</strong> Contagem regressiva com telões de led, efeitos especiais e show de fogos de artifício na passagem de ano.
           </p>
         </section>
 
-        {/* A FESTA */}
+        {/* LINE-UP */}
         <section style={{maxWidth:'800px',margin:'0 auto',padding:'0 var(--px) 56px'}}>
           <h2 style={{fontFamily:'var(--font-display)',fontSize:'clamp(22px,4vw,28px)',fontWeight:700,letterSpacing:'-0.02em',marginBottom:'20px'}}>
-            A festa
+            Line-up
           </h2>
-          <p style={{fontSize:'15px',color:'var(--text-muted)',lineHeight:1.8}}>
-            A Virada Estaiada não é evento novo. A casa já realizou as edições de 2025 e 2026, e a festa aparece nas listas de réveillon de São Paulo publicadas pela imprensa desde a virada de 2022. É uma das viradas que consolidaram o formato open bar premium com vista para a ponte.
-          </p>
+          <div style={{display:'flex',flexDirection:'column',gap:'16px'}}>
+            {LINEUP.map(([nome, desc]) => (
+              <div key={nome}>
+                <div style={{fontFamily:'var(--font-display)',fontSize:'15px',fontWeight:600,marginBottom:'4px'}}>{nome}</div>
+                <p style={{fontSize:'14px',color:'var(--text-muted)',lineHeight:1.7}}>{desc}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* INFORMAÇÕES IMPORTANTES */}
+        <section style={{maxWidth:'800px',margin:'0 auto',padding:'0 var(--px) 56px'}}>
+          <h2 style={{fontFamily:'var(--font-display)',fontSize:'clamp(22px,4vw,28px)',fontWeight:700,letterSpacing:'-0.02em',marginBottom:'20px'}}>
+            Informações importantes
+          </h2>
+          <ul style={{fontSize:'15px',color:'var(--text-muted)',lineHeight:1.9,paddingLeft:'20px'}}>
+            <li>Evento 18+, não é permitida a entrada de menores de idade.</li>
+            <li>Dress code sugerido: branco e esporte fino. Não é permitido camiseta de time, boné, corrente grossa ou regata.</li>
+            <li>Ingresso deve ser apresentado no aplicativo ou impresso, junto com documento com foto.</li>
+            <li>Estacionamento oficial com valet terceirizado; chapelaria paga à parte, com vagas limitadas.</li>
+          </ul>
         </section>
 
         {/* FAQ */}
@@ -249,7 +240,7 @@ export default function ViradaEstaiada2027Page() {
         <section style={{maxWidth:'800px',margin:'0 auto',padding:'0 var(--px) 72px'}}>
           <hr style={{border:'none',borderTop:'1px solid var(--border)',marginBottom:'40px'}} />
           <p style={{fontSize:'15px',color:'var(--text-muted)',lineHeight:1.8,marginBottom:'24px',textAlign:'center'}}>
-            O primeiro lote da Virada Estaiada é sempre o mais disputado da temporada. Garanta o seu com o desconto da Direct.
+            O Réveillon Sampa Festival esgota todo ano. Garanta o seu com o desconto da Direct.
           </p>
           <ConversionBlock />
         </section>

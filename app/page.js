@@ -57,14 +57,14 @@ export default async function Home() {
           </p>
         </section>
 
-        {/* VIRADA ESTAIADA 2027 */}
+        {/* RÉVEILLON SÃO PAULO 2027 */}
         <div style={{margin:'0 var(--px) 32px',maxWidth:'640px',marginLeft:'auto',marginRight:'auto'}}>
-          <Link href="/virada-estaiada-2027" className="banner-flex" style={{display:'flex',background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:'var(--radius)',padding:'16px 20px',alignItems:'center',justifyContent:'space-between',gap:'16px'}}>
+          <Link href="/reveillon-sao-paulo" className="banner-flex" style={{display:'flex',background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:'var(--radius)',padding:'16px 20px',alignItems:'center',justifyContent:'space-between',gap:'16px'}}>
             <div>
-              <strong style={{fontFamily:'var(--font-display)',fontSize:'14px',fontWeight:600,display:'block',marginBottom:'2px'}}>Virada Estaiada 2027 chegou</strong>
-              <p style={{fontSize:'12px',color:'var(--text-muted)'}}>Open bar e open food premium com vista para a ponte. Cupom DIRECT.</p>
+              <strong style={{fontFamily:'var(--font-display)',fontSize:'14px',fontWeight:600,display:'block',marginBottom:'2px'}}>Guia do Réveillon 2027 em São Paulo</strong>
+              <p style={{fontSize:'12px',color:'var(--text-muted)'}}>Todos os Réveillons com desconto Direct: Estaiada, Sampa Festival e Utopic Festival.</p>
             </div>
-            <span style={{fontSize:'12px',fontWeight:600,color:'var(--pink)',whiteSpace:'nowrap'}}>Ver detalhes →</span>
+            <span style={{fontSize:'12px',fontWeight:600,color:'var(--pink)',whiteSpace:'nowrap'}}>Ver guia →</span>
           </Link>
         </div>
 
