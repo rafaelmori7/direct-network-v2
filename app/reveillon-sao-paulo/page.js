@@ -26,6 +26,11 @@ export const metadata = {
   },
 }
 
+// TODO (pendência Rafael): foto de SP/réveillon (ex: fogos sobre o skyline) pra
+// usar de fundo da hero. Assim que vier, troque para o caminho em /public —
+// o degradê escuro por cima já está pronto pra manter o texto legível.
+const HERO_IMAGE = null
+
 const LINK_GRUPO_WHATSAPP = 'https://chat.whatsapp.com/DYcOSP7iF8U3OYgBHpU0tG'
 // Link genérico, sem id de afiliado — trocar se/quando tivermos um parceiro
 // de hospedagem com link rastreável (pendência Rafael).
@@ -49,11 +54,11 @@ const schema = {
 }
 
 const PONTOS_TURISTICOS = [
-  ['🖼️', 'MASP', 'Museu de Arte de São Paulo, na Avenida Paulista — um dos cartões-postais da cidade.'],
-  ['🌳', 'Parque Ibirapuera', 'O parque mais famoso de SP, ótimo pra caminhar, andar de bike e curtir o verão antes da virada.'],
-  ['🏙️', 'Avenida Paulista', 'O coração da cidade, com museus, shoppings e o Parque Trianon por perto.'],
-  ['🥪', 'Mercado Municipal (Mercadão)', 'Parada clássica pra provar o famoso sanduíche de mortadela.'],
-  ['🎨', 'Beco do Batman', 'Point de arte urbana na Vila Madalena, ótimo pra fotos.'],
+  { foto: '/sp-masp.jpg', nome: 'MASP', desc: 'Museu de Arte de São Paulo, na Avenida Paulista — um dos cartões-postais da cidade.' },
+  { foto: '/sp-ibirapuera.jpg', nome: 'Parque Ibirapuera', desc: 'O parque mais famoso de SP, ótimo pra caminhar, andar de bike e curtir o verão antes da virada.' },
+  { icone: '🏙️', nome: 'Avenida Paulista', desc: 'O coração da cidade, com museus, shoppings e o Parque Trianon por perto.' },
+  { foto: '/sp-mercado-municipal.jpg', nome: 'Mercado Municipal (Mercadão)', desc: 'Parada clássica pra provar o famoso sanduíche de mortadela.' },
+  { foto: '/sp-beco-do-batman.jpg', nome: 'Beco do Batman', desc: 'Point de arte urbana na Vila Madalena, ótimo pra fotos.' },
 ]
 
 const FAQ = [
@@ -70,20 +75,32 @@ export default function ReveillonSaoPauloPage() {
       <Nav />
       <main>
         {/* HERO */}
-        <section style={{padding:'64px var(--px) 36px',maxWidth:'800px',margin:'0 auto',position:'relative',overflow:'hidden'}}>
-          <div style={{position:'absolute',top:'-80px',left:'50%',transform:'translateX(-50%)',width:'700px',height:'320px',background:'radial-gradient(ellipse, rgba(200,150,60,0.18) 0%, transparent 70%)',pointerEvents:'none'}} />
-          <div style={{display:'inline-flex',alignItems:'center',gap:'7px',fontSize:'11px',fontWeight:600,letterSpacing:'0.14em',textTransform:'uppercase',color:'#C8963C',background:'rgba(200,150,60,0.1)',border:'1px solid rgba(200,150,60,0.3)',padding:'5px 14px',borderRadius:'20px',marginBottom:'20px'}}>
-            🎆 Guia 2027
+        <section style={{
+          position:'relative',
+          overflow:'hidden',
+          backgroundImage: HERO_IMAGE ? `url(${HERO_IMAGE})` : undefined,
+          backgroundSize:'cover',
+          backgroundPosition:'center',
+        }}>
+          {HERO_IMAGE ? (
+            <div style={{position:'absolute',inset:0,background:'linear-gradient(180deg, rgba(10,10,10,0.55) 0%, rgba(10,10,10,0.85) 80%, var(--bg) 100%)'}} />
+          ) : (
+            <div style={{position:'absolute',top:'-80px',left:'50%',transform:'translateX(-50%)',width:'700px',height:'320px',background:'radial-gradient(ellipse, rgba(200,150,60,0.18) 0%, transparent 70%)',pointerEvents:'none'}} />
+          )}
+          <div style={{position:'relative',padding:'64px var(--px) 36px',maxWidth:'800px',margin:'0 auto'}}>
+            <div style={{display:'inline-flex',alignItems:'center',gap:'7px',fontSize:'11px',fontWeight:600,letterSpacing:'0.14em',textTransform:'uppercase',color:'#C8963C',background:'rgba(200,150,60,0.1)',border:'1px solid rgba(200,150,60,0.3)',padding:'5px 14px',borderRadius:'20px',marginBottom:'20px'}}>
+              🎆 Guia 2027
+            </div>
+            <h1 style={{fontFamily:'var(--font-display)',fontSize:'clamp(28px,5vw,44px)',fontWeight:700,lineHeight:1.15,letterSpacing:'-0.02em',marginBottom:'20px'}}>
+              Réveillon em São Paulo <span style={{color:'#C8963C'}}>2027</span>: guia completo e ingressos com desconto
+            </h1>
+            <p style={{fontSize:'16px',color:'var(--text-muted)',lineHeight:1.75,marginBottom:'16px'}}>
+              São Paulo virou um dos principais destinos de réveillon do Brasil, com festas open bar premium que esgotam ano após ano. Reunimos aqui os Réveillons que a Direct Network vende com desconto exclusivo, além de dicas de onde ficar e o que fazer na cidade pra quem vem de fora.
+            </p>
+            <p style={{fontSize:'16px',color:'var(--text-muted)',lineHeight:1.75}}>
+              Escolha o seu abaixo — cada um tem sua própria página com ficha completa, line-up e o link de compra.
+            </p>
           </div>
-          <h1 style={{fontFamily:'var(--font-display)',fontSize:'clamp(28px,5vw,44px)',fontWeight:700,lineHeight:1.15,letterSpacing:'-0.02em',marginBottom:'20px'}}>
-            Réveillon em São Paulo <span style={{color:'#C8963C'}}>2027</span>: guia completo e ingressos com desconto
-          </h1>
-          <p style={{fontSize:'16px',color:'var(--text-muted)',lineHeight:1.75,marginBottom:'16px'}}>
-            São Paulo virou um dos principais destinos de réveillon do Brasil, com festas open bar premium que esgotam ano após ano. Reunimos aqui os Réveillons que a Direct Network vende com desconto exclusivo, além de dicas de onde ficar e o que fazer na cidade pra quem vem de fora.
-          </p>
-          <p style={{fontSize:'16px',color:'var(--text-muted)',lineHeight:1.75}}>
-            Escolha o seu abaixo — cada um tem sua própria página com ficha completa, line-up e o link de compra.
-          </p>
         </section>
 
         {/* OS RÉVEILLONS */}
@@ -128,11 +145,21 @@ export default function ReveillonSaoPauloPage() {
             O que fazer em São Paulo
           </h2>
           <div className="pontos-grid">
-            {PONTOS_TURISTICOS.map(([icone, nome, desc]) => (
-              <div key={nome} style={{background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:'var(--radius)',padding:'16px'}}>
-                <div style={{fontSize:'26px',marginBottom:'8px'}}>{icone}</div>
-                <div style={{fontFamily:'var(--font-display)',fontSize:'14px',fontWeight:600,marginBottom:'4px'}}>{nome}</div>
-                <p style={{fontSize:'13px',color:'var(--text-muted)',lineHeight:1.6}}>{desc}</p>
+            {PONTOS_TURISTICOS.map(p => (
+              <div key={p.nome} style={{background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:'var(--radius)',overflow:'hidden'}}>
+                {p.foto ? (
+                  <div style={{width:'100%',aspectRatio:'4/3',background:'var(--bg3)'}}>
+                    <img src={p.foto} alt={p.nome} style={{width:'100%',height:'100%',objectFit:'cover',display:'block'}} />
+                  </div>
+                ) : (
+                  <div style={{width:'100%',aspectRatio:'4/3',background:'var(--bg3)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'36px'}}>
+                    {p.icone}
+                  </div>
+                )}
+                <div style={{padding:'14px 16px'}}>
+                  <div style={{fontFamily:'var(--font-display)',fontSize:'14px',fontWeight:600,marginBottom:'4px'}}>{p.nome}</div>
+                  <p style={{fontSize:'13px',color:'var(--text-muted)',lineHeight:1.6}}>{p.desc}</p>
+                </div>
               </div>
             ))}
           </div>
