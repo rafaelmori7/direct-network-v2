@@ -7,6 +7,8 @@ const TITLE = 'Réveillon Utopic Festival 2027 | Ingressos com Desconto — Dire
 const DESCRIPTION = 'Réveillon Utopic Festival 2027 no Bosque Esperia, em São Paulo. 100% open bar premium e 100% música eletrônica, com D-Nox, Meca, Tom Keller e mais. Ingressos com desconto Direct.'
 const PAGE_PATH = '/reveillon-utopic-2027'
 const PAGE_URL = `https://www.directnw.com.br${PAGE_PATH}`
+const IMAGE_PATH = '/reveillon-utopic-2027.jpg'
+const IMAGE_URL = `https://www.directnw.com.br${IMAGE_PATH}`
 
 export const metadata = {
   title: TITLE,
@@ -18,17 +20,17 @@ export const metadata = {
     type: 'website',
     siteName: 'Direct Network',
     url: PAGE_URL,
+    images: [{ url: IMAGE_PATH, width: 1200, height: 630, alt: 'Réveillon Utopic Festival' }],
   },
   twitter: {
-    card: 'summary',
+    card: 'summary_large_image',
     title: TITLE,
     description: DESCRIPTION,
+    images: [IMAGE_PATH],
   },
 }
 
-// TODO (pendência Rafael): link de afiliado/cupom Direct para o Réveillon
-// Utopic — até lá, o CTA aponta pro WhatsApp pra captar o lead.
-const LINK_GRUPO_WHATSAPP = 'https://chat.whatsapp.com/DYcOSP7iF8U3OYgBHpU0tG'
+const LINK_AFILIADO = 'https://cart.ingresse.com/c89a2105-e284-4486-bad2-04c773e1ee8d/tickets?passkey=DIRECT'
 
 const schema = {
   '@context': 'https://schema.org',
@@ -39,31 +41,32 @@ const schema = {
   endDate: '2027-01-01T06:00:00-03:00',
   eventStatus: 'https://schema.org/EventScheduled',
   eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
-  // image: pendência — sem flyer/foto de capa ainda
+  image: [IMAGE_URL],
   location: {
     '@type': 'Place',
     name: 'Bosque Esperia',
     address: {
-      // pendência: endereço completo do Bosque Esperia (temos só "complexo
-      // do Clube Esperia, zona norte, acesso pela Marginal Tietê")
       '@type': 'PostalAddress',
+      streetAddress: 'Av. Santos Dumont, 1313',
       addressLocality: 'São Paulo',
       addressRegion: 'SP',
+      postalCode: '02012-010',
       addressCountry: 'BR',
     },
   },
-  // offers: pendência — acrescentar quando tivermos link de afiliado e preço do lote
+  // offers: pendência — preço do lote ainda não confirmado (declarar preço
+  // inexistente gera erro no Search Console, então fica de fora até lá)
 }
 
 function ConversionBlock() {
   return (
     <div style={{background:'rgba(233,30,140,0.05)',border:'1px solid rgba(233,30,140,0.25)',borderRadius:'var(--radius)',padding:'24px',textAlign:'center'}}>
-      <div style={{fontFamily:'var(--font-display)',fontSize:'18px',fontWeight:700,marginBottom:'8px'}}>Ingressos à venda — garanta com desconto Direct</div>
+      <div style={{fontFamily:'var(--font-display)',fontSize:'18px',fontWeight:700,marginBottom:'8px'}}>Ingressos à venda com desconto Direct</div>
       <p style={{fontSize:'14px',color:'var(--text-muted)',lineHeight:1.7,marginBottom:'18px',maxWidth:'520px',marginLeft:'auto',marginRight:'auto'}}>
-        O Réveillon Utopic Festival tem lotes limitados. Antecipe-se à virada de lote entrando no nosso grupo pra receber o link com desconto exclusivo Direct Network.
+        Compre pelo nosso link e o desconto Direct já vem aplicado. O Réveillon Utopic Festival tem lotes limitados — antecipe-se à virada de lote.
       </p>
-      <a href={LINK_GRUPO_WHATSAPP} target="_blank" rel="noopener noreferrer" style={{display:'inline-flex',alignItems:'center',justifyContent:'center',background:'var(--pink)',color:'#fff',fontFamily:'var(--font-display)',fontSize:'15px',fontWeight:600,padding:'16px 28px',borderRadius:'8px'}}>
-        Quero o link com desconto
+      <a href={LINK_AFILIADO} target="_blank" rel="noopener noreferrer" style={{display:'inline-flex',alignItems:'center',justifyContent:'center',background:'var(--pink)',color:'#fff',fontFamily:'var(--font-display)',fontSize:'15px',fontWeight:600,padding:'16px 28px',borderRadius:'8px'}}>
+        Comprar com desconto
       </a>
     </div>
   )
@@ -73,7 +76,7 @@ const FICHA = [
   ['Evento', 'Réveillon Utopic Festival 2027'],
   ['Data', '31 de dezembro de 2026'],
   ['Horário', 'Das 21h às 6h'],
-  ['Local', 'Bosque Esperia — complexo do Clube Esperia, zona norte, São Paulo/SP'],
+  ['Local', 'Bosque Esperia — Av. Santos Dumont, 1313, Santana, São Paulo/SP'],
   ['Open bar', 'Premium, durante toda a festa'],
   ['Formato', '100% música eletrônica'],
   ['Line-up', 'D-Nox, Meca, Tom Keller, Dimy Soler, Mau Max'],
@@ -90,12 +93,12 @@ const LINEUP = [
 
 const FAQ = [
   ['Quando é o Réveillon Utopic Festival 2027?', 'Dia 31 de dezembro de 2026, das 21h às 6h.'],
-  ['Onde é o Réveillon Utopic Festival?', 'No Bosque Esperia, no complexo do Clube Esperia, zona norte de São Paulo, com acesso pela Marginal Tietê.'],
+  ['Onde é o Réveillon Utopic Festival?', 'No Bosque Esperia, na Av. Santos Dumont, 1313, Santana, São Paulo.'],
   ['Tem open bar?', 'Sim, 100% open bar premium durante toda a festa.'],
   ['Qual é o estilo musical?', '100% música eletrônica, com curadoria de DJs de diferentes vertentes do house e do techno.'],
   ['Qual a classificação etária?', 'Evento 18+, não é permitida a entrada de menores de idade.'],
   ['Tem dress code?', 'Sugestão de branco e estilo festival eletrônico premium — tons off-white, champagne, prata e dourado também são bem-vindos.'],
-  ['Tem desconto Direct Network?', 'A Direct Network está com o link de desconto em preparação para este evento — entre no nosso grupo do WhatsApp para receber assim que estiver disponível.'],
+  ['Tem desconto Direct Network?', 'Sim. Comprando pelo nosso link, o desconto Direct Network já vem aplicado.'],
 ]
 
 const OUTROS = REVEILLONS_SP.filter(r => r.slug !== 'reveillon-utopic-2027')
@@ -114,15 +117,14 @@ export default function ReveillonUtopic2027Page() {
           <h1 style={{fontFamily:'var(--font-display)',fontSize:'clamp(28px,5vw,44px)',fontWeight:700,lineHeight:1.15,letterSpacing:'-0.02em',marginBottom:'20px'}}>
             Réveillon Utopic Festival 2027: ingressos com desconto no Bosque Esperia
           </h1>
-          <div style={{width:'100%',borderRadius:'12px',overflow:'hidden',background:'#534AB715',border:'1px solid rgba(83,74,183,0.2)',display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:'8px',padding:'48px 0',marginBottom:'24px'}}>
-            <svg width="48" height="48" viewBox="0 0 48 48" fill="none"><rect x="5" y="7" width="38" height="34" rx="6" stroke="#534AB7" strokeWidth="1.5"/><path d="M16 7V4M32 7V4" stroke="#534AB7" strokeWidth="1.5" strokeLinecap="round"/><path d="M5 17h38" stroke="#534AB7" strokeWidth="1"/></svg>
-            <span style={{fontSize:'11px',color:'var(--text-faint)'}}>Flyer do evento em breve</span>
+          <div style={{width:'100%',borderRadius:'12px',overflow:'hidden',border:'1px solid var(--border)',marginBottom:'24px'}}>
+            <img src={IMAGE_PATH} alt="Réveillon Utopic Festival — estrutura do Bosque Esperia, em São Paulo" style={{width:'100%',height:'auto',display:'block'}} />
           </div>
           <p style={{fontSize:'16px',color:'var(--text-muted)',lineHeight:1.75,marginBottom:'16px'}}>
             O Réveillon Utopic Festival chega a São Paulo propondo uma experiência imersiva: 100% open bar premium e 100% música eletrônica, com cenografia, tecnologia e um line-up que já dividiu palco com os maiores nomes do gênero no mundo.
           </p>
           <p style={{fontSize:'16px',color:'var(--text-muted)',lineHeight:1.75}}>
-            A Direct está preparando o link com desconto exclusivo para este Réveillon. Abaixo você encontra tudo o que já foi confirmado e como entrar na fila pra garantir o seu.
+            A Direct tem link com desconto para a festa. Abaixo você encontra tudo o que já foi confirmado e como garantir o seu ingresso.
           </p>
         </section>
 
@@ -153,7 +155,7 @@ export default function ReveillonUtopic2027Page() {
             Onde fica o Bosque Esperia
           </h2>
           <p style={{fontSize:'15px',color:'var(--text-muted)',lineHeight:1.8}}>
-            O Bosque Esperia fica no complexo do Clube Esperia, na zona norte de São Paulo, com fácil acesso pela Marginal Tietê. É um espaço contemporâneo com mais de 3.500 m², com muito verde, parte coberta e parte open air.
+            O Bosque Esperia fica na Av. Santos Dumont, 1313, em Santana, zona norte de São Paulo, no complexo do Clube Esperia, com fácil acesso pela Marginal Tietê. É um espaço contemporâneo com mais de 3.500 m², com muito verde, parte coberta e parte open air.
           </p>
         </section>
 
