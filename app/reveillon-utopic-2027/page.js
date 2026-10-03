@@ -111,8 +111,8 @@ export default function ReveillonUtopic2027Page() {
       <main>
         {/* HERO */}
         <section style={{padding:'56px var(--px) 32px',maxWidth:'800px',margin:'0 auto'}}>
-          <div style={{display:'inline-block',fontSize:'11px',fontWeight:500,letterSpacing:'0.14em',textTransform:'uppercase',color:'var(--pink)',background:'rgba(233,30,140,0.1)',border:'1px solid rgba(233,30,140,0.2)',padding:'5px 14px',borderRadius:'20px',marginBottom:'20px'}}>
-            Réveillon 2027 — São Paulo
+          <div style={{display:'inline-block',fontSize:'11px',fontWeight:600,letterSpacing:'0.14em',textTransform:'uppercase',color:'#C8963C',background:'rgba(200,150,60,0.1)',border:'1px solid rgba(200,150,60,0.3)',padding:'5px 14px',borderRadius:'20px',marginBottom:'20px'}}>
+            🎆 Réveillon 2027 — São Paulo
           </div>
           <h1 style={{fontFamily:'var(--font-display)',fontSize:'clamp(28px,5vw,44px)',fontWeight:700,lineHeight:1.15,letterSpacing:'-0.02em',marginBottom:'20px'}}>
             Réveillon Utopic Festival 2027: ingressos com desconto no Bosque Esperia

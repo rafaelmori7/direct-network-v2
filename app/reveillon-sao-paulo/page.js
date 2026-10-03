@@ -49,11 +49,11 @@ const schema = {
 }
 
 const PONTOS_TURISTICOS = [
-  ['MASP', 'Museu de Arte de São Paulo, na Avenida Paulista — um dos cartões-postais da cidade.'],
-  ['Parque Ibirapuera', 'O parque mais famoso de SP, ótimo pra caminhar, andar de bike e curtir o verão antes da virada.'],
-  ['Avenida Paulista', 'O coração da cidade, com museus, shoppings e o Parque Trianon por perto.'],
-  ['Mercado Municipal (Mercadão)', 'Parada clássica pra provar o famoso sanduíche de mortadela.'],
-  ['Beco do Batman', 'Point de arte urbana na Vila Madalena, ótimo pra fotos.'],
+  ['🖼️', 'MASP', 'Museu de Arte de São Paulo, na Avenida Paulista — um dos cartões-postais da cidade.'],
+  ['🌳', 'Parque Ibirapuera', 'O parque mais famoso de SP, ótimo pra caminhar, andar de bike e curtir o verão antes da virada.'],
+  ['🏙️', 'Avenida Paulista', 'O coração da cidade, com museus, shoppings e o Parque Trianon por perto.'],
+  ['🥪', 'Mercado Municipal (Mercadão)', 'Parada clássica pra provar o famoso sanduíche de mortadela.'],
+  ['🎨', 'Beco do Batman', 'Point de arte urbana na Vila Madalena, ótimo pra fotos.'],
 ]
 
 const FAQ = [
@@ -70,12 +70,13 @@ export default function ReveillonSaoPauloPage() {
       <Nav />
       <main>
         {/* HERO */}
-        <section style={{padding:'56px var(--px) 32px',maxWidth:'800px',margin:'0 auto'}}>
-          <div style={{display:'inline-block',fontSize:'11px',fontWeight:500,letterSpacing:'0.14em',textTransform:'uppercase',color:'var(--pink)',background:'rgba(233,30,140,0.1)',border:'1px solid rgba(233,30,140,0.2)',padding:'5px 14px',borderRadius:'20px',marginBottom:'20px'}}>
-            Guia 2027
+        <section style={{padding:'64px var(--px) 36px',maxWidth:'800px',margin:'0 auto',position:'relative',overflow:'hidden'}}>
+          <div style={{position:'absolute',top:'-80px',left:'50%',transform:'translateX(-50%)',width:'700px',height:'320px',background:'radial-gradient(ellipse, rgba(200,150,60,0.18) 0%, transparent 70%)',pointerEvents:'none'}} />
+          <div style={{display:'inline-flex',alignItems:'center',gap:'7px',fontSize:'11px',fontWeight:600,letterSpacing:'0.14em',textTransform:'uppercase',color:'#C8963C',background:'rgba(200,150,60,0.1)',border:'1px solid rgba(200,150,60,0.3)',padding:'5px 14px',borderRadius:'20px',marginBottom:'20px'}}>
+            🎆 Guia 2027
           </div>
           <h1 style={{fontFamily:'var(--font-display)',fontSize:'clamp(28px,5vw,44px)',fontWeight:700,lineHeight:1.15,letterSpacing:'-0.02em',marginBottom:'20px'}}>
-            Réveillon em São Paulo 2027: guia completo e ingressos com desconto
+            Réveillon em São Paulo <span style={{color:'#C8963C'}}>2027</span>: guia completo e ingressos com desconto
           </h1>
           <p style={{fontSize:'16px',color:'var(--text-muted)',lineHeight:1.75,marginBottom:'16px'}}>
             São Paulo virou um dos principais destinos de réveillon do Brasil, com festas open bar premium que esgotam ano após ano. Reunimos aqui os Réveillons que a Direct Network vende com desconto exclusivo, além de dicas de onde ficar e o que fazer na cidade pra quem vem de fora.
@@ -90,13 +91,18 @@ export default function ReveillonSaoPauloPage() {
           <h2 style={{fontFamily:'var(--font-display)',fontSize:'clamp(22px,4vw,28px)',fontWeight:700,letterSpacing:'-0.02em',marginBottom:'20px'}}>
             Os Réveillons 2027 em São Paulo
           </h2>
-          <div style={{display:'flex',flexDirection:'column',gap:'12px'}}>
+          <div className="reveillons-grid">
             {REVEILLONS_SP.map(r => (
-              <Link key={r.slug} href={`/${r.slug}`} style={{display:'block',background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:'var(--radius)',padding:'18px 20px'}}>
-                <div style={{fontFamily:'var(--font-display)',fontSize:'16px',fontWeight:600,marginBottom:'4px'}}>{r.nome}</div>
-                <div style={{fontSize:'13px',color:'var(--text-muted)',marginBottom:'8px'}}>{r.local}</div>
-                <p style={{fontSize:'13px',color:'var(--text-muted)',lineHeight:1.6,marginBottom:'8px'}}>{r.resumo}</p>
-                <span style={{fontSize:'12px',fontWeight:600,color:'var(--pink)'}}>Ver detalhes e ingressos →</span>
+              <Link key={r.slug} href={`/${r.slug}`} style={{display:'block',background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:'var(--radius)',overflow:'hidden'}}>
+                <div style={{width:'100%',aspectRatio:'3/4',background:'var(--bg3)'}}>
+                  <img src={r.flyer} alt={`Flyer do ${r.nome}`} style={{width:'100%',height:'100%',objectFit:'cover',display:'block'}} />
+                </div>
+                <div style={{padding:'16px'}}>
+                  <div style={{fontFamily:'var(--font-display)',fontSize:'15px',fontWeight:600,marginBottom:'4px'}}>{r.nome}</div>
+                  <div style={{fontSize:'12px',color:'var(--text-muted)',marginBottom:'8px'}}>{r.local}</div>
+                  <p style={{fontSize:'13px',color:'var(--text-muted)',lineHeight:1.6,marginBottom:'10px'}}>{r.resumo}</p>
+                  <span style={{fontSize:'12px',fontWeight:600,color:'#C8963C'}}>Ver detalhes e ingressos →</span>
+                </div>
               </Link>
             ))}
           </div>
@@ -111,8 +117,8 @@ export default function ReveillonSaoPauloPage() {
           <p style={{fontSize:'15px',color:'var(--text-muted)',lineHeight:1.8,marginBottom:'16px'}}>
             Quem vem de fora pra curtir o Réveillon em São Paulo costuma se hospedar perto da Avenida Paulista, Jardins ou Vila Olímpia/Itaim — bairros centrais, com boa oferta de hotéis em todas as faixas de preço e fácil acesso de app até as casas de festa deste guia.
           </p>
-          <a href={LINK_BOOKING} target="_blank" rel="noopener noreferrer" style={{display:'inline-flex',alignItems:'center',gap:'8px',fontSize:'13px',fontWeight:600,color:'var(--pink)'}}>
-            Buscar hospedagem em São Paulo no Booking.com →
+          <a href={LINK_BOOKING} target="_blank" rel="noopener noreferrer" style={{display:'inline-flex',alignItems:'center',gap:'8px',fontSize:'13px',fontWeight:600,color:'#C8963C'}}>
+            🏨 Buscar hospedagem em São Paulo no Booking.com →
           </a>
         </section>
 
@@ -121,11 +127,12 @@ export default function ReveillonSaoPauloPage() {
           <h2 style={{fontFamily:'var(--font-display)',fontSize:'clamp(22px,4vw,28px)',fontWeight:700,letterSpacing:'-0.02em',marginBottom:'20px'}}>
             O que fazer em São Paulo
           </h2>
-          <div style={{display:'flex',flexDirection:'column',gap:'14px'}}>
-            {PONTOS_TURISTICOS.map(([nome, desc]) => (
-              <div key={nome}>
-                <div style={{fontFamily:'var(--font-display)',fontSize:'14px',fontWeight:600,marginBottom:'2px'}}>{nome}</div>
-                <p style={{fontSize:'14px',color:'var(--text-muted)',lineHeight:1.7}}>{desc}</p>
+          <div className="pontos-grid">
+            {PONTOS_TURISTICOS.map(([icone, nome, desc]) => (
+              <div key={nome} style={{background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:'var(--radius)',padding:'16px'}}>
+                <div style={{fontSize:'26px',marginBottom:'8px'}}>{icone}</div>
+                <div style={{fontFamily:'var(--font-display)',fontSize:'14px',fontWeight:600,marginBottom:'4px'}}>{nome}</div>
+                <p style={{fontSize:'13px',color:'var(--text-muted)',lineHeight:1.6}}>{desc}</p>
               </div>
             ))}
           </div>
@@ -149,12 +156,12 @@ export default function ReveillonSaoPauloPage() {
         {/* ENCERRAMENTO */}
         <section style={{maxWidth:'800px',margin:'0 auto',padding:'0 var(--px) 72px'}}>
           <hr style={{border:'none',borderTop:'1px solid var(--border)',marginBottom:'40px'}} />
-          <div style={{background:'rgba(233,30,140,0.05)',border:'1px solid rgba(233,30,140,0.25)',borderRadius:'var(--radius)',padding:'24px',textAlign:'center'}}>
+          <div style={{background:'rgba(200,150,60,0.06)',border:'1px solid rgba(200,150,60,0.3)',borderRadius:'var(--radius)',padding:'24px',textAlign:'center'}}>
             <div style={{fontFamily:'var(--font-display)',fontSize:'18px',fontWeight:700,marginBottom:'8px'}}>Receba o desconto de todos os Réveillons</div>
             <p style={{fontSize:'14px',color:'var(--text-muted)',lineHeight:1.7,marginBottom:'18px',maxWidth:'480px',marginLeft:'auto',marginRight:'auto'}}>
               Entre no grupo do WhatsApp da Direct Network e receba o link com desconto de cada Réveillon assim que abrir.
             </p>
-            <a href={LINK_GRUPO_WHATSAPP} target="_blank" rel="noopener noreferrer" style={{display:'inline-flex',alignItems:'center',justifyContent:'center',background:'var(--pink)',color:'#fff',fontFamily:'var(--font-display)',fontSize:'15px',fontWeight:600,padding:'16px 28px',borderRadius:'8px'}}>
+            <a href={LINK_GRUPO_WHATSAPP} target="_blank" rel="noopener noreferrer" style={{display:'inline-flex',alignItems:'center',justifyContent:'center',background:'#C8963C',color:'#fff',fontFamily:'var(--font-display)',fontSize:'15px',fontWeight:600,padding:'16px 28px',borderRadius:'8px'}}>
               Entrar no grupo
             </a>
           </div>

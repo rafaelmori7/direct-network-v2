@@ -165,3 +165,29 @@ img { max-width: 100%; }
     position: static !important;
   }
 }
+
+/* Cards dos Réveillons no hub /reveillon-sao-paulo (flyer + texto) */
+.reveillons-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+@media (max-width: 768px) {
+  .reveillons-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Pontos turísticos ilustrados no hub de Réveillon */
+.pontos-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 640px) {
+  .pontos-grid {
+    grid-template-columns: 1fr;
+  }
+}
