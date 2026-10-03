@@ -81,7 +81,25 @@ export default async function sitemap() {
       priority: 0.7,
     },
     {
+      url: `${baseUrl}/reveillon-sao-paulo`,
+      lastModified: agora,
+      changeFrequency: 'weekly',
+      priority: 0.9,
+    },
+    {
       url: `${baseUrl}/virada-estaiada-2027`,
+      lastModified: agora,
+      changeFrequency: 'weekly',
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/reveillon-sampa-2027`,
+      lastModified: agora,
+      changeFrequency: 'weekly',
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/reveillon-utopic-2027`,
       lastModified: agora,
       changeFrequency: 'weekly',
       priority: 0.8,

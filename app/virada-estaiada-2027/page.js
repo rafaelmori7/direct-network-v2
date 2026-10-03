@@ -1,5 +1,7 @@
+import Link from 'next/link'
 import Nav from '../components/Nav'
 import Footer from '../components/Footer'
+import { REVEILLONS_SP } from '../../lib/reveillons-sp'
 
 const TITLE = 'Virada Estaiada 2027 | Ingressos com Desconto — Cupom DIRECT'
 const DESCRIPTION = 'Ingressos para a Virada Estaiada 2027 com desconto pelo cupom DIRECT. Open bar e open food premium no Varanda Estaiada, 31 de dezembro, das 20h às 3h.'
@@ -98,6 +100,8 @@ const FICHA = [
   ['Vendas', 'A partir de 10 de setembro, começando pela pré-venda'],
   ['Cupom de desconto', 'DIRECT'],
 ]
+
+const OUTROS = REVEILLONS_SP.filter(r => r.slug !== 'virada-estaiada-2027')
 
 const FAQ = [
   ['Quando é a Virada Estaiada 2027?', 'Dia 31 de dezembro de 2026, das 20h às 3h.'],
@@ -222,6 +226,22 @@ export default function ViradaEstaiada2027Page() {
                 <p style={{fontSize:'14px',color:'var(--text-muted)',lineHeight:1.75}}>{resposta}</p>
               </div>
             ))}
+          </div>
+        </section>
+
+        {/* OUTROS RÉVEILLONS */}
+        <section style={{maxWidth:'800px',margin:'0 auto',padding:'0 var(--px) 56px'}}>
+          <h2 style={{fontFamily:'var(--font-display)',fontSize:'clamp(20px,4vw,24px)',fontWeight:700,letterSpacing:'-0.02em',marginBottom:'16px'}}>
+            Outros Réveillons em São Paulo
+          </h2>
+          <div style={{display:'flex',flexDirection:'column',gap:'10px'}}>
+            {OUTROS.map(r => (
+              <Link key={r.slug} href={`/${r.slug}`} style={{display:'block',background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:'var(--radius)',padding:'14px 16px'}}>
+                <div style={{fontFamily:'var(--font-display)',fontSize:'14px',fontWeight:600,marginBottom:'2px'}}>{r.nome}</div>
+                <div style={{fontSize:'12px',color:'var(--text-muted)'}}>{r.local}</div>
+              </Link>
+            ))}
+            <Link href="/reveillon-sao-paulo" style={{fontSize:'13px',fontWeight:600,color:'var(--pink)'}}>Ver guia completo do Réveillon em São Paulo →</Link>
           </div>
         </section>
 
