@@ -105,6 +105,12 @@ export default async function sitemap() {
       priority: 0.8,
     },
     {
+      url: `${baseUrl}/reveillon-la-nuit-2027`,
+      lastModified: agora,
+      changeFrequency: 'weekly',
+      priority: 0.8,
+    },
+    {
       url: `${baseUrl}/cortesia`,
       lastModified: agora,
       changeFrequency: 'monthly',
