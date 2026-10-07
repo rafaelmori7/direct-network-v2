@@ -1,0 +1,250 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String    @id @default(cuid())
+  name              String
+  email             String    @unique
+  cpf               String    @unique
+  phone             String
+  birthDate         DateTime
+  passwordHash      String
+  /** CPF com dígitos válidos e único: suficiente para comprar. */
+  cpfCheckedAt      DateTime?
+  /** Identidade conferida (documento/selfie ou aprovação da subconta). Obrigatório para vender. */
+  verifiedAt        DateTime?
+  /** Subconta do vendedor no gateway, com Conta Escrow ligada. */
+  gatewayAccountId  String?
+  gatewayWalletId   String?
+  isAdmin           Boolean   @default(false)
+  createdAt         DateTime  @default(now())
+
+  listings    Listing[]
+  orders      Order[]      @relation("BuyerOrders")
+  wantedPosts WantedPost[]
+  messages    Message[]
+  sessions    Session[]
+}
+
+model Session {
+  /** Hash SHA-256 do token do cookie; o token em si nunca é salvo. */
+  id        String   @id
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+enum PlatformCode {
+  INGRESSE
+  SYMPLA
+  TICKETMASTER
+}
+
+/** Ticketeira. `profile` segue o tipo RuleProfile de src/lib/rules/types.ts. */
+model Platform {
+  id      String       @id @default(cuid())
+  code    PlatformCode @unique
+  name    String
+  profile Json
+  events  Event[]
+}
+
+enum TransferAllowed {
+  SIM
+  NAO
+  DESCONHECIDO
+}
+
+model Event {
+  id                   String          @id @default(cuid())
+  platformId           String
+  platform             Platform        @relation(fields: [platformId], references: [id])
+  slug                 String          @unique
+  name                 String
+  category             String
+  /** Cor do cartaz provisório (0–360) enquanto não há imagem. */
+  hue                  Int             @default(260)
+  imageUrl             String?
+  /** Setores e valores originais: [{ name, faceValueCents }]. */
+  sectors              Json            @default("[]")
+  venue                String
+  city                 String
+  startsAt             DateTime
+  endsAt               DateTime
+  isSports             Boolean         @default(false)
+  transferAllowed      TransferAllowed @default(DESCONHECIDO)
+  nominalBiometric     Boolean         @default(false)
+  /** Data/hora exatas da janela de transferência definida pela ticketeira/produtor. */
+  transferOpensAt      DateTime?
+  transferEndsAt       DateTime?
+  /** Só informativo: a ticketeira tem revenda oficial ligada para este evento. */
+  officialResaleActive Boolean         @default(false)
+  /** Sobreposições do perfil da ticketeira (Partial<RuleProfile>). */
+  ruleOverrides        Json            @default("{}")
+  createdAt            DateTime        @default(now())
+
+  listings    Listing[]
+  wantedPosts WantedPost[]
+
+  @@index([startsAt])
+}
+
+enum TicketType {
+  INTEIRA
+  MEIA
+  MEIA_SOCIAL
+  CORTESIA
+}
+
+enum ListingStatus {
+  ATIVO
+  PAUSADO
+  ESGOTADO
+  /** Janela de transferência encerrada: anúncio sai do ar automaticamente. */
+  ENCERRADO
+  REMOVIDO
+}
+
+model Listing {
+  id                          String        @id @default(cuid())
+  eventId                     String
+  event                       Event         @relation(fields: [eventId], references: [id])
+  sellerId                    String
+  seller                      User          @relation(fields: [sellerId], references: [id])
+  sector                      String
+  ticketType                  TicketType
+  quantity                    Int
+  quantityAvailable           Int
+  priceCents                  Int
+  faceValueCents              Int
+  purchasedAt                 DateTime
+  /** Número do pedido na ticketeira; só usado em disputas. */
+  platformOrderRef            String
+  sellerDeclaresOriginalBuyer Boolean
+  status                      ListingStatus @default(ATIVO)
+  createdAt                   DateTime      @default(now())
+
+  orders Order[]
+
+  @@index([eventId, status])
+}
+
+enum OrderStatus {
+  AGUARDANDO_PAGAMENTO
+  PAGO
+  TRANSFERIDO
+  RECEBIDO
+  EM_DISPUTA
+  LIBERADO
+  REEMBOLSADO
+  CANCELADO
+}
+
+model Order {
+  id                 String      @id @default(cuid())
+  listingId          String
+  listing            Listing     @relation(fields: [listingId], references: [id])
+  buyerId            String
+  buyer              User        @relation("BuyerOrders", fields: [buyerId], references: [id])
+  quantity           Int
+  totalCents         Int
+  platformFeeCents   Int
+  sellerNetCents     Int
+  status             OrderStatus @default(AGUARDANDO_PAGAMENTO)
+  /** Dados que o vendedor usa para transferir (e-mail, CPF, nome, Quentro ID). */
+  buyerIdentifiers   Json
+  chargeId           String?     @unique
+  pixCopyPaste       String?
+  paymentExpiresAt   DateTime
+  paidAt             DateTime?
+  transferDeadlineAt DateTime?
+  disputeDeadlineAt  DateTime
+  releaseAt          DateTime
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+
+  logs     OrderLog[]
+  disputes Dispute[]
+  messages Message[]
+
+  @@index([status, releaseAt])
+  @@index([status, transferDeadlineAt])
+  @@index([status, paymentExpiresAt])
+}
+
+/** Histórico imutável de cada mudança de status (prova em disputas e no MED). */
+model OrderLog {
+  id         String       @id @default(cuid())
+  orderId    String
+  order      Order        @relation(fields: [orderId], references: [id])
+  fromStatus OrderStatus
+  toStatus   OrderStatus
+  action     String
+  actor      String
+  actorId    String?
+  note       String?
+  ip         String?
+  createdAt  DateTime     @default(now())
+
+  @@index([orderId])
+}
+
+model Dispute {
+  id         String    @id @default(cuid())
+  orderId    String
+  order      Order     @relation(fields: [orderId], references: [id])
+  openedBy   String
+  reason     String
+  resolution String?
+  winner     String?
+  createdAt  DateTime  @default(now())
+  resolvedAt DateTime?
+}
+
+/** Pedido de compra ("COMPRO ..."), como nos grupos. */
+model WantedPost {
+  id            String     @id @default(cuid())
+  eventId       String
+  event         Event      @relation(fields: [eventId], references: [id])
+  buyerId       String
+  buyer         User       @relation(fields: [buyerId], references: [id])
+  sector        String?
+  ticketType    TicketType?
+  quantity      Int
+  maxPriceCents Int?
+  active        Boolean    @default(true)
+  createdAt     DateTime   @default(now())
+}
+
+enum MessageKind {
+  USUARIO
+  SISTEMA
+  BLOQUEADA
+}
+
+/** Chat do pedido entre comprador e vendedor. Abre só depois do pagamento. */
+model Message {
+  id        String      @id @default(cuid())
+  orderId   String
+  order     Order       @relation(fields: [orderId], references: [id])
+  senderId  String?
+  sender    User?       @relation(fields: [senderId], references: [id])
+  /** COMPRADOR, VENDEDOR, ADMIN ou SISTEMA */
+  role      String
+  kind      MessageKind @default(USUARIO)
+  /** Mensagens bloqueadas ficam guardadas (visíveis só para o admin) como sinal de risco. */
+  body      String
+  readAt    DateTime?
+  createdAt DateTime    @default(now())
+
+  @@index([orderId, createdAt])
+}
