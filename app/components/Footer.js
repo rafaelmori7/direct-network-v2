@@ -8,7 +8,7 @@ export default function Footer() {
         <Link href="/" style={{fontSize:'12px',color:'var(--text-faint)'}}>Festas</Link>
         <Link href="/listas" style={{fontSize:'12px',color:'var(--text-faint)'}}>Listas VIP</Link>
         <Link href="/cortesia" style={{fontSize:'12px',color:'var(--text-faint)'}}>Cortesias</Link>
-        <Link href="/virada-estaiada-2027" style={{fontSize:'12px',color:'var(--text-faint)'}}>Réveillon 2027</Link>
+        <Link href="/reveillon-sao-paulo" style={{fontSize:'12px',color:'var(--text-faint)'}}>Réveillon 2027</Link>
         <Link href="/grupo" style={{fontSize:'12px',color:'var(--text-faint)'}}>Entrar no grupo</Link>
         <Link href="/quem-somos" style={{fontSize:'12px',color:'var(--text-faint)'}}>Quem somos</Link>
         <a href="https://www.directclub.com.br" target="_blank" style={{fontSize:'12px',color:'var(--text-faint)'}}>Direct Club</a>
