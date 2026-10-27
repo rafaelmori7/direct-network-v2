@@ -62,7 +62,7 @@ export default async function Home() {
           <Link href="/reveillon-sao-paulo" className="banner-flex" style={{display:'flex',background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:'var(--radius)',padding:'16px 20px',alignItems:'center',justifyContent:'space-between',gap:'16px'}}>
             <div>
               <strong style={{fontFamily:'var(--font-display)',fontSize:'14px',fontWeight:600,display:'block',marginBottom:'2px'}}>Guia do Réveillon 2027 em São Paulo</strong>
-              <p style={{fontSize:'12px',color:'var(--text-muted)'}}>Todos os Réveillons com desconto Direct: Estaiada, Sampa Festival e Utopic Festival.</p>
+              <p style={{fontSize:'12px',color:'var(--text-muted)'}}>Todos os Réveillons com desconto Direct: Estaiada, Sampa Festival e La Nuit.</p>
             </div>
             <span style={{fontSize:'12px',fontWeight:600,color:'var(--pink)',whiteSpace:'nowrap'}}>Ver guia →</span>
           </Link>

@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import Nav from '../components/Nav'
 import Footer from '../components/Footer'
+import Breadcrumbs from '../components/Breadcrumbs'
 import { REVEILLONS_SP } from '../../lib/reveillons-sp'
 
 const TITLE = 'Réveillon São Paulo 2027 | Guia Completo + Ingressos com Desconto'
@@ -59,7 +60,7 @@ const PONTOS_TURISTICOS = [
 ]
 
 const FAQ = [
-  ['Qual é o melhor Réveillon de São Paulo em 2027?', 'Depende do estilo que você procura: o Virada Estaiada tem vista pra Ponte Estaiada, o Sampa Festival mistura pagode, sertanejo e eletrônica, e o Utopic Festival é 100% música eletrônica. Todos têm open bar e abrem com desconto exclusivo Direct.'],
+  ['Qual é o melhor Réveillon de São Paulo em 2027?', 'Depende do estilo que você procura: o Virada Estaiada tem vista pra Ponte Estaiada, o Sampa Festival mistura pagode, sertanejo e eletrônica, e o La Nuit reúne eletrônica e brasilidades em ambiente open air e indoor. Todos têm open bar e abrem com desconto exclusivo Direct.'],
   ['Quando devo comprar o ingresso do Réveillon?', 'O quanto antes. Os réveillons de São Paulo vendem por lotes crescentes e esgotam antes da virada — o primeiro lote é sempre o mais barato.'],
   ['Tem desconto para os Réveillons de São Paulo?', 'Sim, a Direct Network tem desconto exclusivo para os Réveillons deste guia. Entre no grupo do WhatsApp pra receber o link de cada um assim que abrir.'],
   ['Onde ficar hospedado para o Réveillon em São Paulo?', 'Região da Avenida Paulista, Jardins ou Vila Olímpia/Itaim são as mais centrais, com fácil acesso de app às principais casas de festa da cidade.'],
@@ -71,6 +72,8 @@ export default function ReveillonSaoPauloPage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
       <Nav />
       <main>
+        <Breadcrumbs items={[{ label: 'Festas', href: '/' }, { label: 'Réveillon São Paulo 2027' }]} />
+
         {/* HERO */}
         <section style={{
           position:'relative',
