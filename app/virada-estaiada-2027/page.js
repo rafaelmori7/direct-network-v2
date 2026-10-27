@@ -30,11 +30,9 @@ export const metadata = {
   },
 }
 
-// Vendas abrem em 10/09. Quando o cupom/link de afiliado estiverem confirmados,
-// troque VENDAS_ABERTAS para true e preencha LINK_AFILIADO — é a única linha a mudar.
-const VENDAS_ABERTAS = false
+const VENDAS_ABERTAS = true
 const LINK_GRUPO_WHATSAPP = 'https://chat.whatsapp.com/DYcOSP7iF8U3OYgBHpU0tG' // TODO: trocar pelo link do grupo específico da Virada Estaiada (pendência Rafael)
-const LINK_AFILIADO = '#' // TODO: link de afiliado com cupom DIRECT aplicado (pendência Rafael)
+const LINK_AFILIADO = 'https://cart.ingresse.com/3d4b6ddf-c1ec-4d81-804c-cb89320d6795/tickets?cod=DIRECT'
 
 const schema = {
   '@context': 'https://schema.org',
@@ -58,7 +56,8 @@ const schema = {
       addressCountry: 'BR',
     },
   },
-  // offers: pendência — a partir de 10/09, acrescentar { '@type': 'Offer', url: LINK_AFILIADO, price, priceCurrency: 'BRL', availability: 'https://schema.org/InStock', validFrom: '2026-09-10T00:00:00-03:00' }
+  // offers: pendência — preço ainda não confirmado (declarar preço inexistente
+  // gera erro no Search Console); venda já está aberta pelo LINK_AFILIADO acima.
 }
 
 function ConversionBlock() {
@@ -97,7 +96,7 @@ const FICHA = [
   ['Open bar', 'Premium, durante toda a festa'],
   ['Open food', 'Premium, incluso'],
   ['Atração musical', 'Ao vivo, nome a ser anunciado'],
-  ['Vendas', 'A partir de 10 de setembro, começando pela pré-venda'],
+  ['Vendas', 'Abertas, com desconto Direct pelo cupom DIRECT'],
   ['Cupom de desconto', 'DIRECT'],
 ]
 
@@ -106,8 +105,8 @@ const OUTROS = REVEILLONS_SP.filter(r => r.slug !== 'virada-estaiada-2027')
 const FAQ = [
   ['Quando é a Virada Estaiada 2027?', 'Dia 31 de dezembro de 2026, das 20h às 3h.'],
   ['Onde é a Virada Estaiada?', 'No Varanda Estaiada, na Av. Dr. Chucri Zaidan, 155, Vila Cordeiro, São Paulo.'],
-  ['Quando abrem as vendas?', 'Em 10 de setembro, começando pela pré-venda, que tem o menor valor da temporada e quantidade limitada.'],
-  ['Quanto custa o ingresso?', 'Os valores são divulgados na abertura das vendas. A pré-venda é sempre o lote mais barato do ano.'],
+  ['As vendas já estão abertas?', 'Sim. A venda está na pré-venda, que é o menor valor da temporada e tem quantidade limitada.'],
+  ['Quanto custa o ingresso?', 'O valor atual do lote aparece no checkout ao abrir o link de compra. O preço sobe a cada virada de lote.'],
   ['Tem open bar?', 'Sim, open bar premium durante toda a festa, além de open food premium incluso.'],
   ['Qual é o line-up?', 'A produção confirmou uma atração musical ao vivo e ainda não divulgou o nome.'],
   ['Tem cupom de desconto para a Virada Estaiada?', 'Sim. Comprando pelo link da Direct o cupom DIRECT já vem aplicado, e ele também funciona digitado no checkout.'],
@@ -178,10 +177,10 @@ export default function ViradaEstaiada2027Page() {
             Quanto custa
           </h2>
           <p style={{fontSize:'15px',color:'var(--text-muted)',lineHeight:1.8,marginBottom:'16px'}}>
-            Os valores da Virada Estaiada 2027 são divulgados na abertura das vendas, em 10 de setembro.
+            As vendas da Virada Estaiada 2027 já estão abertas, na pré-venda. O valor atual aparece no checkout ao abrir o link de compra abaixo.
           </p>
           <p style={{fontSize:'15px',color:'var(--text-muted)',lineHeight:1.8,marginBottom:'16px'}}>
-            A temporada começa pela pré-venda, que é o menor valor do ano e tem quantidade limitada. Em réveillon de São Paulo o preço sobe a cada lote, e quem compra depois da virada de lote paga mais pelo mesmo ingresso.
+            A pré-venda é o menor valor do ano e tem quantidade limitada. Em réveillon de São Paulo o preço sobe a cada lote, e quem compra depois da virada de lote paga mais pelo mesmo ingresso.
           </p>
           <p style={{fontSize:'15px',color:'var(--text-muted)',lineHeight:1.8}}>
             Comprando pelo link da Direct, o cupom DIRECT aplica o desconto sobre o lote que estiver aberto.
