@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import Nav from '../components/Nav'
 import Footer from '../components/Footer'
+import Breadcrumbs from '../components/Breadcrumbs'
 import { REVEILLONS_SP } from '../../lib/reveillons-sp'
 
 const TITLE = 'Réveillon Sampa Festival 2027 | Ingressos com Desconto — Direct Network'
@@ -111,6 +112,8 @@ export default function ReveillonSampa2027Page() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
       <Nav />
       <main>
+        <Breadcrumbs items={[{ label: 'Festas', href: '/' }, { label: 'Réveillon São Paulo 2027', href: '/reveillon-sao-paulo' }, { label: 'Réveillon Sampa Festival 2027' }]} />
+
         {/* HERO */}
         <section style={{padding:'56px var(--px) 32px',maxWidth:'800px',margin:'0 auto'}}>
           <div style={{display:'inline-block',fontSize:'11px',fontWeight:600,letterSpacing:'0.14em',textTransform:'uppercase',color:'#C8963C',background:'rgba(200,150,60,0.1)',border:'1px solid rgba(200,150,60,0.3)',padding:'5px 14px',borderRadius:'20px',marginBottom:'20px'}}>
