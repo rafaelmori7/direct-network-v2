@@ -56,6 +56,9 @@ export default async function CortesiaSlugPage({ params }) {
     ativo: f.ativo !== false,
     mensagemEncerrada: f.mensagemEncerrada || 'As cortesias para este evento foram encerradas.',
     linkWhatsApp: f.linkWhatsApp || '',
+    quizPergunta: f.quizPergunta || '',
+    quizOpcoes: Array.isArray(f.quizOpcoes) ? f.quizOpcoes : [],
+    quizRespostaCorreta: f.quizRespostaCorreta || '',
   }
 
   const descricaoNode = f.descricao
