@@ -5,6 +5,7 @@ const LINK_GRUPO = 'https://chat.whatsapp.com/DYcOSP7iF8U3OYgBHpU0tG'
 
 export default function CortesiaSlugClient({ cortesia: evento, descricaoNode }) {
   const [genero, setGenero] = useState(null)
+  const [quizIndex, setQuizIndex] = useState(0)
   const [quizOk, setQuizOk] = useState(false)
   const [quizErro, setQuizErro] = useState(false)
   const [email, setEmail] = useState('')
@@ -14,14 +15,27 @@ export default function CortesiaSlugClient({ cortesia: evento, descricaoNode }) 
   const [copiado, setCopiado] = useState(false)
 
   const temGenero = evento.appsScriptUrlMasc && evento.linkCortesiaMasc
-  const temQuiz = Boolean(evento.quizPergunta && evento.quizOpcoes?.length >= 2 && evento.quizRespostaCorreta)
+  const temQuiz = Array.isArray(evento.quiz) && evento.quiz.length > 0
   const passouGenero = !temGenero || genero
   const passouQuiz = !temQuiz || quizOk
 
-  function responderQuiz(opcao) {
-    if (opcao === evento.quizRespostaCorreta) {
+  function voltarQuiz() {
+    if (quizIndex > 0) {
+      setQuizIndex(quizIndex - 1)
       setQuizErro(false)
-      setQuizOk(true)
+    } else {
+      setGenero(null)
+    }
+  }
+
+  function responderQuiz(opcao, respostaCorreta) {
+    if (opcao === respostaCorreta) {
+      setQuizErro(false)
+      if (quizIndex < evento.quiz.length - 1) {
+        setQuizIndex(quizIndex + 1)
+      } else {
+        setQuizOk(true)
+      }
     } else {
       setQuizErro(true)
     }
@@ -149,15 +163,20 @@ export default function CortesiaSlugClient({ cortesia: evento, descricaoNode }) 
           {/* QUIZ */}
           {passouGenero && temQuiz && !quizOk && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              {temGenero && (
-                <button onClick={() => setGenero(null)} style={styles.btnVoltar}>← Voltar</button>
+              {(quizIndex > 0 || temGenero) && (
+                <button onClick={voltarQuiz} style={styles.btnVoltar}>← Voltar</button>
+              )}
+              {evento.quiz.length > 1 && (
+                <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>
+                  Pergunta {quizIndex + 1} de {evento.quiz.length}
+                </span>
               )}
               <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', lineHeight: 1.55 }}>
-                1. {evento.quizPergunta}
+                {quizIndex + 1}. {evento.quiz[quizIndex].pergunta}
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {evento.quizOpcoes.map(opcao => (
-                  <button key={opcao} onClick={() => responderQuiz(opcao)} style={styles.btnGenero}>
+                {evento.quiz[quizIndex].opcoes.map(opcao => (
+                  <button key={opcao} onClick={() => responderQuiz(opcao, evento.quiz[quizIndex].resposta)} style={styles.btnGenero}>
                     {opcao}
                   </button>
                 ))}
@@ -180,7 +199,7 @@ export default function CortesiaSlugClient({ cortesia: evento, descricaoNode }) 
                 </div>
               )}
               <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', lineHeight: 1.55 }}>
-                {temQuiz ? '2. ' : '1. '}Informe seu e-mail para receber o link para gerar a cortesia.
+                {temQuiz ? evento.quiz.length + 1 : 1}. Informe seu e-mail para receber o link para gerar a cortesia.
               </p>
               <div>
                 <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8 }}>
