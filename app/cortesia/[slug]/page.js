@@ -57,7 +57,10 @@ export default async function CortesiaSlugPage({ params }) {
     mensagemEncerrada: f.mensagemEncerrada || 'As cortesias para este evento foram encerradas.',
     linkWhatsApp: f.linkWhatsApp || '',
     quiz: Array.isArray(f.quiz)
-      ? f.quiz.filter(p => p?.pergunta && Array.isArray(p.opcoes) && p.opcoes.length >= 2 && p.resposta)
+      ? f.quiz
+          .map(entry => entry?.fields)
+          .filter(p => p?.pergunta && Array.isArray(p.opcoes) && p.opcoes.length >= 2 && p.respostaCorreta)
+          .map(p => ({ pergunta: p.pergunta, opcoes: p.opcoes, resposta: p.respostaCorreta }))
       : [],
   }
 
