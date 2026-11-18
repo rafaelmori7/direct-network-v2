@@ -1,10 +1,13 @@
 'use client'
 import { useState } from 'react'
 
-const LINK_GRUPO = 'https://chat.whatsapp.com/DYcOSP7iF8U3OYgBHpU0tG'
+const LINK_GRUPO = 'https://curt.link/grupo-direct'
 
 export default function CortesiaSlugClient({ cortesia: evento, descricaoNode }) {
   const [genero, setGenero] = useState(null)
+  const [quizIndex, setQuizIndex] = useState(0)
+  const [quizOk, setQuizOk] = useState(false)
+  const [quizErro, setQuizErro] = useState(false)
   const [email, setEmail] = useState('')
   const [erro, setErro] = useState('')
   const [loading, setLoading] = useState(false)
@@ -12,6 +15,31 @@ export default function CortesiaSlugClient({ cortesia: evento, descricaoNode }) 
   const [copiado, setCopiado] = useState(false)
 
   const temGenero = evento.appsScriptUrlMasc && evento.linkCortesiaMasc
+  const temQuiz = Array.isArray(evento.quiz) && evento.quiz.length > 0
+  const passouGenero = !temGenero || genero
+  const passouQuiz = !temQuiz || quizOk
+
+  function voltarQuiz() {
+    if (quizIndex > 0) {
+      setQuizIndex(quizIndex - 1)
+      setQuizErro(false)
+    } else {
+      setGenero(null)
+    }
+  }
+
+  function responderQuiz(opcao, respostaCorreta) {
+    if (opcao === respostaCorreta) {
+      setQuizErro(false)
+      if (quizIndex < evento.quiz.length - 1) {
+        setQuizIndex(quizIndex + 1)
+      } else {
+        setQuizOk(true)
+      }
+    } else {
+      setQuizErro(true)
+    }
+  }
   const scriptUrl = genero === 'masc' ? evento?.appsScriptUrlMasc : evento?.appsScriptUrl
   const linkCortesia = genero === 'masc' ? evento?.linkCortesiaMasc : evento?.linkCortesia
 
@@ -132,19 +160,46 @@ export default function CortesiaSlugClient({ cortesia: evento, descricaoNode }) 
             </div>
           )}
 
-          {/* FORMULÁRIO */}
-          {(!temGenero || genero) && !resgatado && (
+          {/* QUIZ */}
+          {passouGenero && temQuiz && !quizOk && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              {temGenero && (
+              {(quizIndex > 0 || temGenero) && (
+                <button onClick={voltarQuiz} style={styles.btnVoltar}>← Voltar</button>
+              )}
+              {evento.quiz.length > 1 && (
+                <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>
+                  Pergunta {quizIndex + 1} de {evento.quiz.length}
+                </span>
+              )}
+              <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', lineHeight: 1.55 }}>
+                {quizIndex + 1}. {evento.quiz[quizIndex].pergunta}
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {evento.quiz[quizIndex].opcoes.map(opcao => (
+                  <button key={opcao} onClick={() => responderQuiz(opcao, evento.quiz[quizIndex].resposta)} style={styles.btnGenero}>
+                    {opcao}
+                  </button>
+                ))}
+              </div>
+              {quizErro && <p style={{ fontSize: 12, color: '#ff6b6b' }}>Resposta incorreta. Tenta de novo!</p>}
+            </div>
+          )}
+
+          {/* FORMULÁRIO */}
+          {passouGenero && passouQuiz && !resgatado && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {(temGenero || temQuiz) && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <button onClick={() => setGenero(null)} style={styles.btnVoltar}>← Voltar</button>
-                  <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-                    Lista {genero === 'masc' ? 'Masculino' : 'Feminino'}
-                  </span>
+                  <button onClick={() => (temQuiz ? setQuizOk(false) : setGenero(null))} style={styles.btnVoltar}>← Voltar</button>
+                  {temGenero && (
+                    <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+                      Lista {genero === 'masc' ? 'Masculino' : 'Feminino'}
+                    </span>
+                  )}
                 </div>
               )}
               <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', lineHeight: 1.55 }}>
-                1. Informe seu e-mail para receber o link para gerar a cortesia.
+                {temQuiz ? evento.quiz.length + 1 : 1}. Informe seu e-mail para receber o link para gerar a cortesia.
               </p>
               <div>
                 <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8 }}>
