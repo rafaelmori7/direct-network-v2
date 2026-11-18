@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 
-const LINK_GRUPO = 'https://chat.whatsapp.com/DYcOSP7iF8U3OYgBHpU0tG'
+const LINK_GRUPO = 'https://curt.link/grupo-direct'
 
 export default function CortesiaSlugClient({ cortesia: evento, descricaoNode }) {
   const [genero, setGenero] = useState(null)

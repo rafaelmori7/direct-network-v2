@@ -31,7 +31,7 @@ export const metadata = {
 }
 
 const VENDAS_ABERTAS = true
-const LINK_GRUPO_WHATSAPP = 'https://chat.whatsapp.com/DYcOSP7iF8U3OYgBHpU0tG' // TODO: trocar pelo link do grupo específico da Virada Estaiada (pendência Rafael)
+const LINK_GRUPO_WHATSAPP = 'https://curt.link/grupo-direct' // TODO: trocar pelo link do grupo específico da Virada Estaiada (pendência Rafael)
 const LINK_AFILIADO = 'https://cart.ingresse.com/3d4b6ddf-c1ec-4d81-804c-cb89320d6795/tickets?cod=DIRECT'
 
 const schema = {

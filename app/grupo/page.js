@@ -57,7 +57,7 @@ export default function GrupoPage() {
 
           {/* GRATUITO — destaque principal */}
           <a
-            href="https://chat.whatsapp.com/DYcOSP7iF8U3OYgBHpU0tG"
+            href="https://curt.link/grupo-direct"
             target="_blank"
             style={{display:'block',background:'var(--bg2)',border:'2px solid #25D366',borderRadius:'var(--radius)',padding:'28px 24px',textDecoration:'none',marginBottom:'16px'}}
           >

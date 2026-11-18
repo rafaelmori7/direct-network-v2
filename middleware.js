@@ -13,7 +13,7 @@ import { NextResponse } from 'next/server'
 
 const LINKTREE_URL = 'https://linktr.ee/direct.festas'
 // Mesmo link de grupo usado em Nav.js, Footer.js e app/grupo/page.js.
-const WHATSAPP_URL = 'https://chat.whatsapp.com/DYcOSP7iF8U3OYgBHpU0tG'
+const WHATSAPP_URL = 'https://curt.link/grupo-direct'
 
 // HTTP-date real (fim do ciclo de cobrança do Contentful), não uma estimativa
 // em segundos — dá pro Google um motivo concreto pra não tirar o site do
