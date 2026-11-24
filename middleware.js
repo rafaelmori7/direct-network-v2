@@ -32,6 +32,96 @@ const CAMINHOS_LIVRES = ['/_next', '/logo.png', '/icon.png', '/apple-icon.png', 
 // do formato HTTP-date exato). Ajustar as duas juntas se a previsão mudar.
 const PREVISAO_RETORNO = '30 de setembro'
 
+// O domínio principal aponta pro Vercel (este site), não pro Wix — então o
+// link de "gerenciar preferências/cancelar inscrição" que o Wix gera pros
+// e-mails de campanha (.../\_manage-consent/api/revoke-consent/unsubscribe)
+// cai aqui e não existe nenhuma rota pra ele, dando 404. Não dá pra
+// processar o token aqui (é criptografado pro backend do Wix), então a
+// saída é oferecer um cancelamento manual por e-mail.
+const EMAIL_CONTATO = 'contato@directnw.com.br'
+
+function paginaCancelarInscricao() {
+  const mailto = `mailto:${EMAIL_CONTATO}?subject=${encodeURIComponent('Cancelar inscrição')}&body=${encodeURIComponent('Quero parar de receber e-mails da Direct Network.\n\nMeu e-mail cadastrado é: ')}`
+  return `<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Cancelar inscrição — Direct Network</title>
+<meta name="robots" content="noindex" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #0a0a0a;
+    background-image: radial-gradient(circle at 50% 30%, rgba(233,30,140,0.14), transparent 60%);
+    color: #fff;
+    font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+    padding: 24px;
+  }
+  .card {
+    width: 100%;
+    max-width: 420px;
+    background: #111111;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    padding: 48px 32px 40px;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+  }
+  .logo {
+    height: 56px;
+    width: 56px;
+    object-fit: contain;
+    border-radius: 14px;
+    margin-bottom: 28px;
+  }
+  h1 {
+    font-family: 'Syne', 'DM Sans', sans-serif;
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin: 0 0 14px;
+  }
+  p {
+    font-size: 15px;
+    color: #9a9a9a;
+    line-height: 1.65;
+    margin: 0 auto 28px;
+    max-width: 320px;
+  }
+  .btn {
+    display: block;
+    font-weight: 600;
+    font-size: 14px;
+    padding: 15px 24px;
+    border-radius: 10px;
+    text-decoration: none;
+    background: #E91E8C;
+    color: #fff;
+    transition: background 0.15s ease, transform 0.15s ease;
+  }
+  .btn:hover { background: #C4176F; transform: translateY(-1px); }
+</style>
+</head>
+<body>
+  <div class="card">
+    <img class="logo" src="/icon.png" alt="Direct Network" />
+    <h1>Cancelar inscrição</h1>
+    <p>O link usado para gerenciar suas preferências de e-mail expirou ou não é mais válido. Mande um e-mail pra gente que cancelamos sua inscrição manualmente.</p>
+    <a class="btn" href="${mailto}">Cancelar minha inscrição por e-mail</a>
+  </div>
+</body>
+</html>`
+}
+
 function paginaManutencao() {
   return `<!doctype html>
 <html lang="pt-BR">
@@ -138,11 +228,19 @@ function paginaManutencao() {
 }
 
 export function middleware(request) {
+  const { pathname } = request.nextUrl
+
+  if (pathname.startsWith('/_manage-consent')) {
+    return new NextResponse(paginaCancelarInscricao(), {
+      status: 200,
+      headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' },
+    })
+  }
+
   if (process.env.MAINTENANCE_MODE !== 'true') {
     return NextResponse.next()
   }
 
-  const { pathname } = request.nextUrl
   if (CAMINHOS_LIVRES.some(caminho => pathname.startsWith(caminho))) {
     return NextResponse.next()
   }
