@@ -28,7 +28,7 @@ export const metadata = {
 
 const HERO_IMAGE = '/reveillon-sao-paulo-hero.jpg'
 
-const LINK_GRUPO_WHATSAPP = 'https://chat.whatsapp.com/DYcOSP7iF8U3OYgBHpU0tG'
+const LINK_GRUPO_WHATSAPP = 'https://curt.link/grupo-direct'
 // Link genérico, sem id de afiliado — trocar se/quando tivermos um parceiro
 // de hospedagem com link rastreável (pendência Rafael).
 const LINK_BOOKING = 'https://www.booking.com/city/br/sao-paulo.html'

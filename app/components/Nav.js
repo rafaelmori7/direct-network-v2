@@ -22,7 +22,7 @@ export default function Nav() {
           <Link href="/" style={{fontSize:'13px',color:path==='/'?'#fff':'var(--text-muted)'}}>Festas</Link>
           <Link href="/listas" style={{fontSize:'13px',color:path.startsWith('/listas')?'#fff':'var(--text-muted)'}}>Listas VIP</Link>
           <Link href="/quem-somos" style={{fontSize:'13px',color:path==='/quem-somos'?'#fff':'var(--text-muted)'}}>Quem somos</Link>
-          <a href="https://chat.whatsapp.com/DYcOSP7iF8U3OYgBHpU0tG" target="_blank"
+          <a href="https://curt.link/grupo-direct" target="_blank"
             style={{background:'#25D366',color:'#fff',padding:'9px 18px',borderRadius:'6px',fontSize:'13px',fontWeight:500}}>
             Grupo WhatsApp
           </a>
@@ -53,7 +53,7 @@ export default function Nav() {
           <Link href="/listas" onClick={()=>setOpen(false)} style={{fontSize:'17px',fontWeight:500,padding:'16px 0',borderBottom:'1px solid var(--border)',color:path.startsWith('/listas')?'var(--pink)':'#fff',display:'block'}}>Listas VIP</Link>
           <Link href="/quem-somos" onClick={()=>setOpen(false)} style={{fontSize:'17px',fontWeight:500,padding:'16px 0',borderBottom:'1px solid var(--border)',color:path==='/quem-somos'?'var(--pink)':'#fff',display:'block'}}>Quem somos</Link>
         <a
-            href="https://chat.whatsapp.com/DYcOSP7iF8U3OYgBHpU0tG"
+            href="https://curt.link/grupo-direct"
             target="_blank"
             onClick={()=>setOpen(false)}
             style={{marginTop:'20px',display:'flex',alignItems:'center',justifyContent:'center',gap:'8px',background:'#25D366',color:'#fff',padding:'14px 20px',borderRadius:'8px',fontSize:'15px',fontWeight:600}}
