@@ -37,11 +37,44 @@ const PREVISAO_RETORNO = '30 de setembro'
 // e-mails de campanha (.../\_manage-consent/api/revoke-consent/unsubscribe)
 // cai aqui e não existe nenhuma rota pra ele, dando 404. Não dá pra
 // processar o token aqui (é criptografado pro backend do Wix), então a
-// saída é oferecer um cancelamento manual por e-mail.
+// saída é capturar o e-mail aqui mesmo (igual ao padrão appsScriptUrl já
+// usado em CortesiaSlugClient.js) pra remover manualmente depois, até
+// ajustar a causa raiz direto no Wix.
+//
+// UNSUBSCRIBE_SCRIPT_URL ainda não configurada em produção -- enquanto isso
+// a página cai no fallback por e-mail (mailto) mais abaixo.
 const EMAIL_CONTATO = 'contato@directnw.com.br'
 
 function paginaCancelarInscricao() {
-  const mailto = `mailto:${EMAIL_CONTATO}?subject=${encodeURIComponent('Cancelar inscrição')}&body=${encodeURIComponent('Quero parar de receber e-mails da Direct Network.\n\nMeu e-mail cadastrado é: ')}`
+  const scriptUrl = process.env.UNSUBSCRIBE_SCRIPT_URL
+
+  const corpo = scriptUrl
+    ? `
+    <p>Estamos com uma instabilidade no cancelamento automático. Deixe seu e-mail abaixo que a gente remove você da nossa lista o quanto antes.</p>
+    <form id="form-cancelar">
+      <input type="email" id="input-email" placeholder="seu@email.com" required
+        style="width:100%;box-sizing:border-box;background:#0a0a0a;border:1px solid #242424;border-radius:10px;color:#fff;font-size:14px;padding:13px 16px;outline:none;font-family:inherit;margin-bottom:12px;" />
+      <button type="submit" class="btn" style="width:100%;border:none;cursor:pointer;font-family:inherit;">Cancelar minha inscrição</button>
+    </form>
+    <p id="msg-sucesso" style="display:none;">Prontinho! Vamos remover seu e-mail da nossa lista em breve.</p>
+    <script>
+      document.getElementById('form-cancelar').addEventListener('submit', function (e) {
+        e.preventDefault()
+        var email = document.getElementById('input-email').value
+        fetch(${JSON.stringify(scriptUrl)}, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email, timestamp: new Date().toISOString(), origem: 'unsubscribe-fallback' }),
+        }).catch(function () {})
+        document.getElementById('form-cancelar').style.display = 'none'
+        document.getElementById('msg-sucesso').style.display = 'block'
+      })
+    </script>`
+    : `
+    <p>O link usado para gerenciar suas preferências de e-mail expirou ou não é mais válido. Mande um e-mail pra gente que cancelamos sua inscrição manualmente.</p>
+    <a class="btn" href="mailto:${EMAIL_CONTATO}?subject=${encodeURIComponent('Cancelar inscrição')}&body=${encodeURIComponent('Quero parar de receber e-mails da Direct Network.\n\nMeu e-mail cadastrado é: ')}">Cancelar minha inscrição por e-mail</a>`
+
   return `<!doctype html>
 <html lang="pt-BR">
 <head>
@@ -115,8 +148,7 @@ function paginaCancelarInscricao() {
   <div class="card">
     <img class="logo" src="/icon.png" alt="Direct Network" />
     <h1>Cancelar inscrição</h1>
-    <p>O link usado para gerenciar suas preferências de e-mail expirou ou não é mais válido. Mande um e-mail pra gente que cancelamos sua inscrição manualmente.</p>
-    <a class="btn" href="${mailto}">Cancelar minha inscrição por e-mail</a>
+    ${corpo}
   </div>
 </body>
 </html>`
